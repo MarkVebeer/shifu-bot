@@ -9,9 +9,9 @@ const feature: FeatureModule = {
   register(context: FeatureContext) {
     const { app, client, database } = context;
     ensureGtaNewsTable(database);
-    registerGtaNewsRoutes(app, database);
-    registerGtaNewsEvents(client, database);
-    registerGtaNewsCommand(client, database);
+      registerGtaNewsRoutes(app, database, client);
+      registerGtaNewsEvents(client, database);
+      registerGtaNewsCommand(client, database);
   }
 };
 

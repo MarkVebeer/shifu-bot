@@ -28,3 +28,20 @@ export function getGtaNewsSettings(database: SqliteDatabase, guildId: string): G
 
   return statement.get(guildId) as GtaNewsSettings | undefined;
 }
+
+export function setGtaNewsSettings(database: SqliteDatabase, guildId: string, channelId: string | null, enabled = true) {
+  // ensure guild_settings row exists to satisfy foreign key constraint
+  const ensureGuild = database.prepare(`INSERT OR IGNORE INTO guild_settings (guild_id) VALUES (?)`);
+  ensureGuild.run(guildId);
+
+  const statement = database.prepare(`
+    INSERT INTO gta_news_settings (guild_id, channel_id, enabled, created_at, updated_at)
+    VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    ON CONFLICT(guild_id) DO UPDATE SET
+      channel_id = excluded.channel_id,
+      enabled = excluded.enabled,
+      updated_at = CURRENT_TIMESTAMP
+  `);
+
+  return statement.run(guildId, channelId, enabled ? 1 : 0);
+}

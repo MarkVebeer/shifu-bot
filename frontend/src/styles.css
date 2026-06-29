@@ -1,10 +1,11 @@
 :root {
   color-scheme: dark;
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: Inter, 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   background:
-    radial-gradient(circle at top, rgba(54, 92, 255, 0.28), transparent 38%),
-    linear-gradient(180deg, #0d1117 0%, #070b11 100%);
-  color: #f5f7fb;
+    radial-gradient(circle at top left, rgba(70, 110, 255, 0.24), transparent 32%),
+    radial-gradient(circle at top right, rgba(45, 212, 191, 0.16), transparent 30%),
+    linear-gradient(180deg, #0b1020 0%, #05070d 100%);
+  color: #eef2ff;
 }
 
 * {
@@ -24,8 +25,6 @@ body {
 
 .shell {
   min-height: 100vh;
-  display: grid;
-  place-items: center;
   padding: 2rem;
 }
 
@@ -39,11 +38,314 @@ body {
   backdrop-filter: blur(18px);
 }
 
+.shell--dashboard {
+  display: grid;
+  gap: 1.25rem;
+  align-content: start;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.panel {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 28px;
+  background: rgba(8, 12, 18, 0.72);
+  box-shadow: 0 20px 100px rgba(0, 0, 0, 0.36);
+  backdrop-filter: blur(18px);
+}
+
+.panel--loading {
+  display: grid;
+  place-items: center;
+  min-height: 320px;
+  color: rgba(238, 242, 255, 0.72);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.topbar h1 {
+  margin-top: 0.35rem;
+  font-size: clamp(2rem, 4vw, 3rem);
+}
+
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.profile-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #f8fafc;
+  font-weight: 600;
+}
+
+.account-menu {
+  position: relative;
+}
+
+.account-menu > summary {
+  list-style: none;
+}
+
+.account-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.account-menu__trigger {
+  cursor: pointer;
+  border: 0;
+  min-height: 48px;
+}
+
+.account-menu__trigger:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.account-menu[open] .account-menu__trigger {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.account-menu__name {
+  white-space: nowrap;
+}
+
+.menu-icon {
+  display: inline-grid;
+  gap: 0.18rem;
+  width: 1rem;
+}
+
+.menu-icon span {
+  display: block;
+  width: 100%;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.account-menu__panel {
+  position: absolute;
+  top: calc(100% + 0.55rem);
+  right: 0;
+  min-width: 220px;
+  padding: 0.5rem;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(8, 12, 18, 0.96);
+  box-shadow: 0 18px 70px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(18px);
+  display: grid;
+  gap: 0.35rem;
+  z-index: 20;
+}
+
+.account-menu__item {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 0.9rem;
+  border-radius: 14px;
+  color: #eef2ff;
+  text-decoration: none;
+  font-weight: 600;
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.account-menu__item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+
+.account-menu__item--danger {
+  color: #ffb4b4;
+}
+
+.account-menu__item--danger:hover {
+  background: rgba(248, 113, 113, 0.12);
+}
+
+.profile-chip__avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr);
+  gap: 1.25rem;
+}
+
+.dashboard-hero {
+  padding: 2.25rem;
+}
+
+.dashboard-hero h1 {
+  margin: 0;
+  font-size: clamp(2.2rem, 4vw, 4rem);
+  line-height: 0.96;
+}
+
+.dashboard-hero--auth {
+  width: min(720px, 100%);
+  margin: 8vh auto 0;
+}
+
+.section-card {
+  padding: 1.4rem;
+}
+
+.section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.section-heading h2 {
+  margin: 0.25rem 0 0;
+  font-size: 1.15rem;
+}
+
+.section-count {
+  min-width: 2.25rem;
+  height: 2.25rem;
+  padding: 0 0.7rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.guild-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.guild-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.9rem;
+  border-radius: 20px;
+  text-decoration: none;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.guild-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.guild-card--active {
+  background: linear-gradient(135deg, rgba(79, 111, 255, 0.18), rgba(45, 212, 191, 0.12));
+}
+
+.guild-card__icon {
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #4f6fff, #2dd4bf);
+  color: #08111c;
+  font-weight: 800;
+}
+
+.guild-card__icon--muted {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+}
+
+.guild-card__body {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.guild-card__body span {
+  color: rgba(238, 242, 255, 0.66);
+  font-size: 0.95rem;
+}
+
+.guild-card__action {
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.empty-state {
+  margin: 0;
+  padding: 1rem 0.25rem 0.25rem;
+  color: rgba(238, 242, 255, 0.68);
+}
+
+.server-stage {
+  min-height: 55vh;
+}
+
+.server-stage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 420px));
+  gap: 1rem;
+  align-items: start;
+  justify-content: start;
+}
+
+.server-stage__heading {
+  margin-bottom: 1.35rem;
+}
+
+.server-stage__heading .lead {
+  margin-top: 0.75rem;
+}
+
+.topbar--server {
+  padding-bottom: 0.15rem;
+}
+
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.topbar__actions .secondary {
+  border: 0;
+}
+
 .eyebrow {
   margin: 0 0 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.22em;
-  color: #88aaff;
+  color: #8ab4ff;
   font-size: 0.8rem;
 }
 
@@ -56,7 +358,7 @@ h1 {
 .lead {
   max-width: 60ch;
   margin: 1.25rem 0 0;
-  color: rgba(245, 247, 251, 0.78);
+  color: rgba(238, 242, 255, 0.78);
   font-size: 1.05rem;
   line-height: 1.7;
 }
@@ -91,5 +393,352 @@ h1 {
 
 .secondary {
   background: rgba(255, 255, 255, 0.08);
-  color: #f5f7fb;
+  color: #eef2ff;
+}
+
+.gta-news-card {
+  display: grid;
+  gap: 0.95rem;
+  width: 100%;
+  padding: 1.1rem;
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  animation: gta-news-card-enter 420ms ease-out both;
+}
+
+.gta-news-card__body {
+  min-height: 132px;
+  display: grid;
+  place-items: center;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.gta-news-card__loading {
+  margin: 0;
+  color: rgba(238, 242, 255, 0.74);
+}
+
+.gta-news-card__header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.85rem;
+  align-items: start;
+}
+
+.gta-news-card__header h3 {
+  margin: 0;
+  font-size: 1.18rem;
+}
+
+.gta-news-card__description {
+  margin: 0.55rem 0 0;
+  color: rgba(238, 242, 255, 0.74);
+  line-height: 1.5;
+  font-size: 0.96rem;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0 0.85rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.status-pill--success {
+  background: rgba(45, 212, 191, 0.18);
+  color: #b9fff1;
+  border: 1px solid rgba(45, 212, 191, 0.26);
+}
+
+.status-pill--warning {
+  background: rgba(255, 184, 77, 0.15);
+  color: #ffe4b8;
+  border: 1px solid rgba(255, 184, 77, 0.22);
+}
+
+.status-pill--muted {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(238, 242, 255, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.gta-news-form {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.gta-news-notice {
+  display: grid;
+  gap: 0.28rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.gta-news-notice__title {
+  margin: 0;
+  color: #ffe4b8;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.gta-news-field {
+  display: grid;
+  gap: 0.45rem;
+  font-weight: 600;
+  color: #dbeafe;
+}
+
+.gta-news-field span {
+  font-size: 0.9rem;
+}
+
+.gta-news-select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.55rem 0.8rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #eef2ff;
+  font-weight: 600;
+}
+
+.gta-news-field__hint {
+  color: rgba(238, 242, 255, 0.68);
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.gta-news-actions {
+  display: grid;
+  gap: 0.7rem;
+  justify-items: center;
+}
+
+.gta-news-actions .primary,
+.gta-news-actions .secondary {
+  border: 0;
+  cursor: pointer;
+}
+
+.gta-news-save-button {
+  width: 100%;
+  min-height: 54px;
+  max-width: 100%;
+  justify-content: center;
+  border-radius: 18px;
+  box-shadow: 0 14px 34px rgba(45, 212, 191, 0.2);
+  transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
+}
+
+.gta-news-save-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 38px rgba(45, 212, 191, 0.24);
+  filter: saturate(1.05);
+}
+
+.gta-news-save-button:disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.gta-news-save-button:focus-visible {
+  outline: 2px solid rgba(185, 255, 241, 0.75);
+  outline-offset: 3px;
+}
+
+.gta-news-message {
+  margin: 0;
+  color: #9fead0;
+  line-height: 1.45;
+  font-size: 0.94rem;
+}
+
+.gta-news-card .muted {
+  margin: 0;
+  color: rgba(238, 242, 255, 0.68);
+}
+
+.gta-news-card a {
+  color: #bfe6ff;
+}
+
+.gta-news-card a:hover {
+  color: #e6f4ff;
+}
+
+.toast-viewport {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 50;
+  display: grid;
+  gap: 0.75rem;
+  width: min(360px, calc(100vw - 2.5rem));
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.85rem;
+  align-items: start;
+  padding: 0.95rem 1rem;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(8, 12, 18, 0.92);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(16px);
+  animation: toast-enter 220ms ease-out both;
+}
+
+.toast__content {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.toast__title {
+  margin: 0;
+  color: #f8fafc;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.toast__message {
+  margin: 0;
+  color: rgba(238, 242, 255, 0.76);
+  line-height: 1.45;
+  font-size: 0.92rem;
+}
+
+.toast__dismiss {
+  appearance: none;
+  border: 0;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(248, 250, 252, 0.82);
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.toast--success {
+  border-color: rgba(45, 212, 191, 0.28);
+  box-shadow: 0 18px 60px rgba(45, 212, 191, 0.12), 0 18px 60px rgba(0, 0, 0, 0.38);
+}
+
+.toast--error {
+  border-color: rgba(248, 113, 113, 0.3);
+  box-shadow: 0 18px 60px rgba(248, 113, 113, 0.12), 0 18px 60px rgba(0, 0, 0, 0.38);
+}
+
+.toast--info {
+  border-color: rgba(79, 111, 255, 0.28);
+}
+
+@media (max-width: 900px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar,
+  .section-heading,
+  .guild-card {
+    grid-template-columns: 1fr;
+  }
+
+  .gta-news-card__header {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar,
+  .guild-card {
+    align-items: start;
+  }
+
+  .topbar__actions {
+    justify-content: flex-start;
+  }
+
+  .profile-chip {
+    width: fit-content;
+  }
+
+  .account-menu__panel {
+    right: auto;
+    left: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .shell {
+    padding: 1rem;
+  }
+
+  .dashboard-hero,
+  .section-card,
+  .hero {
+    padding: 1.25rem;
+    border-radius: 22px;
+  }
+
+  .gta-news-card {
+    padding: 1rem;
+    border-radius: 20px;
+  }
+
+  .toast-viewport {
+    right: 1rem;
+    left: 1rem;
+    bottom: 1rem;
+    width: auto;
+  }
+
+  .toast {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .actions a {
+    width: 100%;
+  }
+}
+
+@keyframes gta-news-card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toast-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }

@@ -1,8 +1,7 @@
 import express from 'express';
 import path from 'node:path';
-import fs from 'node:fs';
 
-export function createApp() {
+export function createApp(options: { serveClientBuild: boolean }) {
   const app = express();
 
   app.use(express.json());
@@ -12,11 +11,9 @@ export function createApp() {
     response.json({ ok: true, service: 'shifu-bot' });
   });
 
-  const clientBuildPath = path.resolve('dist/client');
-  if (fs.existsSync(clientBuildPath)) {
+  if (options.serveClientBuild) {
+    const clientBuildPath = path.resolve('dist/client');
     app.use(express.static(clientBuildPath));
-    // Removed SPA fallback from createApp
-    // Fallback will be handled in server.ts
   }
 
   return app;
