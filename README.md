@@ -14,6 +14,11 @@ discord.js, Hono, SQLite and React. Self host it on a Pelican panel, with Docker
 - 🛡️ **Raid safe.** At most 10 welcome messages per server per minute (configurable).
 - 📱 **Dashboard for phone and desktop.** Sign in with Discord. You only see servers where you have
   the *Manage Server* permission.
+- 🚀 **Guided setup.** The first time you open a server's dashboard (after the bot joins, or when
+  the server has no config yet), a short wizard asks for the server language and the essentials of
+  each feature. Everything it asks can be changed later in the **Settings** tab, which can also run
+  the wizard again. A server that removes the bot and adds it back goes through setup again, with
+  its previous answers filled in.
 
 One instance serves hundreds of servers, each with its own settings. New features plug in as
 modules (see [Adding a feature module](#adding-a-feature-module)).
@@ -278,6 +283,7 @@ features/
     manifest.ts         ← shared by bot and dashboard: id, emoji, translations, Zod schema, embed builder
     server.ts           ← Discord event handlers, API routes, database migrations
     web.tsx             ← dashboard page (default export)
+    setup.tsx           ← optional: the feature's step in the setup wizard and Settings tab
     i18n/en.json        ← translations, must contain "name" and "description"
     i18n/hu.json
 ```
@@ -309,13 +315,18 @@ features/
 3. **`web.tsx`** default exports a React component. Use `useGuild()`, `useT()` and the UI kit in
    `apps/web/src/ui`. Call `setDirty(true)` from `useGuild()` while there are unsaved changes.
 
-4. **Register it** in `features/index.ts`:
+4. **`setup.tsx`** (optional) default exports `defineSetupSection({ id, emoji, title, description,
+   load, save, validate, summary, Component })` from `apps/web/src/lib/setup.ts`. It becomes one
+   step of the first run wizard and one card in the Settings tab. Ask only the essentials here
+   (the welcome feature asks "on or off" and the channel); detailed options belong in `web.tsx`.
+
+5. **Register it** in `features/index.ts`:
 
    ```ts
    export const features = [welcomeManifest, goodbyeManifest] as const;
    ```
 
-That is it. The bot loads `server.ts`, the dashboard finds `web.tsx`, the navigation gets an entry,
+That is it. The bot loads `server.ts`, the dashboard finds `web.tsx` (and `setup.tsx`), the navigation gets an entry,
 translations become available as `t('goodbye.…')` with typed keys, and `bun test` checks that both
 languages have every key.
 

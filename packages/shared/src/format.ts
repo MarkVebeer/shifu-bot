@@ -19,6 +19,8 @@ export const emoji = {
   soon: '🌱',
   globe: '🌐',
   overview: '🧭',
+  settings: '⚙️',
+  rocket: '🚀',
 } as const;
 
 export type EmojiName = keyof typeof emoji;

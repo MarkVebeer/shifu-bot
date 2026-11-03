@@ -1,7 +1,7 @@
 import { emoji, type GuildOverview } from '@shifubot/shared';
 import { ChevronsLeft, ChevronsRight, LayoutGrid, LogOut } from 'lucide-react';
 import { Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Link, NavLink, Outlet, useBlocker, useParams } from 'react-router';
+import { Link, NavLink, Outlet, useBlocker, useMatch, useParams } from 'react-router';
 import { featurePages } from '../features';
 import { useAuth } from '../lib/auth';
 import { GuildContext, type GuildContextValue } from '../lib/guild';
@@ -9,6 +9,7 @@ import { errorText, I18nProvider, useT } from '../lib/i18n';
 import { useApi } from '../lib/use-api';
 import { Alert, Avatar, Button, cx, Logo, Skeleton } from '../ui/primitives';
 import { ConfirmDialog } from '../ui/widgets';
+import { SetupWizard } from './SetupWizard';
 
 const SIDEBAR_KEY = 'shifu_sidebar_collapsed';
 
@@ -30,10 +31,15 @@ interface NavItem {
 export function GuildLayout() {
   const { guildId = '' } = useParams();
   const { data, error, loading, reload } = useApi<GuildOverview>(`/guilds/${guildId}/overview`);
+  const setupRoute = useMatch('/guilds/:guildId/setup');
 
   if (error) return <CenteredError error={error} />;
   if (loading && !data) return <LayoutSkeleton />;
   if (!data) return null;
+  // A server without finished setup (bot just joined, or no config yet) always lands in the wizard.
+  if (!data.setupCompleted || setupRoute) {
+    return <SetupWizard guild={data} reload={reload} rerun={data.setupCompleted} />;
+  }
   return (
     <I18nProvider locale={data.locale}>
       <GuildShell guild={data} reload={reload} />
@@ -77,6 +83,7 @@ function GuildShell({ guild, reload }: { guild: GuildOverview; reload: () => Pro
       label: t(`${feature.id}.name` as 'welcome.name'),
       icon: <span aria-hidden>{feature.emoji}</span>,
     })),
+    { to: `${base}/settings`, label: t('nav.settings'), icon: <span aria-hidden>{emoji.settings}</span> },
     { to: `${base}/upcoming`, label: t('nav.upcoming'), icon: <span aria-hidden>{emoji.soon}</span> },
   ];
 

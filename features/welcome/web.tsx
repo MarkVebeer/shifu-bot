@@ -1,7 +1,7 @@
 /**
  * Welcome feature: dashboard page.
  */
-import { colors, emoji, findUnknownPlaceholders, type ChannelOption, type Locale } from '@shifubot/shared';
+import { colors, emoji, findUnknownPlaceholders, type Locale } from '@shifubot/shared';
 import { Eye, Send } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../apps/web/src/lib/api';
@@ -10,7 +10,7 @@ import { useGuild } from '../../apps/web/src/lib/guild';
 import { errorText, useI18n } from '../../apps/web/src/lib/i18n';
 import { useApi } from '../../apps/web/src/lib/use-api';
 import { DiscordMessagePreview } from '../../apps/web/src/ui/discord-preview';
-import { Alert, Button, Card, CardHeader, Field, Input, Select, Skeleton, Switch, Textarea, cx } from '../../apps/web/src/ui/primitives';
+import { Alert, Button, Card, CardHeader, Field, Input, Skeleton, Switch, Textarea, cx } from '../../apps/web/src/ui/primitives';
 import { useToast } from '../../apps/web/src/ui/toast';
 import { ColorField, LanguageSwitcher, SaveBar } from '../../apps/web/src/ui/widgets';
 import {
@@ -22,6 +22,7 @@ import {
 } from './manifest';
 import type { WelcomeResponse } from './server';
 import { getTranslator } from '..';
+import { WelcomeChannelPicker } from './channel-picker';
 
 type TextField = 'title' | 'description' | 'footer';
 
@@ -32,7 +33,6 @@ export default function WelcomePage() {
   const { guild, reload, setDirty } = useGuild();
   const base = `/guilds/${guild.id}`;
   const welcome = useApi<WelcomeResponse>(`${base}/features/welcome`);
-  const channels = useApi<{ channels: ChannelOption[] }>(`${base}/channels`);
 
   const [draft, setDraft] = useState<WelcomeSettings | null>(null);
   const [draftLocale, setDraftLocale] = useState<Locale>(guild.locale);
@@ -152,12 +152,6 @@ export default function WelcomePage() {
   };
 
   const { status, maxPerMinute } = welcome.data;
-  const writable = (channels.data?.channels ?? []).filter((channel) => channel.canSend || channel.id === draft.channelId);
-  const groups = writable.reduce<Map<string, ChannelOption[]>>((map, channel) => {
-    const key = channel.parentName ?? '';
-    map.set(key, [...(map.get(key) ?? []), channel]);
-    return map;
-  }, new Map());
   const savedChannelSelected = draft.channelId !== null && draft.channelId === saved?.channelId;
 
   const warnings: { tone: 'warning' | 'danger' | 'info'; text: string }[] = [];
@@ -242,37 +236,12 @@ export default function WelcomePage() {
               <Field label={t('welcome.form.language')} help={t('welcome.form.languageHelp')} htmlFor="welcome-language">
                 <LanguageSwitcher id="welcome-language" value={draftLocale} onChange={setDraftLocale} />
               </Field>
-              <Field label={t('welcome.form.channel')} help={t('welcome.form.channelHelp')} htmlFor="welcome-channel" error={fieldError('channelId')}>
-                {channels.loading ? (
-                  <Skeleton className="h-11 w-full" />
-                ) : writable.length === 0 ? (
-                  <Alert tone="warning">{t('welcome.form.noChannels')}</Alert>
-                ) : (
-                  <Select
-                    id="welcome-channel"
-                    value={draft.channelId ?? ''}
-                    onChange={(value) => update('channelId', value || null)}
-                    aria-describedby="welcome-channel-help"
-                  >
-                    <option value="">{t('welcome.form.channelPlaceholder')}</option>
-                    {[...groups].map(([parent, list]) => {
-                      const options = list.map((channel) => (
-                        <option key={channel.id} value={channel.id}>
-                          # {channel.name}
-                          {channel.canSend ? '' : ` ${emoji.warning}`}
-                        </option>
-                      ));
-                      return parent ? (
-                        <optgroup key={parent} label={parent}>
-                          {options}
-                        </optgroup>
-                      ) : (
-                        options
-                      );
-                    })}
-                  </Select>
-                )}
-              </Field>
+              <WelcomeChannelPicker
+                id="welcome-channel"
+                value={draft.channelId}
+                onChange={(value) => update('channelId', value)}
+                error={fieldError('channelId')}
+              />
               <Alert tone="info">{t('welcome.status.rateLimited', { count: maxPerMinute })}</Alert>
             </div>
           </Card>

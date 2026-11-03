@@ -6,39 +6,63 @@ interface GuildRow {
   guild_id: string;
   locale: string;
   left_at: number | null;
+  setup_completed_at: number | null;
 }
 
-/** Core per server settings (language) with an in memory cache that is cleared on every save. */
+interface GuildRecord {
+  settings: GuildSettings;
+  /** False until an admin finished the first run setup in the dashboard. */
+  setupCompleted: boolean;
+}
+
+/** Core per server settings (language, setup state) with an in memory cache that is cleared on every save. */
 export class GuildSettingsStore {
-  private readonly cache = new LruCache<string, GuildSettings>(10_000);
+  private readonly cache = new LruCache<string, GuildRecord>(10_000);
 
   constructor(
     private readonly db: Database,
     private readonly defaultLocale: Locale,
   ) {}
 
-  get(guildId: string): GuildSettings {
+  private record(guildId: string): GuildRecord {
     const cached = this.cache.get(guildId);
     if (cached) return cached;
     const row = this.db
-      .query<GuildRow, [string]>('SELECT guild_id, locale, left_at FROM guilds WHERE guild_id = ?')
+      .query<GuildRow, [string]>('SELECT guild_id, locale, left_at, setup_completed_at FROM guilds WHERE guild_id = ?')
       .get(guildId);
-    const settings: GuildSettings = { locale: row && isLocale(row.locale) ? row.locale : this.defaultLocale };
-    this.cache.set(guildId, settings);
-    return settings;
+    const record: GuildRecord = {
+      settings: { locale: row && isLocale(row.locale) ? row.locale : this.defaultLocale },
+      setupCompleted: row?.setup_completed_at != null,
+    };
+    this.cache.set(guildId, record);
+    return record;
+  }
+
+  get(guildId: string): GuildSettings {
+    return this.record(guildId).settings;
   }
 
   locale(guildId: string): Locale {
     return this.get(guildId).locale;
   }
 
-  /** Create default settings for a new server, or revive a server that came back. */
+  isSetupCompleted(guildId: string): boolean {
+    return this.record(guildId).setupCompleted;
+  }
+
+  /**
+   * Create default settings for a new server, or revive a server that came back.
+   * A server that removed the bot and added it again goes through setup again.
+   */
   ensure(guildId: string): void {
     const now = Date.now();
     this.db
       .query(
-        `INSERT INTO guilds (guild_id, locale, created_at, updated_at, left_at) VALUES (?, ?, ?, ?, NULL)
-         ON CONFLICT (guild_id) DO UPDATE SET left_at = NULL`,
+        `INSERT INTO guilds (guild_id, locale, created_at, updated_at, left_at, setup_completed_at)
+         VALUES (?, ?, ?, ?, NULL, NULL)
+         ON CONFLICT (guild_id) DO UPDATE SET
+           setup_completed_at = CASE WHEN left_at IS NULL THEN setup_completed_at ELSE NULL END,
+           left_at = NULL`,
       )
       .run(guildId, this.defaultLocale, now, now);
     this.cache.delete(guildId);
@@ -54,6 +78,17 @@ export class GuildSettingsStore {
       .run(guildId, settings.locale, now, now);
     this.cache.delete(guildId);
     return this.get(guildId);
+  }
+
+  completeSetup(guildId: string): void {
+    const now = Date.now();
+    this.db
+      .query(
+        `INSERT INTO guilds (guild_id, locale, created_at, updated_at, setup_completed_at) VALUES (?, ?, ?, ?, ?)
+         ON CONFLICT (guild_id) DO UPDATE SET setup_completed_at = excluded.setup_completed_at, updated_at = excluded.updated_at`,
+      )
+      .run(guildId, this.defaultLocale, now, now, now);
+    this.cache.delete(guildId);
   }
 
   /** The bot was removed: keep the data for a grace period, then the cleanup job deletes it. */

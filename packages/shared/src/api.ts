@@ -37,7 +37,9 @@ export interface GuildOverview {
   iconUrl: string | null;
   memberCount: number;
   locale: Locale;
-  bot: { id: string; username: string; avatarUrl: string };
+  /** False until an admin finished the first run setup wizard. */
+  setupCompleted: boolean;
+  bot:{ id: string; username: string; avatarUrl: string };
   features: { id: string; enabled: boolean }[];
 }
 

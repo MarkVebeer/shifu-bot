@@ -1,34 +1,15 @@
-import { emoji, type Locale } from '@shifubot/shared';
-import { ArrowRight, Users } from 'lucide-react';
-import { useState } from 'react';
+import { emoji } from '@shifubot/shared';
+import { ArrowRight, Settings, Users } from 'lucide-react';
 import { Link } from 'react-router';
 import { featurePages } from '../features';
-import { api } from '../lib/api';
 import { useGuild } from '../lib/guild';
-import { errorText, useT } from '../lib/i18n';
+import { useT } from '../lib/i18n';
+import { LocaleBadge } from '../ui/locale-badge';
 import { Avatar, Badge, Card, CardHeader } from '../ui/primitives';
-import { useToast } from '../ui/toast';
-import { LanguageSwitcher } from '../ui/widgets';
 
 export function OverviewPage() {
   const t = useT();
-  const toast = useToast();
-  const { guild, reload } = useGuild();
-  const [saving, setSaving] = useState(false);
-
-  const changeLocale = async (locale: Locale) => {
-    if (locale === guild.locale || saving) return;
-    setSaving(true);
-    try {
-      await api(`/guilds/${guild.id}/settings`, { method: 'PUT', body: { locale } });
-      await reload();
-      toast.success(t('toast.saved'));
-    } catch (error) {
-      toast.error(`${t('toast.saveFailed')}: ${errorText(t, error)}`);
-    } finally {
-      setSaving(false);
-    }
-  };
+  const { guild } = useGuild();
 
   return (
     <div className="animate-fade-up space-y-6">
@@ -47,8 +28,18 @@ export function OverviewPage() {
         </Card>
         <Card>
           <CardHeader icon={emoji.globe} title={t('overview.language')} description={t('overview.languageHelp')} />
-          <div aria-busy={saving}>
-            <LanguageSwitcher value={guild.locale} onChange={changeLocale} />
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="flex items-center gap-3 text-lg font-semibold">
+              <LocaleBadge locale={guild.locale} size="sm" active />
+              {t(`lang.${guild.locale}`)}
+            </p>
+            <Link
+              to={`/guilds/${guild.id}/settings`}
+              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line bg-raised/70 px-4 text-sm font-semibold transition hover:border-primary/60"
+            >
+              <Settings className="size-4" aria-hidden />
+              {t('overview.changeInSettings')}
+            </Link>
           </div>
         </Card>
       </div>

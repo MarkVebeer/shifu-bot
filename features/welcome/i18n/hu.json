@@ -63,6 +63,13 @@
     "botTag": "APP",
     "today": "Ma {time}"
   },
+  "setup": {
+    "title": "Üdvözlő üzenetek",
+    "description": "Köszöntsd az új tagokat egy általad választott csatornán. A szövegeket és színeket később az Üdvözlés oldalon finomíthatod.",
+    "channelRequired": "Válassz csatornát, vagy egyelőre kapcsold ki az üdvözlő üzeneteket.",
+    "summaryOn": "Bekapcsolva",
+    "summaryOff": "Kikapcsolva"
+  },
   "errors": {
     "channel_missing": "a csatorna nem található",
     "missing_permissions": "hiányzó jogosultságok",

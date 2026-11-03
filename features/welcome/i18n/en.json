@@ -63,6 +63,13 @@
     "botTag": "APP",
     "today": "Today at {time}"
   },
+  "setup": {
+    "title": "Welcome messages",
+    "description": "Greet new members in a channel of your choice. Fine tune texts and colors later on the Welcome page.",
+    "channelRequired": "Pick a channel, or turn welcome messages off for now.",
+    "summaryOn": "On",
+    "summaryOff": "Off"
+  },
   "errors": {
     "channel_missing": "channel not found",
     "missing_permissions": "missing permissions",

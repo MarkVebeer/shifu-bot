@@ -63,6 +63,7 @@
     "upcoming": "Hamarosan",
     "servers": "Szerverek",
     "features": "Funkciók",
+    "settings": "Beállítások",
     "collapse": "Oldalsáv összecsukása",
     "expand": "Oldalsáv kinyitása",
     "main": "Fő navigáció"
@@ -74,7 +75,40 @@
     "languageHelp": "Ezt használja a vezérlőpult és a bot minden üzenete ezen a szerveren.",
     "features": "Funkciók",
     "active": "Aktív",
-    "inactive": "Inaktív"
+    "inactive": "Inaktív",
+    "changeInSettings": "Módosítás a Beállításokban"
+  },
+  "setup": {
+    "badge": "Első beállítás",
+    "rerunBadge": "Beállítás varázsló",
+    "introTitle": "Állítsuk be a ShifuBotot",
+    "introBody": "A ShifuBot készen áll, hogy segítsen itt: {server}. Válaszolj néhány gyors kérdésre. Később mindent módosíthatsz a Beállításokban.",
+    "start": "Beállítás indítása",
+    "step": "{current}. lépés / {total}",
+    "progress": "Beállítás állapota",
+    "next": "Tovább",
+    "back": "Vissza",
+    "edit": "Szerkesztés",
+    "finish": "Beállítás befejezése",
+    "finishing": "Mentés…",
+    "doneTitle": "Minden kész!",
+    "doneBody": "Nézd át a választásaidat. Bármikor módosíthatod őket a Beállításokban.",
+    "leave": "Vissza a szerverekhez",
+    "cancel": "Mégse",
+    "completed": "A beállítás kész. Üdv a fedélzeten!",
+    "failed": "Nem sikerült menteni a beállítást",
+    "language": {
+      "title": "Szerver nyelve",
+      "description": "A ShifuBot ezt használja a vezérlőpulton és minden üzenetében ezen a szerveren.",
+      "enHint": "Messages and dashboard in English",
+      "huHint": "Üzenetek és vezérlőpult magyarul"
+    }
+  },
+  "settings": {
+    "title": "Beállítások",
+    "description": "Minden, amit a beállításkor választottál. A módosítások azonnal érvényesek a botra.",
+    "rerun": "Beállítás varázsló újra",
+    "rerunHelp": "Menj végig újra a beállítás varázslón a jelenlegi beállításaidból indulva."
   },
   "upcoming": {
     "title": "Újabb funkciók érkeznek",

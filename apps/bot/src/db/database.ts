@@ -69,4 +69,8 @@ export const coreMigrations: Migration[] = [
       CREATE INDEX idx_sessions_expires_at ON sessions (expires_at);
     `,
   },
+  {
+    id: 'core_002_setup',
+    sql: `ALTER TABLE guilds ADD COLUMN setup_completed_at INTEGER;`,
+  },
 ];

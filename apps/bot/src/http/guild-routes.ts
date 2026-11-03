@@ -120,6 +120,7 @@ export function guildRoutes(
       iconUrl: guild.iconURL({ size: 128, extension: 'png' }),
       memberCount: guild.memberCount,
       locale: c.get('locale'),
+      setupCompleted: guildSettings.isSetupCompleted(guild.id),
       bot: { id: me.id, username: me.username, avatarUrl: me.displayAvatarURL({ size: 128, extension: 'png' }) },
       features: features.map(({ feature, instance }) => ({
         id: feature.manifest.id,
@@ -135,6 +136,14 @@ export function guildRoutes(
     const saved = guildSettings.save(guild.id, input);
     logger.info('Server settings saved', { guildId: guild.id, userId: c.get('session').userId, locale: saved.locale });
     return c.json({ settings: saved });
+  });
+
+  /** Called by the dashboard when the first run setup wizard finishes. */
+  app.post('/:guildId/setup/complete', (c) => {
+    const guild = c.get('guild');
+    guildSettings.completeSetup(guild.id);
+    logger.info('Server setup completed', { guildId: guild.id, userId: c.get('session').userId });
+    return c.json({ setupCompleted: true });
   });
 
   app.get('/:guildId/channels', (c) => {
