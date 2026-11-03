@@ -1,0 +1,109 @@
+{
+  "app": {
+    "name": "ShifuBot",
+    "tagline": "Nyugodt, barátságos segítő a Discord közösségedhez."
+  },
+  "lang": {
+    "label": "Nyelv",
+    "en": "English",
+    "hu": "Magyar"
+  },
+  "common": {
+    "save": "Mentés",
+    "saving": "Mentés…",
+    "discard": "Elvetés",
+    "cancel": "Mégse",
+    "retry": "Újra",
+    "loading": "Betöltés…",
+    "enabled": "Bekapcsolva",
+    "disabled": "Kikapcsolva",
+    "on": "Be",
+    "off": "Ki",
+    "optional": "Opcionális",
+    "logout": "Kijelentkezés",
+    "back": "Vissza",
+    "invite": "Meghívás",
+    "manage": "Kezelés",
+    "configure": "Beállítás",
+    "unsaved": "Nem mentett módosításaid vannak",
+    "leaveTitle": "Kilépsz mentés nélkül?",
+    "leaveBody": "Az ezen az oldalon végzett módosítások elvesznek.",
+    "leave": "Kilépés",
+    "stay": "Maradok",
+    "comingSoon": "Hamarosan",
+    "skipToContent": "Ugrás a tartalomhoz"
+  },
+  "toast": {
+    "saved": "Módosítások elmentve",
+    "saveFailed": "Nem sikerült menteni a módosításokat",
+    "close": "Értesítés bezárása"
+  },
+  "login": {
+    "title": "Üdv a ShifuBotban",
+    "subtitle": "Jelentkezz be Discorddal, és állítsd be a botot a szervereiden, amelyeket kezelsz.",
+    "button": "Folytatás Discorddal",
+    "note": "Csak a felhasználónevedet és a kezelt szervereid listáját látjuk. A jelszavadat soha.",
+    "pointWelcome": "Gyönyörű üdvözlő üzenetek",
+    "pointLanguages": "Angol és magyar nyelv",
+    "pointOpenSource": "Nyílt forráskódú, saját szerveren futtatható"
+  },
+  "guilds": {
+    "title": "Szervereid",
+    "subtitle": "Azok a szerverek, ahol Szerver kezelése jogosultságod van.",
+    "withBot": "Beállításra kész",
+    "withoutBot": "ShifuBot hozzáadása",
+    "invite": "Bot meghívása",
+    "manage": "Vezérlőpult megnyitása",
+    "empty": "Még nem kezelsz egy szervert sem. Hozz létre egyet Discordon, vagy kérj Szerver kezelése jogot.",
+    "refresh": "Lista frissítése",
+    "members": "{count} tag"
+  },
+  "nav": {
+    "overview": "Áttekintés",
+    "upcoming": "Hamarosan",
+    "servers": "Szerverek",
+    "features": "Funkciók",
+    "collapse": "Oldalsáv összecsukása",
+    "expand": "Oldalsáv kinyitása",
+    "main": "Fő navigáció"
+  },
+  "overview": {
+    "title": "Szerver áttekintés",
+    "members": "Tagok",
+    "language": "Szerver nyelve",
+    "languageHelp": "Ezt használja a vezérlőpult és a bot minden üzenete ezen a szerveren.",
+    "features": "Funkciók",
+    "active": "Aktív",
+    "inactive": "Inaktív"
+  },
+  "upcoming": {
+    "title": "Újabb funkciók érkeznek",
+    "body": "A ShifuBot funkciómodulokból épül fel. Az újak itt jelennek meg, amint elkészülnek.",
+    "ideaRoles": "Reakció rangok",
+    "ideaLogs": "Moderációs napló",
+    "ideaLeveling": "Szintlépés",
+    "ideaGoodbye": "Búcsúüzenetek"
+  },
+  "errors": {
+    "title": "Hiba történt",
+    "notFound": "Az oldal nem található",
+    "notFoundBody": "A keresett oldal nem létezik vagy elköltözött.",
+    "server": "Váratlan szerverhiba",
+    "serverBody": "A hibát naplóztuk. Kérlek, próbáld újra egy kicsit később.",
+    "unauthorized": "A munkameneted lejárt. Jelentkezz be újra.",
+    "forbidden": "Ehhez Szerver kezelése jogosultság kell ezen a szerveren.",
+    "rate_limited": "Túl sok kérés. Lassíts egy kicsit, és próbáld újra.",
+    "csrf": "A biztonsági ellenőrzés sikertelen. Töltsd újra az oldalt, és próbáld újra.",
+    "validation": "Néhány mező nem érvényes.",
+    "bot_not_in_guild": "A ShifuBot még nincs ezen a szerveren.",
+    "bot_offline": "A bot most nem kapcsolódik a Discordhoz.",
+    "oauth_failed": "A Discord bejelentkezés nem sikerült. Próbáld újra.",
+    "network": "Hálózati hiba. Ellenőrizd a kapcsolatot.",
+    "not_found": "Nem található.",
+    "internal": "Váratlan szerverhiba.",
+    "goHome": "Vissza a kezdőlapra"
+  },
+  "discord": {
+    "footer": "ShifuBot • {feature}"
+  }
+}

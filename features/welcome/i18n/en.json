@@ -1,0 +1,72 @@
+{
+  "name": "Welcome",
+  "description": "Greet every new member with a styled embed in a channel you choose.",
+  "defaults": {
+    "title": "Welcome to {server}",
+    "description": "Hey {user}, glad you joined. You are member number {memberCount}. Read the rules, say hi and make yourself at home."
+  },
+  "form": {
+    "general": "General",
+    "content": "Message",
+    "style": "Style",
+    "enabled": "Send welcome messages",
+    "enabledHelp": "Post a message when someone joins. Bots are skipped.",
+    "language": "Server language",
+    "languageHelp": "Changes the dashboard and the default texts the bot sends.",
+    "channel": "Channel",
+    "channelHelp": "Only text channels where ShifuBot can write are listed.",
+    "channelPlaceholder": "Choose a channel",
+    "noChannels": "ShifuBot cannot write in any text channel. Give it the Send Messages and Embed Links permissions.",
+    "title": "Title",
+    "description": "Description",
+    "defaultHint": "Leave empty to use the default text in the server language.",
+    "placeholders": "Placeholders",
+    "insertPlaceholder": "Insert {name}",
+    "unknownPlaceholder": "Unknown placeholder: {names}",
+    "color": "Accent color",
+    "colorHex": "Hex value",
+    "resetColor": "Use brand color",
+    "showAvatar": "Show member avatar",
+    "showAvatarHelp": "Displays the avatar as a thumbnail in the corner.",
+    "banner": "Banner image URL",
+    "bannerHelp": "A wide image shown at the bottom. Must start with http:// or https://.",
+    "footer": "Footer text",
+    "footerHelp": "Leave empty for the standard ShifuBot footer.",
+    "mention": "Mention the new member",
+    "mentionHelp": "Pings the member above the embed so they get a notification."
+  },
+  "placeholder": {
+    "user": "Mentions the member",
+    "username": "The member's name",
+    "server": "The server name",
+    "memberCount": "Member count"
+  },
+  "status": {
+    "noChannel": "Pick a channel so ShifuBot knows where to post.",
+    "channelMissing": "The selected channel no longer exists. Choose another one.",
+    "missingPermissions": "ShifuBot is missing permissions in this channel: {permissions}.",
+    "lastError": "The last welcome message failed: {error}",
+    "disabled": "Welcome messages are turned off.",
+    "ready": "Welcome messages are active.",
+    "rateLimited": "Raid protection: at most {count} welcome messages per minute."
+  },
+  "test": {
+    "button": "Send test",
+    "sending": "Sending…",
+    "sent": "Test message sent to #{channel}",
+    "failed": "Test failed: {error}",
+    "help": "Sends the message above to the channel as if you just joined."
+  },
+  "preview": {
+    "title": "Live preview",
+    "hint": "This is exactly what Discord will show.",
+    "botTag": "APP",
+    "today": "Today at {time}"
+  },
+  "errors": {
+    "channel_missing": "channel not found",
+    "missing_permissions": "missing permissions",
+    "no_channel": "no channel selected",
+    "send_failed": "Discord rejected the message"
+  }
+}

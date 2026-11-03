@@ -1,0 +1,24 @@
+{
+  "name": "shifubot",
+  "version": "0.1.0",
+  "description": "Open source Discord bot with a web dashboard. Built with Bun.",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "bun scripts/dev.ts",
+    "build": "bun run --cwd apps/web build",
+    "start": "NODE_ENV=production bun apps/bot/src/index.ts",
+    "test": "bun test",
+    "typecheck": "bun --bun tsc --noEmit -p tsconfig.json",
+    "check": "bun run typecheck && bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.5",
+    "typescript": "^5.8.3"
+  }
+}

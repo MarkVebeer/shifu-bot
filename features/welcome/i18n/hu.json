@@ -1,0 +1,72 @@
+{
+  "name": "Üdvözlés",
+  "description": "Köszönts minden új tagot egy stílusos embeddel egy általad választott csatornán.",
+  "defaults": {
+    "title": "Üdv a(z) {server} szerveren",
+    "description": "Szia {user}! Örülünk, hogy csatlakoztál. Te vagy a(z) {memberCount}. tag. Olvasd el a szabályokat, köszönj be és érezd magad otthon."
+  },
+  "form": {
+    "general": "Általános",
+    "content": "Üzenet",
+    "style": "Megjelenés",
+    "enabled": "Üdvözlő üzenetek küldése",
+    "enabledHelp": "Üzenetet küld, amikor valaki csatlakozik. A botokat kihagyja.",
+    "language": "Szerver nyelve",
+    "languageHelp": "Megváltoztatja a vezérlőpultot és a bot alapértelmezett szövegeit.",
+    "channel": "Csatorna",
+    "channelHelp": "Csak azok a szöveges csatornák jelennek meg, ahová a ShifuBot írhat.",
+    "channelPlaceholder": "Válassz csatornát",
+    "noChannels": "A ShifuBot egyik szöveges csatornába sem írhat. Adj neki Üzenetek küldése és Linkek beágyazása jogot.",
+    "title": "Cím",
+    "description": "Leírás",
+    "defaultHint": "Hagyd üresen, és a szerver nyelvén szóló alapszöveg jelenik meg.",
+    "placeholders": "Helyőrzők",
+    "insertPlaceholder": "{name} beszúrása",
+    "unknownPlaceholder": "Ismeretlen helyőrző: {names}",
+    "color": "Kiemelő szín",
+    "colorHex": "Hex érték",
+    "resetColor": "Márkaszín használata",
+    "showAvatar": "Tag profilképének mutatása",
+    "showAvatarHelp": "A profilkép kis képként jelenik meg a sarokban.",
+    "banner": "Banner kép URL",
+    "bannerHelp": "Széles kép az üzenet alján. http:// vagy https:// kezdetű legyen.",
+    "footer": "Lábléc szöveg",
+    "footerHelp": "Hagyd üresen az alapértelmezett ShifuBot lábléchez.",
+    "mention": "Új tag megemlítése",
+    "mentionHelp": "Megemlíti a tagot az embed fölött, így értesítést kap."
+  },
+  "placeholder": {
+    "user": "Megemlíti a tagot",
+    "username": "A tag neve",
+    "server": "A szerver neve",
+    "memberCount": "Taglétszám"
+  },
+  "status": {
+    "noChannel": "Válassz csatornát, hogy a ShifuBot tudja, hová írjon.",
+    "channelMissing": "A kiválasztott csatorna már nem létezik. Válassz másikat.",
+    "missingPermissions": "A ShifuBotnak hiányzó jogai vannak ezen a csatornán: {permissions}.",
+    "lastError": "Az utolsó üdvözlő üzenet nem ment el: {error}",
+    "disabled": "Az üdvözlő üzenetek ki vannak kapcsolva.",
+    "ready": "Az üdvözlő üzenetek aktívak.",
+    "rateLimited": "Raid védelem: percenként legfeljebb {count} üdvözlő üzenet."
+  },
+  "test": {
+    "button": "Teszt küldése",
+    "sending": "Küldés…",
+    "sent": "Teszt üzenet elküldve ide: #{channel}",
+    "failed": "A teszt nem sikerült: {error}",
+    "help": "Elküldi a fenti üzenetet a csatornára, mintha most csatlakoztál volna."
+  },
+  "preview": {
+    "title": "Élő előnézet",
+    "hint": "Pontosan így fog megjelenni Discordon.",
+    "botTag": "APP",
+    "today": "Ma {time}"
+  },
+  "errors": {
+    "channel_missing": "a csatorna nem található",
+    "missing_permissions": "hiányzó jogosultságok",
+    "no_channel": "nincs csatorna kiválasztva",
+    "send_failed": "a Discord elutasította az üzenetet"
+  }
+}

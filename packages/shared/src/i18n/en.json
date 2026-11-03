@@ -1,0 +1,109 @@
+{
+  "app": {
+    "name": "ShifuBot",
+    "tagline": "A calm, friendly helper for your Discord community."
+  },
+  "lang": {
+    "label": "Language",
+    "en": "English",
+    "hu": "Magyar"
+  },
+  "common": {
+    "save": "Save changes",
+    "saving": "Saving…",
+    "discard": "Discard",
+    "cancel": "Cancel",
+    "retry": "Try again",
+    "loading": "Loading…",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "on": "On",
+    "off": "Off",
+    "optional": "Optional",
+    "logout": "Log out",
+    "back": "Back",
+    "invite": "Invite",
+    "manage": "Manage",
+    "configure": "Configure",
+    "unsaved": "You have unsaved changes",
+    "leaveTitle": "Leave without saving?",
+    "leaveBody": "Your changes on this page will be lost.",
+    "leave": "Leave",
+    "stay": "Stay",
+    "comingSoon": "Coming soon",
+    "skipToContent": "Skip to content"
+  },
+  "toast": {
+    "saved": "Changes saved",
+    "saveFailed": "Could not save your changes",
+    "close": "Dismiss notification"
+  },
+  "login": {
+    "title": "Welcome to ShifuBot",
+    "subtitle": "Sign in with Discord to configure the bot for the servers you manage.",
+    "button": "Continue with Discord",
+    "note": "We only read your username and the list of servers you manage. We never see your password.",
+    "pointWelcome": "Beautiful welcome messages",
+    "pointLanguages": "English and Hungarian",
+    "pointOpenSource": "Open source and self hosted"
+  },
+  "guilds": {
+    "title": "Your servers",
+    "subtitle": "Servers where you have the Manage Server permission.",
+    "withBot": "Ready to configure",
+    "withoutBot": "Add ShifuBot",
+    "invite": "Invite bot",
+    "manage": "Open dashboard",
+    "empty": "You do not manage any servers yet. Create one in Discord or ask for the Manage Server permission.",
+    "refresh": "Refresh list",
+    "members": "{count} members"
+  },
+  "nav": {
+    "overview": "Overview",
+    "upcoming": "Upcoming",
+    "servers": "Servers",
+    "features": "Features",
+    "collapse": "Collapse sidebar",
+    "expand": "Expand sidebar",
+    "main": "Main navigation"
+  },
+  "overview": {
+    "title": "Server overview",
+    "members": "Members",
+    "language": "Server language",
+    "languageHelp": "Used for the dashboard and every message the bot sends in this server.",
+    "features": "Features",
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "upcoming": {
+    "title": "More features are on the way",
+    "body": "ShifuBot is built from feature modules. New ones will appear here as they ship.",
+    "ideaRoles": "Reaction roles",
+    "ideaLogs": "Moderation log",
+    "ideaLeveling": "Leveling",
+    "ideaGoodbye": "Goodbye messages"
+  },
+  "errors": {
+    "title": "Something went wrong",
+    "notFound": "Page not found",
+    "notFoundBody": "The page you are looking for does not exist or moved.",
+    "server": "Unexpected server error",
+    "serverBody": "The error was logged. Please try again in a moment.",
+    "unauthorized": "Your session expired. Please sign in again.",
+    "forbidden": "You need the Manage Server permission in this server.",
+    "rate_limited": "Too many requests. Slow down a little and try again.",
+    "csrf": "Security check failed. Reload the page and try again.",
+    "validation": "Some fields are not valid.",
+    "bot_not_in_guild": "ShifuBot is not in this server yet.",
+    "bot_offline": "The bot is not connected to Discord right now.",
+    "oauth_failed": "Discord sign in failed. Please try again.",
+    "network": "Network error. Check your connection.",
+    "not_found": "Not found.",
+    "internal": "Unexpected server error.",
+    "goHome": "Back to start"
+  },
+  "discord": {
+    "footer": "ShifuBot • {feature}"
+  }
+}

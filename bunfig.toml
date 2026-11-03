@@ -1,0 +1,7 @@
+[install]
+# Feature modules in /features import packages from the root node_modules,
+# so keep dependencies hoisted.
+linker = "hoisted"
+
+[test]
+root = "."

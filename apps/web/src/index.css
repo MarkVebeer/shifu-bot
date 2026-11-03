@@ -1,0 +1,75 @@
+@import 'tailwindcss';
+@config '../tailwind.config.ts';
+@source '../../../features';
+@source '../../../packages/shared/src';
+
+@theme {
+  --animate-fade-up: fade-up 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-fade-in: fade-in 0.25s ease-out both;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-toast-in: toast-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes shimmer {
+    from { background-position: -200% 0; }
+    to { background-position: 200% 0; }
+  }
+  @keyframes toast-in {
+    from { opacity: 0; transform: translateY(12px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply min-h-dvh bg-bg bg-aurora bg-fixed font-sans text-ink antialiased;
+  }
+  ::selection {
+    @apply bg-primary/30;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-aqua;
+  }
+}
+
+@utility glass {
+  @apply rounded-card border border-line/70 bg-surface/70 shadow-panel backdrop-blur-xl;
+}
+
+@utility glass-raised {
+  @apply rounded-panel border border-line/80 bg-raised/70 backdrop-blur-xl;
+}
+
+@utility glow-hover {
+  @apply transition-[box-shadow,border-color,transform] duration-200 hover:border-primary/50 hover:shadow-glow;
+}
+
+@utility text-gradient {
+  @apply bg-brand bg-clip-text text-transparent;
+}
+
+@utility skeleton {
+  @apply rounded-token bg-linear-to-r from-raised via-line to-raised bg-[length:200%_100%] animate-shimmer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

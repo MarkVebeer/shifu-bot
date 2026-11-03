@@ -1,0 +1,176 @@
+{
+    "_comment": "DO NOT EDIT: FILE GENERATED AUTOMATICALLY BY PANEL",
+    "meta": {
+        "version": "PLCN_v3",
+        "update_url": "https://raw.githubusercontent.com/MarkVebeer/shifu-bot/main/pelican/egg-shifubot.json"
+    },
+    "exported_at": "2026-11-03T12:00:00+00:00",
+    "name": "ShifuBot",
+    "author": "github.com/MarkVebeer",
+    "uuid": "ae48fb0a-19b8-4773-acbf-0dacc485f208",
+    "description": "ShifuBot: an open source Discord bot with a web dashboard, built with Bun. The bot and the dashboard run in one process on the server's allocation port. Put a reverse proxy with HTTPS in front of the allocation and set PUBLIC_URL to that address.",
+    "icon": null,
+    "tags": [
+        "discord",
+        "bot",
+        "bun"
+    ],
+    "features": [],
+    "docker_images": {
+        "Bun Latest": "ghcr.io/pelican-eggs/yolks:bun_latest"
+    },
+    "file_denylist": [],
+    "startup_commands": {
+        "Default": "bun run start"
+    },
+    "config": {
+        "files": "{}",
+        "startup": "{\n    \"done\": \"Dashboard listening\"\n}",
+        "logs": "{}",
+        "stop": "^C"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!/bin/bash\n# ShifuBot installation script\n# Server files: /mnt/server\nset -e\n\napt-get update -qq\napt-get install -y -qq git ca-certificates > /dev/null\n\nREPO=\"${GIT_REPO:-https://github.com/MarkVebeer/shifu-bot.git}\"\nBRANCH=\"${GIT_BRANCH:-main}\"\n\nmkdir -p /mnt/server\ncd /mnt/server\ngit config --global --add safe.directory /mnt/server\n\nif [ -d .git ]; then\n    echo \"Updating existing ShifuBot checkout from ${REPO} (${BRANCH})\"\n    git remote set-url origin \"${REPO}\"\n    git fetch --depth 1 origin \"${BRANCH}\"\n    git reset --hard \"origin/${BRANCH}\"\nelse\n    echo \"Cloning ShifuBot from ${REPO} (${BRANCH})\"\n    rm -rf /tmp/shifubot\n    git clone --depth 1 --branch \"${BRANCH}\" \"${REPO}\" /tmp/shifubot\n    cp -a /tmp/shifubot/. /mnt/server/\n    rm -rf /tmp/shifubot\nfi\n\n# The data folder holds the SQLite database. It is git ignored, so updates never touch it.\nmkdir -p /mnt/server/data\n\necho \"Installing dependencies\"\nbun install --frozen-lockfile\n\necho \"Building the dashboard\"\nbun run build\n\necho \"-----------------------------------------\"\necho \"ShifuBot installation completed\"\necho \"-----------------------------------------\"\n",
+            "container": "oven/bun:1.2-debian",
+            "entrypoint": "bash"
+        }
+    },
+    "variables": [
+        {
+            "sort": 1,
+            "name": "Discord Bot Token",
+            "description": "Developer Portal > your application > Bot > Reset Token. Keep it secret.",
+            "env_variable": "DISCORD_TOKEN",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": [
+                "required",
+                "string"
+            ]
+        },
+        {
+            "sort": 2,
+            "name": "Discord Client ID",
+            "description": "Developer Portal > your application > General Information > Application ID.",
+            "env_variable": "DISCORD_CLIENT_ID",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": [
+                "required",
+                "string",
+                "regex:/^\\d{17,20}$/"
+            ]
+        },
+        {
+            "sort": 3,
+            "name": "Discord Client Secret",
+            "description": "Developer Portal > your application > OAuth2 > Client Secret. Used for dashboard login.",
+            "env_variable": "DISCORD_CLIENT_SECRET",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": [
+                "required",
+                "string"
+            ]
+        },
+        {
+            "sort": 4,
+            "name": "Public URL",
+            "description": "The address people use to open the dashboard, without a trailing slash, e.g. https://shifu.example.com. Add PUBLIC_URL/auth/callback as an OAuth2 redirect in the Developer Portal.",
+            "env_variable": "PUBLIC_URL",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": [
+                "required",
+                "url"
+            ]
+        },
+        {
+            "sort": 5,
+            "name": "Session Secret",
+            "description": "A long random string (at least 32 characters) used to sign login cookies. Changing it signs everyone out.",
+            "env_variable": "SESSION_SECRET",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": [
+                "required",
+                "string",
+                "min:32"
+            ]
+        },
+        {
+            "sort": 6,
+            "name": "Log Level",
+            "description": "How much the bot logs: trace, debug, info, warn or error.",
+            "env_variable": "LOG_LEVEL",
+            "default_value": "info",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": [
+                "nullable",
+                "string",
+                "in:trace,debug,info,warn,error"
+            ]
+        },
+        {
+            "sort": 7,
+            "name": "Default Language",
+            "description": "Language for newly added servers: en (English) or hu (Hungarian). Each server can change it in the dashboard.",
+            "env_variable": "DEFAULT_LOCALE",
+            "default_value": "en",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": [
+                "nullable",
+                "string",
+                "in:en,hu"
+            ]
+        },
+        {
+            "sort": 8,
+            "name": "Database Path",
+            "description": "Where the SQLite database is stored, relative to the server folder. Keep it inside the data folder.",
+            "env_variable": "DATABASE_PATH",
+            "default_value": "./data/shifubot.db",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": [
+                "required",
+                "string",
+                "max:255"
+            ]
+        },
+        {
+            "sort": 9,
+            "name": "Git Repository",
+            "description": "Repository the installer clones. Change it only if you run a fork.",
+            "env_variable": "GIT_REPO",
+            "default_value": "https://github.com/MarkVebeer/shifu-bot.git",
+            "user_viewable": true,
+            "user_editable": false,
+            "rules": [
+                "required",
+                "string"
+            ]
+        },
+        {
+            "sort": 10,
+            "name": "Git Branch",
+            "description": "Branch the installer clones and updates from.",
+            "env_variable": "GIT_BRANCH",
+            "default_value": "main",
+            "user_viewable": true,
+            "user_editable": false,
+            "rules": [
+                "required",
+                "string"
+            ]
+        }
+    ]
+}

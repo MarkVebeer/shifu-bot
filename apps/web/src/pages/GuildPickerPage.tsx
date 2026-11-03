@@ -1,0 +1,118 @@
+import type { GuildListItem } from '@shifubot/shared';
+import { ArrowRight, LogOut, Plus, RefreshCw } from 'lucide-react';
+import { useState } from 'react';
+import { Link } from 'react-router';
+import { api } from '../lib/api';
+import { useAuth } from '../lib/auth';
+import { errorText, useCookieLocale, useT } from '../lib/i18n';
+import { useApi } from '../lib/use-api';
+import { Alert, Avatar, Badge, Button, ButtonLink, Logo, Skeleton } from '../ui/primitives';
+import { LanguageSwitcher } from '../ui/widgets';
+
+export function GuildPickerPage() {
+  const t = useT();
+  const { me, logout } = useAuth();
+  const { locale, setLocale } = useCookieLocale();
+  const { data, error, loading, setData } = useApi<{ guilds: GuildListItem[] }>('/guilds');
+  const [refreshing, setRefreshing] = useState(false);
+
+  const refresh = async () => {
+    setRefreshing(true);
+    try {
+      setData(await api<{ guilds: GuildListItem[] }>('/guilds?refresh=1'));
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  return (
+    <div className="min-h-dvh">
+      <header className="sticky top-0 z-30 border-b border-line/60 bg-bg/70 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-3">
+          <Logo size={32} />
+          <span className="font-semibold">ShifuBot</span>
+          <div className="ml-auto flex items-center gap-2">
+            <div className="hidden sm:block">
+              <LanguageSwitcher value={locale} onChange={setLocale} />
+            </div>
+            {me && <Avatar src={me.user.avatarUrl} name={me.user.username} size={36} />}
+            <Button variant="ghost" size="icon" onClick={logout} aria-label={t('common.logout')} title={t('common.logout')}>
+              <LogOut className="size-5" aria-hidden />
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <main id="main" className="mx-auto max-w-5xl px-4 py-8">
+        <div className="mb-4 sm:hidden">
+          <LanguageSwitcher value={locale} onChange={setLocale} />
+        </div>
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t('guilds.title')}</h1>
+            <p className="mt-1 text-muted">{t('guilds.subtitle')}</p>
+          </div>
+          <Button variant="secondary" onClick={refresh} loading={refreshing} icon={<RefreshCw className="size-4" aria-hidden />}>
+            {t('guilds.refresh')}
+          </Button>
+        </div>
+
+        {error ? (
+          <Alert tone="danger">{errorText(t, error)}</Alert>
+        ) : loading || !data ? (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true" aria-label={t('common.loading')}>
+            {Array.from({ length: 6 }, (_, index) => (
+              <div key={index} className="glass flex items-center gap-4 p-5">
+                <Skeleton className="size-14 rounded-full" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : data.guilds.length === 0 ? (
+          <Alert>{t('guilds.empty')}</Alert>
+        ) : (
+          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {data.guilds.map((guild, index) => (
+              <li
+                key={guild.id}
+                className="glass glow-hover flex animate-fade-up flex-col gap-4 p-5"
+                style={{ animationDelay: `${Math.min(index, 10) * 30}ms` }}
+              >
+                <div className="flex items-center gap-4">
+                  <Avatar src={guild.iconUrl} name={guild.name} size={56} />
+                  <div className="min-w-0">
+                    <h2 className="truncate font-semibold">{guild.name}</h2>
+                    <div className="mt-1 flex flex-wrap gap-2">
+                      {guild.botPresent ? (
+                        <Badge tone="success">{t('guilds.withBot')}</Badge>
+                      ) : (
+                        <Badge>{t('guilds.withoutBot')}</Badge>
+                      )}
+                      {guild.memberCount !== null && <Badge>{t('guilds.members', { count: guild.memberCount })}</Badge>}
+                    </div>
+                  </div>
+                </div>
+                {guild.botPresent ? (
+                  <Link
+                    to={`/guilds/${guild.id}`}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-brand px-5 text-sm font-semibold text-bg shadow-glow transition hover:shadow-glow-strong"
+                  >
+                    {t('guilds.manage')}
+                    <ArrowRight className="size-4" aria-hidden />
+                  </Link>
+                ) : (
+                  <ButtonLink href={guild.inviteUrl} external variant="secondary" icon={<Plus className="size-4" aria-hidden />}>
+                    {t('guilds.invite')}
+                  </ButtonLink>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </main>
+    </div>
+  );
+}

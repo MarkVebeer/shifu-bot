@@ -1,0 +1,18 @@
+services:
+  shifubot:
+    build: .
+    image: shifubot:latest
+    container_name: shifubot
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3000
+      DATABASE_PATH: /app/data/shifubot.db
+    ports:
+      - "3000:3000"
+    volumes:
+      - shifubot-data:/app/data
+
+volumes:
+  shifubot-data:
