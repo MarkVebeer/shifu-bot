@@ -117,8 +117,7 @@
       "KickMembers": "Tagok kirúgása",
       "BanMembers": "Tagok kitiltása",
       "ViewAuditLog": "Audit napló megtekintése",
-      "ManageGuild": "Szerver kezelése",
-      "ManageNicknames": "Becenevek kezelése"
+      "ManageGuild": "Szerver kezelése"
     }
   },
   "setup": {

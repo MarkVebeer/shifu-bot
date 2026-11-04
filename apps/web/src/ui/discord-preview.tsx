@@ -3,6 +3,7 @@
  * client shows it. Supports the markdown subset used in embeds.
  */
 import { ButtonStyle, discordPreviewColors, intToHex, type ActionRowData, type EmbedData, type MessagePayload } from '@shifubot/shared';
+import { ExternalLink } from 'lucide-react';
 import { Fragment, type ReactNode } from 'react';
 
 interface PreviewProps {
@@ -58,7 +59,11 @@ function Embed({ embed, mentions, timestampLabel }: { embed: EmbedData; mentions
     >
       <div className="grid grid-cols-[1fr_auto] gap-x-3 px-3 pb-4 pt-2 sm:gap-x-4">
         <div className="min-w-0">
-          {embed.title && <div className="mt-2 break-words text-base font-semibold leading-snug text-discord-heading">{embed.title}</div>}
+          {embed.title && (
+            <div className={`mt-2 break-words text-base font-semibold leading-snug ${embed.url ? 'text-discord-link' : 'text-discord-heading'}`}>
+              {embed.title}
+            </div>
+          )}
           {embed.description && (
             <div className="mt-2 whitespace-pre-wrap break-words text-sm leading-[1.375rem] text-discord-text">
               {renderDiscordMarkdown(embed.description, mentions)}
@@ -87,6 +92,8 @@ const BUTTON_COLORS: Record<number, string> = {
   [ButtonStyle.Primary]: discordPreviewColors.buttonPrimary,
   [ButtonStyle.Secondary]: discordPreviewColors.buttonSecondary,
   [ButtonStyle.Success]: discordPreviewColors.buttonSuccess,
+  // Link buttons look like secondary buttons, with an "opens a link" arrow.
+  [ButtonStyle.Link]: discordPreviewColors.buttonSecondary,
 };
 
 function ActionRow({ row }: { row: ActionRowData }) {
@@ -94,12 +101,13 @@ function ActionRow({ row }: { row: ActionRowData }) {
     <div className="mt-2 flex flex-wrap gap-2">
       {row.components.map((button) => (
         <span
-          key={button.custom_id}
+          key={'url' in button ? button.url : button.custom_id}
           className="inline-flex min-h-8 items-center gap-1.5 rounded-[3px] px-4 text-sm font-medium text-white"
           style={{ background: BUTTON_COLORS[button.style] }}
         >
           {button.emoji && <span aria-hidden>{button.emoji.name}</span>}
           {button.label}
+          {'url' in button && <ExternalLink className="size-3.5" aria-hidden />}
         </span>
       ))}
     </div>

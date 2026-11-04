@@ -7,7 +7,6 @@ import type { Database } from 'bun:sqlite';
 import { LruCache } from '../../apps/bot/src/core/lru-cache';
 import type { PanelRef } from '../../apps/bot/src/core/panel';
 import { defaultGoonSettings, goonSettingsSchema, type GoonEntry, type GoonSettings } from './manifest';
-import type { StoredName } from './nickname';
 
 export const GOON_TABLES = ['goon_settings', 'goon_members', 'goon_presses'];
 
@@ -47,6 +46,18 @@ export const GOON_MIGRATIONS = [
       CREATE INDEX goon_presses_member ON goon_presses (guild_id, user_id, id);
     `,
   },
+  {
+    // The counter is no longer written after nicknames. search_name feeds the search on the full
+    // list page; rows from before get an ASCII lowercase name now and the full one at their next press.
+    id: 'goon_002_drop_nicknames',
+    sql: `
+      ALTER TABLE goon_members DROP COLUMN base_name;
+      ALTER TABLE goon_members DROP COLUMN last_nick;
+      ALTER TABLE goon_members DROP COLUMN last_format;
+      ALTER TABLE goon_members ADD COLUMN search_name TEXT;
+      UPDATE goon_members SET search_name = LOWER(display_name);
+    `,
+  },
 ];
 
 export type GoonErrorCode = 'no_channel' | 'channel_missing' | 'missing_permissions' | 'send_failed';
@@ -64,15 +75,28 @@ interface MemberRow {
   last_press_at: number | null;
   display_name: string | null;
   avatar_url: string | null;
-  base_name: string | null;
-  last_nick: string | null;
-  last_format: string | null;
 }
 
 export interface GoonTopEntry extends GoonEntry {
   displayName: string | null;
   avatarUrl: string | null;
 }
+
+export interface GoonListEntry extends GoonTopEntry {
+  /** 1 based place on the full list. Search results keep their real place. */
+  rank: number;
+}
+
+export const LIST_PAGE_MAX = 100;
+
+/**
+ * Lowercase without accents, so "adam" and "ÁDÁM" both find "Ádám".
+ * Done in JavaScript because SQLite's LOWER() only knows ASCII letters.
+ */
+export const foldName = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+
+/** Escape % and _ so a search for "50%" finds the text, not everything. */
+export const escapeLike = (text: string) => text.replace(/[\\%_]/g, (char) => `\\${char}`);
 
 export type PressResult = { ok: true; count: number; pressedAt: number } | { ok: false; nextAt: number };
 
@@ -139,11 +163,12 @@ export class GoonStore {
       this.db.query('INSERT INTO goon_presses (guild_id, user_id, at) VALUES (?, ?, ?)').run(guildId, userId, now);
       this.db
         .query(
-          `INSERT INTO goon_members (guild_id, user_id, count, last_press_at, display_name, avatar_url) VALUES (?, ?, 1, ?, ?, ?)
+          `INSERT INTO goon_members (guild_id, user_id, count, last_press_at, display_name, search_name, avatar_url)
+           VALUES (?, ?, 1, ?, ?, ?, ?)
            ON CONFLICT (guild_id, user_id) DO UPDATE SET count = count + 1, last_press_at = excluded.last_press_at,
-             display_name = excluded.display_name, avatar_url = excluded.avatar_url`,
+             display_name = excluded.display_name, search_name = excluded.search_name, avatar_url = excluded.avatar_url`,
         )
-        .run(guildId, userId, now, displayName, avatarUrl);
+        .run(guildId, userId, now, displayName, foldName(displayName), avatarUrl);
       return { ok: true, count: this.member(guildId, userId)!.count, pressedAt: now };
     })();
   }
@@ -175,22 +200,60 @@ export class GoonStore {
     })();
   }
 
-  storedName(guildId: string, userId: string): StoredName | null {
-    const row = this.member(guildId, userId);
-    return row ? { baseName: row.base_name, lastNick: row.last_nick, lastFormat: row.last_format } : null;
+  /**
+   * The full list, ranked by count (earlier last press first on a tie), for the member page.
+   * The search runs after ranking, so results keep their real place.
+   */
+  list(guildId: string, options: { q?: string; offset?: number; limit?: number } = {}): { entries: GoonListEntry[]; matches: number } {
+    const q = foldName(options.q?.trim() ?? '');
+    const limit = Math.min(Math.max(options.limit ?? 50, 1), LIST_PAGE_MAX);
+    const offset = Math.max(options.offset ?? 0, 0);
+    const ranked = `
+      WITH ranked AS (
+        SELECT user_id, count, display_name, search_name, avatar_url,
+               ROW_NUMBER() OVER (ORDER BY count DESC, last_press_at ASC, user_id ASC) AS rank
+        FROM goon_members WHERE guild_id = ? AND count > 0
+      )`;
+    const where = q ? `WHERE search_name LIKE ? ESCAPE '\\'` : '';
+    const params = q ? [guildId, `%${escapeLike(q)}%`] : [guildId];
+    const rows = this.db
+      .query<{ user_id: string; count: number; display_name: string | null; avatar_url: string | null; rank: number }, (string | number)[]>(
+        `${ranked} SELECT * FROM ranked ${where} ORDER BY rank LIMIT ? OFFSET ?`,
+      )
+      .all(...params, limit, offset);
+    const matches =
+      this.db.query<{ n: number }, string[]>(`${ranked} SELECT COUNT(*) AS n FROM ranked ${where}`).get(...params)?.n ?? 0;
+    return {
+      entries: rows.map((row) => ({
+        rank: row.rank,
+        userId: row.user_id,
+        count: row.count,
+        displayName: row.display_name,
+        avatarUrl: row.avatar_url,
+      })),
+      matches,
+    };
   }
 
-  saveName(guildId: string, userId: string, name: StoredName): void {
-    this.db
-      .query('UPDATE goon_members SET base_name = ?, last_nick = ?, last_format = ? WHERE guild_id = ? AND user_id = ?')
-      .run(name.baseName, name.lastNick, name.lastFormat, guildId, userId);
+  /** One member's place and count, or null when they have no goons. */
+  rankOf(guildId: string, userId: string): { rank: number; count: number } | null {
+    return (
+      this.db
+        .query<{ rank: number; count: number }, [string, string]>(
+          `SELECT rank, count FROM (
+             SELECT user_id, count, ROW_NUMBER() OVER (ORDER BY count DESC, last_press_at ASC, user_id ASC) AS rank
+             FROM goon_members WHERE guild_id = ? AND count > 0
+           ) WHERE user_id = ?`,
+        )
+        .get(guildId, userId) ?? null
+    );
   }
 
   top(guildId: string, limit: number): GoonTopEntry[] {
     return this.db
       .query<{ user_id: string; count: number; display_name: string | null; avatar_url: string | null }, [string, number]>(
         `SELECT user_id, count, display_name, avatar_url FROM goon_members
-         WHERE guild_id = ? AND count > 0 ORDER BY count DESC, last_press_at ASC LIMIT ?`,
+         WHERE guild_id = ? AND count > 0 ORDER BY count DESC, last_press_at ASC, user_id ASC LIMIT ?`,
       )
       .all(guildId, limit)
       .map((row) => ({ userId: row.user_id, count: row.count, displayName: row.display_name, avatarUrl: row.avatar_url }));

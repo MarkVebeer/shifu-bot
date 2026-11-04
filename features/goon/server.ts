@@ -1,39 +1,23 @@
 /**
- * Goon counter: bot side. Panel message, +1 and Undo buttons, nickname updates and API routes.
+ * Goon counter: bot side. Panel message, +1 and Undo buttons, API routes and
+ * the member routes behind the full list page.
  */
 import { emoji, renderPlaceholders, type BotPermission, type Locale, type PermissionIssue } from '@shifubot/shared';
-import {
-  Events,
-  MessageFlags,
-  PermissionFlagsBits,
-  type ButtonInteraction,
-  type Guild,
-  type GuildMember,
-  type Interaction,
-} from 'discord.js';
+import { Events, MessageFlags, type ButtonInteraction, type Guild, type Interaction } from 'discord.js';
+import { z } from 'zod';
 import { defineServerFeature, type AppContext } from '../../apps/bot/src/core/feature';
 import { syncPanelMessage } from '../../apps/bot/src/core/panel';
 import { isPostableChannel, missingSendPermissions } from '../../apps/bot/src/core/permissions';
 import { WindowLimiter } from '../../apps/bot/src/core/send-queue';
-import { ApiError, parseJsonBody } from '../../apps/bot/src/http/errors';
-import {
-  buildGoonPanel,
-  GOON_IDS,
-  goonManifest,
-  goonSettingsSchema,
-  LEADERBOARD_SIZE,
-  type GoonSettings,
-} from './manifest';
-import { resolveBaseName, targetNickname } from './nickname';
-import { GOON_MIGRATIONS, GOON_TABLES, GoonStore, type GoonErrorCode, type GoonTopEntry } from './store';
+import { ApiError, parseInput, parseJsonBody } from '../../apps/bot/src/http/errors';
+import { buildGoonPanel, GOON_IDS, goonManifest, goonSettingsSchema, LEADERBOARD_SIZE, listPath, type GoonSettings } from './manifest';
+import { GOON_MIGRATIONS, GOON_TABLES, GoonStore, LIST_PAGE_MAX, type GoonErrorCode, type GoonListEntry, type GoonTopEntry } from './store';
 
 export interface GoonStatus {
   channelExists: boolean;
   missingPermissions: string[];
   panel: { channelId: string; channelName: string; url: string } | null;
   lastError: { code: GoonErrorCode; at: number } | null;
-  /** False when ShifuBot cannot change nicknames on this server. */
-  canManageNicknames: boolean;
   total: number;
   top: GoonTopEntry[];
 }
@@ -45,12 +29,28 @@ export interface GoonResponse {
   panelError?: GoonErrorCode;
 }
 
+/** The full list page (member route). */
+export interface GoonListResponse {
+  server: { id: string; name: string; iconUrl: string | null };
+  total: number;
+  /** Members with at least one goon. */
+  members: number;
+  /** Members matching the search (equal to members without a search). */
+  matches: number;
+  entries: GoonListEntry[];
+  me: { rank: number; count: number } | null;
+}
+
 const BASE_PERMISSIONS: BotPermission[] = ['ViewChannel', 'SendMessages', 'EmbedLinks'];
 
 /** The panel is redrawn at most this often, so many presses do not hit Discord's edit limit. */
 const PANEL_REFRESH_MS = 15_000;
 
-type RenameProblem = 'renameOwner' | 'renameTooHigh' | 'renameNoPermission' | 'renameError';
+const listQuerySchema = z.object({
+  q: z.string().max(100).optional(),
+  offset: z.coerce.number().int().min(0).max(1_000_000).optional(),
+  limit: z.coerce.number().int().min(1).max(LIST_PAGE_MAX).optional(),
+});
 
 export default defineServerFeature({
   manifest: goonManifest,
@@ -59,12 +59,13 @@ export default defineServerFeature({
   migrations: GOON_MIGRATIONS,
 
   setup(ctx: AppContext) {
-    const { db, logger, queue, guildSettings, client } = ctx;
+    const { db, logger, queue, guildSettings, client, config } = ctx;
     const store = new GoonStore(db);
     const lastRefresh = new Map<string, number>();
     const timers = new Map<string, ReturnType<typeof setTimeout>>();
 
     const texts = (locale: Locale) => goonManifest.messages[locale];
+    const listUrl = (guildId: string) => `${config.publicUrl.replace(/\/+$/, '')}${listPath(guildId)}`;
 
     function panelPayload(guild: Guild, settings: GoonSettings) {
       return buildGoonPanel(settings, {
@@ -72,6 +73,7 @@ export default defineServerFeature({
         server: { name: guild.name },
         entries: store.top(guild.id, LEADERBOARD_SIZE),
         total: store.total(guild.id),
+        listUrl: listUrl(guild.id),
       });
     }
 
@@ -116,46 +118,16 @@ export default defineServerFeature({
       );
     }
 
-    /** Write the count after the member's nickname. Returns why it was not possible, or null. */
-    async function updateNickname(member: GuildMember, count: number, settings: GoonSettings): Promise<RenameProblem | null> {
-      if (!settings.renameMembers) return null;
-      const { guild } = member;
-      if (member.id === guild.ownerId) return 'renameOwner';
-      if (!guild.members.me?.permissions.has(PermissionFlagsBits.ManageNicknames)) return 'renameNoPermission';
-      if (!member.manageable) return 'renameTooHigh';
-
-      const ownName = member.user.globalName ?? member.user.username;
-      const base = resolveBaseName({
-        nickname: member.nickname,
-        ownName,
-        stored: store.storedName(guild.id, member.id),
-        format: settings.nameFormat,
-      });
-      const nick = targetNickname({ base, count, format: settings.nameFormat, ownName });
-      try {
-        if (member.nickname !== nick) await member.setNickname(nick, 'ShifuBot goon counter');
-        store.saveName(guild.id, member.id, { baseName: base, lastNick: nick, lastFormat: settings.nameFormat });
-        return null;
-      } catch (error) {
-        logger.warn('Goon nickname update failed', { guildId: guild.id, userId: member.id, error });
-        return 'renameError';
-      }
-    }
-
     const time = (ms: number) => `<t:${Math.ceil(ms / 1000)}:R>`;
 
     async function onButton(interaction: ButtonInteraction<'cached'>, action: 'add' | 'undo') {
       const { guild, member } = interaction;
       const t = texts(guildSettings.locale(guild.id)).replies;
       const settings = store.get(guild.id);
-      if (!settings.enabled) {
-        await interaction.reply({ content: `${emoji.info} ${t.disabled}`, flags: MessageFlags.Ephemeral });
-        return;
-      }
+      const reply = (content: string) => interaction.reply({ content, flags: MessageFlags.Ephemeral });
+      if (!settings.enabled) return reply(`${emoji.info} ${t.disabled}`);
 
       const now = Date.now();
-      let count: number;
-      let text: string;
       if (action === 'add') {
         const result = store.press(guild.id, member.id, {
           now,
@@ -163,34 +135,15 @@ export default defineServerFeature({
           displayName: member.displayName,
           avatarUrl: member.displayAvatarURL({ size: 64 }),
         });
-        if (!result.ok) {
-          await interaction.reply({
-            content: `${emoji.warning} ${renderPlaceholders(t.cooldown, { time: time(result.nextAt) })}`,
-            flags: MessageFlags.Ephemeral,
-          });
-          return;
-        }
-        count = result.count;
-        text = `${emoji.goon} ${renderPlaceholders(t.counted, { count, time: time(now + settings.undoMinutes * 60_000) })}`;
-      } else {
-        const result = store.undo(guild.id, member.id, { now, windowMs: settings.undoMinutes * 60_000 });
-        if (result === null) {
-          await interaction.reply({
-            content: `${emoji.info} ${renderPlaceholders(t.nothingToUndo, { minutes: settings.undoMinutes })}`,
-            flags: MessageFlags.Ephemeral,
-          });
-          return;
-        }
-        count = result;
-        text = `${emoji.success} ${renderPlaceholders(t.undone, { count })}`;
+        if (!result.ok) return reply(`${emoji.warning} ${renderPlaceholders(t.cooldown, { time: time(result.nextAt) })}`);
+        schedulePanel(guild.id);
+        return reply(`${emoji.goon} ${renderPlaceholders(t.counted, { count: result.count, time: time(now + settings.undoMinutes * 60_000) })}`);
       }
 
-      // Renaming can take a moment: answer within Discord's 3 seconds first.
-      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      const count = store.undo(guild.id, member.id, { now, windowMs: settings.undoMinutes * 60_000 });
+      if (count === null) return reply(`${emoji.info} ${renderPlaceholders(t.nothingToUndo, { minutes: settings.undoMinutes })}`);
       schedulePanel(guild.id);
-      const problem = await updateNickname(member, count, settings);
-      if (problem) text += `\n${emoji.warning} ${renderPlaceholders(t.renameFailed, { reason: t[problem] })}`;
-      await interaction.editReply(text);
+      return reply(`${emoji.success} ${renderPlaceholders(t.undone, { count })}`);
     }
 
     function status(guild: Guild, settings: GoonSettings): GoonStatus {
@@ -210,7 +163,6 @@ export default defineServerFeature({
               }
             : null,
         lastError: store.lastError(guild.id),
-        canManageNicknames: Boolean(guild.members.me?.permissions.has(PermissionFlagsBits.ManageNicknames)),
         total: store.total(guild.id),
         top: store.top(guild.id, LEADERBOARD_SIZE),
       };
@@ -224,9 +176,6 @@ export default defineServerFeature({
 
     return {
       isEnabled: (guildId) => store.get(guildId).enabled,
-
-      requiredPermissions: (guildId) =>
-        store.get(guildId).renameMembers ? [...BASE_PERMISSIONS, 'ManageNicknames'] : BASE_PERMISSIONS,
 
       health: (guild) => {
         const settings = store.get(guild.id);
@@ -278,6 +227,25 @@ export default defineServerFeature({
           }
           store.setError(guild.id, null);
           return c.json({ ...response(guild, store.get(guild.id)), channel: result.channel && { id: result.channel.id, name: result.channel.name } });
+        });
+      },
+
+      memberRoutes(router) {
+        /** The full list for the member page, with search and paging. */
+        router.get('/', (c) => {
+          const guild = c.get('guild');
+          const query = parseInput(listQuerySchema, c.req.query(), 'List query');
+          const list = store.list(guild.id, query);
+          const members = query.q?.trim() ? store.list(guild.id, { limit: 1 }).matches : list.matches;
+          const body: GoonListResponse = {
+            server: { id: guild.id, name: guild.name, iconUrl: guild.iconURL({ size: 128 }) },
+            total: store.total(guild.id),
+            members,
+            matches: list.matches,
+            entries: list.entries,
+            me: store.rankOf(guild.id, c.get('session').userId),
+          };
+          return c.json(body);
         });
       },
     };

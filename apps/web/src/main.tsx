@@ -3,10 +3,10 @@ import '@fontsource/jetbrains-mono/400.css';
 import '@fontsource/jetbrains-mono/600.css';
 import './index.css';
 
-import { StrictMode } from 'react';
+import { StrictMode, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createBrowserRouter, Navigate, Outlet, RouterProvider, useParams } from 'react-router';
-import { featurePages } from './features';
+import { featurePages, memberPages } from './features';
 import { AuthProvider, RequireAuth, useAuth } from './lib/auth';
 import { CookieLanguageProvider } from './lib/i18n';
 import { GuildLayout, PageSkeleton } from './pages/GuildLayout';
@@ -41,6 +41,18 @@ function FullSkeleton() {
     <div className="grid min-h-dvh place-items-center" aria-busy="true">
       <Skeleton className="size-16 rounded-full" />
     </div>
+  );
+}
+
+/** A feature's page for every member of a server, without the dashboard around it. */
+function MemberPageRoute() {
+  const { featureId } = useParams();
+  const page = memberPages.find((item) => item.id === featureId);
+  if (!page) return <NotFoundPage />;
+  return (
+    <Suspense fallback={<FullSkeleton />}>
+      <page.Page />
+    </Suspense>
   );
 }
 
@@ -81,6 +93,7 @@ const router = createBrowserRouter([
         ],
         hydrateFallbackElement: <PageSkeleton />,
       },
+      { path: '/servers/:guildId/:featureId', element: <MemberPageRoute /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

@@ -43,6 +43,8 @@ export const EMBED_LIMITS = {
 
 export interface EmbedData {
   title?: string;
+  /** Makes the title a link. */
+  url?: string;
   description?: string;
   color: number;
   thumbnail?: { url: string };
@@ -52,15 +54,27 @@ export interface EmbedData {
 }
 
 /** Discord button styles used by ShifuBot. */
-export const ButtonStyle = { Primary: 1, Secondary: 2, Success: 3 } as const;
+export const ButtonStyle = { Primary: 1, Secondary: 2, Success: 3, Link: 5 } as const;
 
-export interface ButtonData {
+/** A button that sends an interaction to the bot. */
+export interface InteractionButtonData {
   type: 2;
-  style: (typeof ButtonStyle)[keyof typeof ButtonStyle];
+  style: Exclude<(typeof ButtonStyle)[keyof typeof ButtonStyle], 5>;
   label: string;
   custom_id: string;
   emoji?: { name: string };
 }
+
+/** A button that opens a URL in the browser. */
+export interface LinkButtonData {
+  type: 2;
+  style: typeof ButtonStyle.Link;
+  label: string;
+  url: string;
+  emoji?: { name: string };
+}
+
+export type ButtonData = InteractionButtonData | LinkButtonData;
 
 export interface ActionRowData {
   type: 1;

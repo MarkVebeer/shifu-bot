@@ -38,14 +38,12 @@ discord.js, Hono, SQLite and React. Self host it on a Pelican panel, with Docker
   left out on purpose: sent messages, typing, single reactions, poll votes, muting yourself, status
   and activity changes. Each category and event type can be turned off, events are kept 7–180
   days, and viewers only see events from channels they can see.
-- 🍆 **Goon counter** (off by default). A panel in a channel has an **I gooned** and an **Undo**
-  button. Each press adds one to the member's count, and ShifuBot writes it after their nickname
-  (`Mark [12]`, format configurable). Only the number changes: if members rename themselves, the
-  new name stays and the number goes after it at the next press. Presses have a cooldown (3 minutes
-  by default), and a member can undo their own presses for 5 minutes, only as many as they made.
-  The panel shows the server total and the top 10. Renaming needs the Manage Nicknames permission;
-  Discord never lets bots rename the server owner or members above ShifuBot's role, their count is
-  still kept.
+- 🍆 **Goon counter** (off by default). A panel in a channel has an **I gooned**, an **Undo** and a
+  **Full list** button. Each press adds one to the member's count. Presses have a cooldown (3
+  minutes by default), and a member can undo their own presses for 5 minutes, only as many as they
+  made. The panel shows the server total and the top 20. **Full list** opens a clean page
+  (`/servers/<id>/goon`) with every member's place, a search and the viewer's own place. Only
+  members of the server can open it: they sign in with Discord and ShifuBot checks membership.
 - 🌐 **English and Hungarian.** Each server picks its language. It drives the dashboard and every
   message the bot sends there.
 - 🛡️ **Raid safe.** At most 10 welcome and 10 goodbye messages per server per minute (configurable).
@@ -352,6 +350,7 @@ features/
     server.ts           ← Discord event handlers, API routes, database migrations
     web.tsx             ← dashboard page (default export)
     setup.tsx           ← optional: the feature's step in the setup wizard and Settings tab
+    public.tsx          ← optional: a page for every member of a server (see memberRoutes)
     i18n/en.json        ← translations, must contain "name" and "description"
     i18n/hu.json
 ```
@@ -375,6 +374,11 @@ features/
    - `routes(router)`: Hono routes mounted at `/api/guilds/:guildId/features/leveling`. The Manage
      Server check, CSRF check and rate limit already ran; read `c.get('guild')`, `c.get('member')`
      and `c.get('locale')`. Validate bodies with `parseJsonBody(c.req.raw, schema)`.
+   - `memberRoutes(router)` (optional): read-only routes for every member of the server, mounted at
+     `/api/servers/:guildId/leveling`. The user is signed in and a member, and the feature is
+     enabled; read `c.get('guild')` and `c.get('session')`. The matching page is `public.tsx`, shown
+     at `/servers/:guildId/leveling` without the dashboard around it (the goon counter's full list
+     is an example). Signed out visitors get a sign-in button that returns them to the page.
    - `isEnabled(guildId)` for the overview page, and an optional `onGuildCreate(guild)`.
    - `health(guild)` (optional): channel or role problems for the dashboard permission check.
 

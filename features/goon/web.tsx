@@ -13,8 +13,7 @@ import { DiscordMessagePreview } from '../../apps/web/src/ui/discord-preview';
 import { Alert, Avatar, Button, Card, CardHeader, Field, Input, Skeleton, Switch, Textarea } from '../../apps/web/src/ui/primitives';
 import { useToast } from '../../apps/web/src/ui/toast';
 import { ColorField, SaveBar } from '../../apps/web/src/ui/widgets';
-import { buildGoonPanel, GOON_PLACEHOLDERS, goonSettingsSchema, NAME_FORMAT_MAX, type GoonSettings } from './manifest';
-import { buildNickname, suffixFor } from './nickname';
+import { buildGoonPanel, GOON_PLACEHOLDERS, goonSettingsSchema, listPath, type GoonSettings } from './manifest';
 import type { GoonResponse } from './server';
 import type { GoonErrorCode } from './store';
 
@@ -62,7 +61,13 @@ export default function GoonPage() {
     if (!draft || !goon.data) return null;
     return buildGoonPanel(
       { ...draft, color: fieldError('color') ? null : draft.color },
-      { locale: guild.locale, server: { name: guild.name }, entries: goon.data.status.top, total: goon.data.status.total },
+      {
+        locale: guild.locale,
+        server: { name: guild.name },
+        entries: goon.data.status.top,
+        total: goon.data.status.total,
+        listUrl: `${window.location.origin}${listPath(guild.id)}`,
+      },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draft, guild, validation, goon.data]);
@@ -133,7 +138,6 @@ export default function GoonPage() {
     else if (savedChannelSelected && !status.channelExists) warnings.push({ tone: 'danger', text: t('goon.status.channelMissing') });
     else if (savedChannelSelected && status.missingPermissions.length)
       warnings.push({ tone: 'danger', text: t('goon.status.missingPermissions', { permissions: status.missingPermissions.join(', ') }) });
-    if (draft.renameMembers && !status.canManageNicknames) warnings.push({ tone: 'warning', text: t('goon.status.noManageNicknames') });
   }
   if (status.lastError && saved?.enabled) {
     warnings.push({ tone: 'warning', text: t('goon.status.lastError', { error: errorLabel(status.lastError.code) }) });
@@ -148,7 +152,6 @@ export default function GoonPage() {
     time: new Intl.DateTimeFormat(uiLocale, { hour: '2-digit', minute: '2-digit' }).format(now),
   });
 
-  const formatExample = fieldError('nameFormat') ? null : buildNickname('Mark', suffixFor(draft.nameFormat, 12));
   const mentions = Object.fromEntries(status.top.map((entry) => [entry.userId, entry.displayName ?? t('goon.top.unknown')]));
   const panelLive = saved?.enabled && status.panel;
   const minutesInput = (field: 'cooldownMinutes' | 'undoMinutes', min: number, max: number) => (
@@ -212,6 +215,18 @@ export default function GoonPage() {
         ) : (
           <p className="text-sm text-muted">{t('goon.top.empty')}</p>
         )}
+        <div className="space-y-1 border-t border-line pt-4">
+          <a
+            href={listPath(guild.id)}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+          >
+            <ExternalLink className="size-4" aria-hidden />
+            {t('goon.top.openList')}
+          </a>
+          <p className="text-xs text-muted">{t('goon.top.openListHelp')}</p>
+        </div>
       </Card>
     </div>
   );
@@ -271,45 +286,6 @@ export default function GoonPage() {
               <Field label={t('goon.form.undoWindow')} help={t('goon.form.undoWindowHelp')} htmlFor="goon-undoMinutes" error={fieldError('undoMinutes')}>
                 {minutesInput('undoMinutes', 1, 30)}
               </Field>
-            </div>
-          </Card>
-
-          <Card>
-            <CardHeader icon={emoji.goon} title={t('goon.form.names')} />
-            <div className="space-y-5">
-              <Switch
-                checked={draft.renameMembers}
-                onChange={(value) => update('renameMembers', value)}
-                label={t('goon.form.renameMembers')}
-                description={t('goon.form.renameMembersHelp')}
-              />
-              {draft.renameMembers && (
-                <>
-                  <Field
-                    label={t('goon.form.nameFormat')}
-                    help={t('goon.form.nameFormatHelp', { count: '{count}' })}
-                    htmlFor="goon-format"
-                    error={fieldError('nameFormat')}
-                  >
-                    <Input
-                      id="goon-format"
-                      value={draft.nameFormat}
-                      maxLength={NAME_FORMAT_MAX}
-                      onChange={(event) => update('nameFormat', event.target.value)}
-                      aria-invalid={Boolean(fieldError('nameFormat'))}
-                      className="w-48 font-mono"
-                    />
-                  </Field>
-                  {formatExample && (
-                    <p className="text-sm text-muted">
-                      {t('goon.form.nameFormatExample')}{' '}
-                      <code className="rounded bg-raised/60 px-1.5 py-0.5 font-mono text-ink">{formatExample}</code>
-                    </p>
-                  )}
-                  {saved && draft.nameFormat !== saved.nameFormat && <Alert tone="info">{t('goon.form.nameFormatLater')}</Alert>}
-                  <Alert tone="info">{t('goon.status.nicknameLimits')}</Alert>
-                </>
-              )}
             </div>
           </Card>
 

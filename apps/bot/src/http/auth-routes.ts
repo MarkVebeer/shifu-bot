@@ -9,6 +9,20 @@ import { csrfProtection, requireSession } from './middleware';
 import { randomToken, type Session, type SessionStore } from './session';
 
 const STATE_COOKIE = 'shifu_oauth_state';
+const NEXT_COOKIE = 'shifu_oauth_next';
+const DEFAULT_NEXT = '/guilds';
+
+/**
+ * Where to go after signing in. Only paths on this site are allowed, so the
+ * login link cannot be used to send people to another website.
+ */
+export function safeNextPath(raw: string | undefined | null): string {
+  if (!raw || raw.length > 512) return DEFAULT_NEXT;
+  if (!raw.startsWith('/') || raw.startsWith('//') || raw.startsWith('/\\')) return DEFAULT_NEXT;
+  // Control characters (including tabs and newlines) can turn a path into another URL in some browsers.
+  if ([...raw].some((char) => char.charCodeAt(0) < 0x20 || char.charCodeAt(0) === 0x7f)) return DEFAULT_NEXT;
+  return raw;
+}
 
 const callbackSchema = z.union([
   z.object({ code: z.string().min(1).max(512), state: z.string().min(1).max(256) }),
@@ -29,6 +43,18 @@ export function authRoutes(ctx: AppContext, sessions: SessionStore) {
       path: '/auth',
       maxAge: 600,
     });
+    const next = safeNextPath(c.req.query('next'));
+    if (next !== DEFAULT_NEXT) {
+      await setSignedCookie(c, NEXT_COOKIE, next, config.sessionSecret, {
+        httpOnly: true,
+        secure: config.secureCookies,
+        sameSite: 'Lax',
+        path: '/auth',
+        maxAge: 600,
+      });
+    } else {
+      deleteCookie(c, NEXT_COOKIE, { path: '/auth', secure: config.secureCookies });
+    }
     return c.redirect(authorizeUrl(config, state));
   });
 
@@ -61,7 +87,9 @@ export function authRoutes(ctx: AppContext, sessions: SessionStore) {
       });
       await sessions.writeCookie(c, session);
       logger.info('User signed in', { userId: user.id });
-      return c.redirect('/guilds');
+      const next = safeNextPath((await getSignedCookie(c, config.sessionSecret, NEXT_COOKIE)) || null);
+      deleteCookie(c, NEXT_COOKIE, { path: '/auth', secure: config.secureCookies });
+      return c.redirect(next);
     } catch (error) {
       return fail('token exchange failed', { error });
     }

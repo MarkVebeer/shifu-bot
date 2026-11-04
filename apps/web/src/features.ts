@@ -1,6 +1,7 @@
 /**
  * Dashboard pages of every feature, discovered from features/<id>/web.tsx and
- * listed in the order of the registry in features/index.ts.
+ * listed in the order of the registry in features/index.ts. Member pages (for
+ * every member of a server, outside the dashboard) come from features/<id>/public.tsx.
  */
 import { emoji } from '@shifubot/shared';
 import { lazy, type ComponentType, type LazyExoticComponent } from 'react';
@@ -21,4 +22,12 @@ export const featurePages: FeaturePage[] = features.flatMap((feature) => {
     return [];
   }
   return [{ id: feature.id, emoji: emoji[feature.emoji], Page: lazy(loader) }];
+});
+
+const publicPages = import.meta.glob<{ default: ComponentType }>('../../../features/*/public.tsx');
+
+/** Member pages, shown at /servers/:guildId/<id>. */
+export const memberPages: { id: string; Page: LazyExoticComponent<ComponentType> }[] = features.flatMap((feature) => {
+  const loader = publicPages[`../../../features/${feature.id}/public.tsx`];
+  return loader ? [{ id: feature.id, Page: lazy(loader) }] : [];
 });

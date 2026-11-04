@@ -138,7 +138,7 @@ describe('messages', () => {
     expect(lines.some((line) => line.includes('<@999>'))).toBe(false);
     expect(lines.at(-2)).toBe('*⭐ Overall level = chat XP + voice XP. Ranked by total XP.*');
     expect(lines.at(-1)).toBe('Updated <t:1767225600:R>');
-    expect(payload.components![0]!.components[0]!.custom_id).toBe(RANK_BUTTON_ID);
+    expect(payload.components![0]!.components[0]).toMatchObject({ custom_id: RANK_BUTTON_ID });
     expect(payload.allowedMentions).toEqual({ users: [], roles: [], parse: [] });
   });
 

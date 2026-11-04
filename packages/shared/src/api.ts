@@ -74,7 +74,6 @@ export const BOT_PERMISSIONS = [
   'BanMembers',
   'ViewAuditLog',
   'ManageGuild',
-  'ManageNicknames',
 ] as const;
 export type BotPermission = (typeof BOT_PERMISSIONS)[number];
 

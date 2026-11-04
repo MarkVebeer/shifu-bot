@@ -1,105 +1,50 @@
 import { Database } from 'bun:sqlite';
 import { describe, expect, test } from 'bun:test';
 import { migrate } from '../../apps/bot/src/db/database';
-import { buildGoonPanel, defaultGoonSettings, goonSettingsSchema } from './manifest';
-import { buildNickname, NICKNAME_MAX, resolveBaseName, stripSuffix, suffixFor, targetNickname } from './nickname';
-import { GOON_MIGRATIONS, GoonStore } from './store';
+import { buildGoonPanel, defaultGoonSettings, goonSettingsSchema, LEADERBOARD_SIZE, listPath } from './manifest';
+import { escapeLike, foldName, GOON_MIGRATIONS, GoonStore } from './store';
 
 const silent = { info: () => {}, warn: () => {}, error: () => {}, debug: () => {} } as never;
-const FORMAT = ' [{count}]';
 
 function createStore() {
   const db = new Database(':memory:');
   migrate(db, GOON_MIGRATIONS, silent);
-  return new GoonStore(db);
+  return { db, store: new GoonStore(db) };
 }
 
 const MIN = 60_000;
-const press = (store: GoonStore, userId: string, now: number, cooldownMs = 3 * MIN) =>
-  store.press('g', userId, { now, cooldownMs, displayName: userId, avatarUrl: null });
-
-describe('nickname suffix', () => {
-  test('suffixFor fills in the count', () => {
-    expect(suffixFor(FORMAT, 12)).toBe(' [12]');
-    expect(suffixFor(' 🍆{count}', 3)).toBe(' 🍆3');
-  });
-
-  test('stripSuffix removes a counter of the current or the previous format', () => {
-    expect(stripSuffix('Mark [12]', [FORMAT])).toBe('Mark');
-    expect(stripSuffix('Mark[12]', [FORMAT])).toBe('Mark');
-    expect(stripSuffix('Mark (12)', [FORMAT, ' ({count})'])).toBe('Mark');
-    expect(stripSuffix('Mark 🍆 7', [' 🍆 {count}'])).toBe('Mark');
-    expect(stripSuffix('Mark', [FORMAT])).toBe('Mark');
-    // Brackets in the middle of a name are not a counter.
-    expect(stripSuffix('[12] Mark', [FORMAT])).toBe('[12] Mark');
-    expect(stripSuffix('[5]', [FORMAT])).toBe('');
-  });
-
-  test('buildNickname fits the 32 character limit without cutting an emoji', () => {
-    expect(buildNickname('Mark', ' [12]')).toBe('Mark [12]');
-    const long = buildNickname('A'.repeat(40), ' [123]');
-    expect(long.length).toBe(NICKNAME_MAX);
-    expect(long.endsWith('… [123]')).toBe(true);
-    const emojis = buildNickname('😀'.repeat(20), ' [1]');
-    expect(emojis.length).toBeLessThanOrEqual(NICKNAME_MAX);
-    expect(emojis).not.toContain('�');
-    expect(emojis.endsWith('… [1]')).toBe(true);
-  });
-});
-
-describe('resolveBaseName', () => {
-  const stored = { baseName: 'Mark', lastNick: 'Mark [5]', lastFormat: FORMAT };
-
-  test('keeps the stored name while the nickname is still the one ShifuBot set', () => {
-    expect(resolveBaseName({ nickname: 'Mark [5]', ownName: 'mark_v', stored, format: FORMAT })).toBe('Mark');
-  });
-
-  test('a member who renamed themselves keeps the new name, with or without the old number', () => {
-    expect(resolveBaseName({ nickname: 'Robert', ownName: 'mark_v', stored, format: FORMAT })).toBe('Robert');
-    expect(resolveBaseName({ nickname: 'Robert [5]', ownName: 'mark_v', stored, format: FORMAT })).toBe('Robert');
-  });
-
-  test('after a format change the old counter is still removed', () => {
-    expect(resolveBaseName({ nickname: 'Robert [5]', ownName: 'x', stored, format: ' ({count})' })).toBe('Robert');
-  });
-
-  test('a cleared nickname falls back to the member own name', () => {
-    expect(resolveBaseName({ nickname: null, ownName: 'mark_v', stored, format: FORMAT })).toBe('mark_v');
-    expect(resolveBaseName({ nickname: null, ownName: 'mark_v', stored: null, format: FORMAT })).toBe('mark_v');
-    expect(resolveBaseName({ nickname: '[3]', ownName: 'mark_v', stored: null, format: FORMAT })).toBe('mark_v');
-  });
-
-  test('targetNickname: count 0 restores the name or removes the nickname', () => {
-    expect(targetNickname({ base: 'Mark', count: 4, format: FORMAT, ownName: 'mark_v' })).toBe('Mark [4]');
-    expect(targetNickname({ base: 'Mark', count: 0, format: FORMAT, ownName: 'mark_v' })).toBe('Mark');
-    expect(targetNickname({ base: 'mark_v', count: 0, format: FORMAT, ownName: 'mark_v' })).toBeNull();
-  });
-});
+const press = (store: GoonStore, userId: string, now: number, cooldownMs = 3 * MIN, displayName = userId) =>
+  store.press('g', userId, { now, cooldownMs, displayName, avatarUrl: null });
 
 describe('settings', () => {
-  test('defaults parse, and the format must contain {count} once', () => {
+  test('defaults parse and have the agreed values', () => {
     expect(goonSettingsSchema.safeParse(defaultGoonSettings).success).toBe(true);
     expect(defaultGoonSettings.enabled).toBe(false);
     expect(defaultGoonSettings.cooldownMinutes).toBe(3);
     expect(defaultGoonSettings.undoMinutes).toBe(5);
-    expect(goonSettingsSchema.safeParse({ ...defaultGoonSettings, nameFormat: ' [x]' }).success).toBe(false);
-    expect(goonSettingsSchema.safeParse({ ...defaultGoonSettings, nameFormat: '{count}{count}' }).success).toBe(false);
-    expect(goonSettingsSchema.safeParse({ ...defaultGoonSettings, nameFormat: ' [{count}] goons!' }).success).toBe(false);
     expect(goonSettingsSchema.safeParse({ ...defaultGoonSettings, undoMinutes: 0 }).success).toBe(false);
   });
 
-  test('saved settings round trip, and keep the leading space of the format', () => {
-    const store = createStore();
+  test('saved settings round trip, and settings saved with the old nickname options still load', () => {
+    const { db, store } = createStore();
     expect(store.get('g')).toEqual(defaultGoonSettings);
-    store.save('g', { ...defaultGoonSettings, enabled: true, nameFormat: ' ({count})' });
-    expect(store.get('g').nameFormat).toBe(' ({count})');
+    store.save('g', { ...defaultGoonSettings, enabled: true });
     expect(store.get('g').enabled).toBe(true);
+
+    db.query('INSERT INTO goon_settings (guild_id, settings, updated_at) VALUES (?, ?, ?)').run(
+      'old',
+      JSON.stringify({ ...defaultGoonSettings, enabled: true, renameMembers: true, nameFormat: ' [{count}]' }),
+      0,
+    );
+    const old = store.get('old');
+    expect(old.enabled).toBe(true);
+    expect(old).not.toHaveProperty('nameFormat');
   });
 });
 
 describe('store: presses, cooldown and undo', () => {
   test('a press counts, the next one waits for the cooldown', () => {
-    const store = createStore();
+    const { store } = createStore();
     expect(press(store, 'a', 0)).toEqual({ ok: true, count: 1, pressedAt: 0 });
     expect(press(store, 'a', 2 * MIN)).toEqual({ ok: false, nextAt: 3 * MIN });
     expect(press(store, 'a', 3 * MIN)).toMatchObject({ ok: true, count: 2 });
@@ -108,7 +53,7 @@ describe('store: presses, cooldown and undo', () => {
   });
 
   test('undo takes back only recent own presses, at most as many as were made', () => {
-    const store = createStore();
+    const { store } = createStore();
     press(store, 'a', 0);
     press(store, 'a', 3 * MIN);
     press(store, 'b', 3 * MIN);
@@ -117,25 +62,25 @@ describe('store: presses, cooldown and undo', () => {
     expect(store.undo('g', 'a', { now: 7 * MIN, windowMs: 5 * MIN })).toBeNull();
     // b's press was not touched.
     expect(store.top('g', 10).find((e) => e.userId === 'b')?.count).toBe(1);
-    // Never below zero, and nothing to undo for someone who never pressed.
+    // Nothing to undo for someone who never pressed.
     expect(store.undo('g', 'c', { now: 7 * MIN, windowMs: 5 * MIN })).toBeNull();
   });
 
   test('after an undo the cooldown counts from the press before it', () => {
-    const store = createStore();
+    const { store } = createStore();
     press(store, 'a', 0);
     press(store, 'a', 10 * MIN);
     store.undo('g', 'a', { now: 11 * MIN, windowMs: 5 * MIN });
     expect(press(store, 'a', 11 * MIN)).toMatchObject({ ok: true, count: 2 });
     // A single accidental press undone right away: pressing again is allowed at once.
-    const other = createStore();
+    const other = createStore().store;
     press(other, 'a', 0);
     other.undo('g', 'a', { now: MIN, windowMs: 5 * MIN });
     expect(press(other, 'a', MIN)).toMatchObject({ ok: true, count: 1 });
   });
 
   test('top and total', () => {
-    const store = createStore();
+    const { store } = createStore();
     press(store, 'a', 0);
     press(store, 'a', 3 * MIN);
     press(store, 'b', 0);
@@ -148,25 +93,100 @@ describe('store: presses, cooldown and undo', () => {
     expect(store.total('g')).toBe(3);
     expect(store.total('other')).toBe(0);
   });
+});
 
-  test('name data is stored per member', () => {
-    const store = createStore();
-    press(store, 'a', 0);
-    store.saveName('g', 'a', { baseName: 'Mark', lastNick: 'Mark [1]', lastFormat: FORMAT });
-    expect(store.storedName('g', 'a')).toEqual({ baseName: 'Mark', lastNick: 'Mark [1]', lastFormat: FORMAT });
-    expect(store.storedName('g', 'nobody')).toBeNull();
+describe('store: full list', () => {
+  function seeded() {
+    const { store } = createStore();
+    // anna 3, bob 2 (pressed last at 7), cleo 2 (pressed last at 5, so ahead of bob), dan_50% 1.
+    for (const at of [0, 3, 6]) press(store, 'anna', at * MIN, 0, 'Anna');
+    for (const at of [1, 7]) press(store, 'bob', at * MIN, 0, 'Bob');
+    for (const at of [2, 5]) press(store, 'cleo', at * MIN, 0, 'Cleo');
+    press(store, 'dan', 4 * MIN, 0, 'dan_50%');
+    return store;
+  }
+
+  test('ranks by count, earlier last press first on a tie', () => {
+    const { entries, matches } = seeded().list('g');
+    expect(entries.map((e) => [e.rank, e.userId, e.count])).toEqual([
+      [1, 'anna', 3],
+      [2, 'cleo', 2],
+      [3, 'bob', 2],
+      [4, 'dan', 1],
+    ]);
+    expect(matches).toBe(4);
+  });
+
+  test('search is case insensitive and keeps the real rank', () => {
+    const store = seeded();
+    expect(store.list('g', { q: 'BO' }).entries.map((e) => [e.rank, e.userId])).toEqual([[3, 'bob']]);
+    expect(store.list('g', { q: 'zzz' })).toEqual({ entries: [], matches: 0 });
+  });
+
+  test('search ignores accents and case outside ASCII', () => {
+    const { store } = createStore();
+    press(store, 'adam', 0, 0, 'Ádám');
+    press(store, 'zsofi', 0, 0, 'ZSÓFI');
+    for (const q of ['ádám', 'ADAM', 'Ádám', 'dá']) expect(store.list('g', { q }).entries.map((e) => e.userId)).toEqual(['adam']);
+    expect(store.list('g', { q: 'zsófi' }).entries.map((e) => e.userId)).toEqual(['zsofi']);
+    expect(foldName('Árvíztűrő TÜKÖRFÚRÓGÉP')).toBe('arvizturo tukorfurogep');
+  });
+
+  test('LIKE wildcards in the search are matched literally', () => {
+    const store = seeded();
+    expect(escapeLike('50%_\\')).toBe('50\\%\\_\\\\');
+    expect(store.list('g', { q: '%' }).entries.map((e) => e.userId)).toEqual(['dan']);
+    expect(store.list('g', { q: '_' }).entries.map((e) => e.userId)).toEqual(['dan']);
+  });
+
+  test('paging, limits and own rank', () => {
+    const store = seeded();
+    const page = store.list('g', { offset: 1, limit: 2 });
+    expect(page.entries.map((e) => e.rank)).toEqual([2, 3]);
+    expect(page.matches).toBe(4);
+    expect(store.list('g', { limit: 10_000 }).entries).toHaveLength(4);
+    expect(store.rankOf('g', 'bob')).toEqual({ rank: 3, count: 2 });
+    expect(store.rankOf('g', 'nobody')).toBeNull();
+  });
+});
+
+describe('migrations', () => {
+  test('goon_002 drops the nickname columns from a database made by goon_001', () => {
+    const db = new Database(':memory:');
+    migrate(db, [GOON_MIGRATIONS[0]!], silent);
+    db.query("INSERT INTO goon_members (guild_id, user_id, count, display_name, base_name) VALUES ('g', 'a', 4, 'Mark', 'Mark')").run();
+    migrate(db, GOON_MIGRATIONS, silent);
+    const columns = db.query<{ name: string }, []>('PRAGMA table_info(goon_members)').all().map((c) => c.name);
+    expect(columns).not.toContain('base_name');
+    expect(columns).not.toContain('last_nick');
+    expect(columns).not.toContain('last_format');
+    const store = new GoonStore(db);
+    expect(store.total('g')).toBe(4);
+    // Rows from before the search column are found by name right away.
+    expect(store.list('g', { q: 'mark' }).entries.map((e) => e.userId)).toEqual(['a']);
   });
 });
 
 describe('panel', () => {
-  test('shows the total and the top list, or only the description when turned off', () => {
-    const ctx = { locale: 'en' as const, server: { name: 'Test' }, entries: [{ userId: '1', count: 5 }], total: 9 };
-    const on = buildGoonPanel(defaultGoonSettings, ctx).embeds![0]!.description!;
-    expect(on).toContain('<@1>');
-    expect(on).toContain('**9**');
-    const off = buildGoonPanel({ ...defaultGoonSettings, showLeaderboard: false }, ctx).embeds![0]!.description!;
-    expect(off).not.toContain('<@1>');
-    const buttons = buildGoonPanel(defaultGoonSettings, ctx).components![0]!.components;
-    expect(buttons.map((b) => b.custom_id)).toEqual(['goon:add', 'goon:undo']);
+  const listUrl = `https://shifu.example.com${listPath('123')}`;
+
+  test('shows the total, the top 20, a linked title and a Full list button', () => {
+    const entries = Array.from({ length: 25 }, (_, i) => ({ userId: String(1000 + i), count: 30 - i }));
+    const payload = buildGoonPanel(defaultGoonSettings, { locale: 'en', server: { name: 'Test' }, entries, total: 99, listUrl });
+    const embed = payload.embeds[0]!;
+    expect(embed.url).toBe(listUrl);
+    expect(embed.description).toContain('**99**');
+    expect(embed.description).toContain(`<@${1000 + LEADERBOARD_SIZE - 1}>`);
+    expect(embed.description).not.toContain(`<@${1000 + LEADERBOARD_SIZE}>`);
+    const buttons = payload.components![0]!.components;
+    expect(buttons.map((b) => ('url' in b ? b.url : b.custom_id))).toEqual(['goon:add', 'goon:undo', listUrl]);
+    expect(LEADERBOARD_SIZE).toBe(20);
+  });
+
+  test('without the leaderboard only the description and the buttons stay', () => {
+    const ctx = { locale: 'hu' as const, server: { name: 'Test' }, entries: [{ userId: '1', count: 5 }], total: 9, listUrl };
+    const payload = buildGoonPanel({ ...defaultGoonSettings, showLeaderboard: false }, ctx);
+    expect(payload.embeds[0]!.description).not.toContain('<@1>');
+    expect(payload.components![0]!.components).toHaveLength(3);
   });
 });

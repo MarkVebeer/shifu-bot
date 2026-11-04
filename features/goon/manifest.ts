@@ -1,10 +1,10 @@
 /**
  * Goon counter: the part shared by the bot and the dashboard.
  * A panel message in a channel has a +1 button and an Undo button. Each press
- * adds one to the member's count, which ShifuBot writes after their nickname.
- * Presses have a cooldown, and a press can be undone for a few minutes. The
- * panel shows the server total and the top 10. The panel builder below is used
- * for both the real message and the dashboard preview.
+ * adds one to the member's count. Presses have a cooldown, and a press can be
+ * undone for a few minutes. The panel shows the server total and the top 20,
+ * and links to a page with the full list that only members can open. The panel
+ * builder below is used for both the real message and the dashboard preview.
  */
 import {
   brandFooter,
@@ -20,7 +20,6 @@ import {
 import { z } from 'zod';
 import en from './i18n/en.json';
 import hu from './i18n/hu.json';
-import { COUNT_TOKEN } from './nickname';
 
 export const goonManifest = defineFeature({
   id: 'goon',
@@ -36,8 +35,11 @@ export const GOON_IDS = {
   undo: 'goon:undo',
 } as const;
 
-export const LEADERBOARD_SIZE = 10;
-export const NAME_FORMAT_MAX = 12;
+/** Members shown on the Discord panel and the dashboard. The full list is on the member page. */
+export const LEADERBOARD_SIZE = 20;
+
+/** Path of the full list page, relative to the dashboard address. */
+export const listPath = (guildId: string) => `/servers/${guildId}/goon`;
 
 export const goonSettingsSchema = z.object({
   enabled: z.boolean(),
@@ -52,14 +54,7 @@ export const goonSettingsSchema = z.object({
   cooldownMinutes: z.number().int().min(0, 'Must be 0 or more').max(60, 'At most 60 minutes'),
   /** Minutes a press can still be undone. */
   undoMinutes: z.number().int().min(1, 'At least 1 minute').max(30, 'At most 30 minutes'),
-  /** Write the count after the member's nickname. */
-  renameMembers: z.boolean(),
-  /** What goes after the name, e.g. " [{count}]". Not trimmed: the leading space is part of it. */
-  nameFormat: z
-    .string()
-    .max(NAME_FORMAT_MAX, `At most ${NAME_FORMAT_MAX} characters`)
-    .refine((value) => value.split(COUNT_TOKEN).length === 2, `Must contain ${COUNT_TOKEN} exactly once`),
-  /** Show the server total and the top 10 on the panel. */
+  /** Show the server total and the top 20 on the panel. */
   showLeaderboard: z.boolean(),
 });
 
@@ -75,8 +70,6 @@ export const defaultGoonSettings: GoonSettings = {
   color: null,
   cooldownMinutes: 3,
   undoMinutes: 5,
-  renameMembers: true,
-  nameFormat: ' [{count}]',
   showLeaderboard: true,
 };
 
@@ -91,7 +84,14 @@ const formatNumber = (value: number, locale: Locale) => value.toLocaleString(loc
 
 export function buildGoonPanel(
   settings: Pick<GoonSettings, 'title' | 'description' | 'buttonLabel' | 'undoLabel' | 'color' | 'showLeaderboard'>,
-  ctx: { locale: Locale; server: { name: string }; entries: GoonEntry[]; total: number },
+  ctx: {
+    locale: Locale;
+    server: { name: string };
+    entries: GoonEntry[];
+    total: number;
+    /** Absolute URL of the full list page. */
+    listUrl: string;
+  },
 ): MessagePayload {
   const texts = goonManifest.messages[ctx.locale];
   const values = { server: ctx.server.name };
@@ -114,13 +114,16 @@ export function buildGoonPanel(
 
   return {
     embeds: [
-      buildEmbed({
-        emoji: goonManifest.emoji,
-        title: renderPlaceholders(settings.title || texts.defaults.title, values),
-        description,
-        color: settings.color,
-        footer: brandFooter(ctx.locale, texts.name),
-      }),
+      {
+        ...buildEmbed({
+          emoji: goonManifest.emoji,
+          title: renderPlaceholders(settings.title || texts.defaults.title, values),
+          description,
+          color: settings.color,
+          footer: brandFooter(ctx.locale, texts.name),
+        }),
+        url: ctx.listUrl,
+      },
     ],
     components: [
       {
@@ -140,6 +143,7 @@ export function buildGoonPanel(
             custom_id: GOON_IDS.undo,
             emoji: { name: '↩️' },
           },
+          { type: 2, style: ButtonStyle.Link, label: texts.panel.fullList, url: ctx.listUrl, emoji: { name: '📜' } },
         ],
       },
     ],

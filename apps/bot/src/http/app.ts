@@ -10,6 +10,7 @@ import { authRoutes, sessionApiRoutes } from './auth-routes';
 import { localeFromCookie, renderErrorPage } from './error-page';
 import { ApiError } from './errors';
 import { guildRoutes } from './guild-routes';
+import { memberRoutes } from './member-routes';
 import { rateLimit, requestLogger } from './middleware';
 import { SessionStore } from './session';
 
@@ -78,6 +79,7 @@ export function createHttpApp(ctx: AppContext, features: { feature: ServerFeatur
   });
   app.route('/api', sessionApiRoutes(ctx, sessions));
   app.route('/api/guilds', guildRoutes(ctx, sessions, features));
+  app.route('/api/servers', memberRoutes(ctx, sessions, features));
   app.all('/api/*', () => {
     throw new ApiError(404, 'not_found', 'Unknown API route');
   });

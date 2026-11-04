@@ -33,6 +33,19 @@ export interface GuildRouteEnv {
   };
 }
 
+/**
+ * Variables available to member routes under /api/servers/:guildId/<id>. The
+ * user is signed in and a member of the server, and the feature is enabled.
+ * There is no Manage Server check: these are pages for every member.
+ */
+export interface MemberRouteEnv {
+  Variables: {
+    requestId: string;
+    session: Session;
+    guild: Guild;
+  };
+}
+
 export type FeatureEvents = {
   [E in keyof ClientEvents]?: (...args: ClientEvents[E]) => Awaitable<void>;
 };
@@ -42,6 +55,11 @@ export interface FeatureInstance {
   events?: FeatureEvents;
   /** Routes mounted at /api/guilds/:guildId/features/<id>. */
   routes?: (router: Hono<GuildRouteEnv>) => void;
+  /**
+   * Read-only routes for every member of the server, mounted at /api/servers/:guildId/<id>.
+   * The dashboard shows them on the member page features/<id>/public.tsx.
+   */
+  memberRoutes?: (router: Hono<MemberRouteEnv>) => void;
   /** Shown on the guild overview page. */
   isEnabled?: (guildId: string) => boolean;
   /** Called when the bot joins a server, after core defaults exist. */

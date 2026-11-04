@@ -1,6 +1,6 @@
 {
   "name": "Goon számláló",
-  "description": "A tagok minden goonolás után megnyomnak egy gombot. A ShifuBot számolja, és a számot a becenevük után írja.",
+  "description": "A tagok minden goonolás után megnyomnak egy gombot. A ShifuBot számolja, a top 20-at Discordon mutatja, a teljes listát pedig egy oldalon a tagoknak.",
   "defaults": {
     "title": "{server} goon számlálója",
     "description": "Goonoltál? Nyomd meg a gombot, és eggyel nő a számod. Véletlen nyomtad meg? A **Visszavonás** pár percig visszaveszi.",
@@ -10,8 +10,9 @@
   "panel": {
     "line": "{rank} {user} — **{count}**",
     "total": "🍆 Szerver összesen: **{count}**",
-    "top": "Top 10",
+    "top": "Top 20",
     "empty": "Még senki nem goonolt. Légy te az első!",
+    "fullList": "Teljes lista",
     "repost": "Panel újraküldése",
     "reposting": "Küldés…",
     "reposted": "Panel elküldve ide: #{channel}",
@@ -22,7 +23,6 @@
     "general": "Általános",
     "panel": "Panel üzenet",
     "rules": "Szabályok",
-    "names": "Becenevek",
     "style": "Megjelenés",
     "enabled": "Goon számláló bekapcsolása",
     "enabledHelp": "A ShifuBot egy panelt küld a gombokkal az alábbi csatornába.",
@@ -32,14 +32,8 @@
     "undoWindow": "Visszavonási idő",
     "undoWindowHelp": "Ennyi percig vonhatja vissza a tag a nyomását. Csak a sajátját, és csak annyiszor, ahányszor nyomott.",
     "minutes": "perc",
-    "renameMembers": "A szám a becenév után",
-    "renameMembersHelp": "Csak a szám változik. Ha a tag átnevezi magát, az új neve megmarad, és a következő nyomásnál a szám mögé kerül.",
-    "nameFormat": "Formátum",
-    "nameFormatHelp": "A {count} helyére kerül a szám. Kezdd szóközzel, hogy elváljon a névtől.",
-    "nameFormatExample": "Példa:",
-    "nameFormatLater": "A tagok a következő nyomásukkor kapják meg az új formátumot.",
-    "showLeaderboard": "Top 10 és szerver összesítő",
-    "showLeaderboardHelp": "A panel legfeljebb 15 másodpercenként frissül.",
+    "showLeaderboard": "Top 20 és szerver összesítő",
+    "showLeaderboardHelp": "A panel legfeljebb 15 másodpercenként frissül. A Teljes lista gomb mindig ott van.",
     "title": "Cím",
     "description": "Leírás",
     "buttonLabel": "Gomb felirata",
@@ -57,17 +51,17 @@
     "noChannel": "Válassz csatornát a panelnek.",
     "channelMissing": "A kiválasztott csatorna már nem létezik. Válassz másikat.",
     "missingPermissions": "A ShifuBotnak hiányzó jogai vannak ebben a csatornában: {permissions}.",
-    "noManageNicknames": "A ShifuBotnak nincs Becenevek kezelése joga, így nem tudja a számot a nevek után írni. A számolás ettől még működik.",
-    "nicknameLimits": "A Discord a botoknak sosem engedi átnevezni a szerver tulajdonosát és azokat, akiknek a rangja a ShifuBoté felett van. Az ő számukat is megőrzi.",
     "lastError": "Utolsó hiba: {error}",
     "panelLive": "A panel él itt: #{channel}.",
     "panelMissing": "A panel még nincs elküldve. Ments, vagy küldd el újra lent.",
     "total": "Eddig {count} goon ezen a szerveren"
   },
   "top": {
-    "title": "Top 10",
+    "title": "Top 20",
     "empty": "Még senki nem goonolt.",
-    "unknown": "Ismeretlen tag"
+    "unknown": "Ismeretlen tag",
+    "openList": "Teljes lista megnyitása",
+    "openListHelp": "A szerver minden tagja megnyithatja, miután belépett Discorddal."
   },
   "preview": {
     "title": "Élő előnézet",
@@ -75,9 +69,34 @@
     "botTag": "APP",
     "today": "Ma {time}-kor"
   },
+  "list": {
+    "title": "Goon számláló",
+    "total": "Összesen {count} goon",
+    "members": "{count} tag a listán",
+    "search": "Keresés név szerint",
+    "searchLabel": "Tagok keresése",
+    "you": "Te",
+    "yourPlace": "A helyezésed",
+    "notOnList": "Még nem vagy a listán. Nyomd meg a gombot a Discordos panelen, és felkerülsz.",
+    "goons": "goon",
+    "loadMore": "Továbbiak",
+    "loading": "Betöltés…",
+    "empty": "Még senki nem goonolt. Légy te az első!",
+    "noResults": "Senki nem felel meg ennek: „{q}”.",
+    "matches": "{count} találat",
+    "signInTitle": "Csak tagoknak",
+    "signInBody": "Lépj be Discorddal, hogy lásd a szerver teljes goon listáját. Csak a szerver tagjai láthatják.",
+    "signIn": "Belépés Discorddal",
+    "notMemberTitle": "Csak tagoknak",
+    "notMemberBody": "Be vagy lépve, de nem vagy tagja ennek a szervernek. Ezt a listát csak a tagjai láthatják.",
+    "notFoundTitle": "Nem található",
+    "notFoundBody": "Ez a lista nem létezik, vagy a goon számláló ki van kapcsolva ezen a szerveren.",
+    "errorTitle": "Valami hiba történt",
+    "retry": "Újra"
+  },
   "setup": {
     "title": "Goon számláló",
-    "description": "Egy gomb, amit a tagok minden goonolás után megnyomnak, a számmal a nevük után. Később a Goon számláló oldalon finomhangolhatod.",
+    "description": "Egy gomb, amit a tagok minden goonolás után megnyomnak, top 20-szal Discordon és a teljes listával egy tagoknak szóló oldalon. Később a Goon számláló oldalon finomhangolhatod.",
     "channelRequired": "Válassz csatornát, vagy egyelőre kapcsold ki a goon számlálót.",
     "summaryOn": "Be",
     "summaryOff": "Ki"
@@ -87,12 +106,7 @@
     "counted": "Beszámolva! Most **{count}** goonnál jársz. Véletlen nyomtad meg? A **Visszavonás** eddig működik: {time}.",
     "cooldown": "Lassan a testtel. A következőt ekkor számolhatod: {time}.",
     "undone": "Visszavonva. Most **{count}** goonnál jársz.",
-    "nothingToUndo": "Nincs mit visszavonni. Csak az elmúlt {minutes} perc nyomásai vonhatók vissza.",
-    "renameFailed": "Nem tudtam a számot a neved után írni: {reason}",
-    "renameOwner": "te vagy a szerver tulajdonosa, és a Discord a botoknak sosem engedi átnevezni a tulajdonost. A számodat ettől még megőrzöm.",
-    "renameTooHigh": "a rangod a ShifuBoté felett van. A számodat ettől még megőrzöm.",
-    "renameNoPermission": "a ShifuBotnak nincs Becenevek kezelése joga. A számodat ettől még megőrzöm.",
-    "renameError": "a Discord elutasította a módosítást. A számodat ettől még megőrzöm."
+    "nothingToUndo": "Nincs mit visszavonni. Csak az elmúlt {minutes} perc nyomásai vonhatók vissza."
   },
   "errors": {
     "no_channel": "nincs kiválasztott csatorna",
