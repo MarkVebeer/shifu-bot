@@ -1,10 +1,11 @@
-import { Client, GatewayIntentBits, Options } from 'discord.js';
+import { Client, GatewayIntentBits, Options, Partials } from 'discord.js';
 
 /**
  * A discord.js client tuned for low memory on hundreds of servers.
  * Only guilds, channels and roles are cached: they are needed to compute the
  * bot's permissions. Members and users are not cached except the bot itself,
- * and full member lists are never fetched.
+ * and full member lists are never fetched. The GuildMember partial lets
+ * guildMemberRemove fire for members that are not in the cache (all of them).
  *
  * Sharding later: wrap this file's entry point with a ShardingManager. Nothing
  * here assumes one process sees every guild.
@@ -12,6 +13,7 @@ import { Client, GatewayIntentBits, Options } from 'discord.js';
 export function createDiscordClient(): Client {
   return new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
+    partials: [Partials.GuildMember],
     makeCache: Options.cacheWithLimits({
       ...Options.DefaultMakeCacheSettings,
       MessageManager: 0,

@@ -9,9 +9,11 @@ discord.js, Hono, SQLite and React. Self host it on a Pelican panel, with Docker
 - 👋 **Welcome messages.** When someone joins, ShifuBot posts a styled embed in the channel you
   pick. Edit the title, text, color, avatar thumbnail, banner image and footer in the dashboard,
   watch a live preview that looks exactly like Discord, and send a test message to yourself.
+- 🚪 **Goodbye messages.** The same editor and live preview for a farewell embed when someone
+  leaves, is kicked or banned. It never pings the member who left.
 - 🌐 **English and Hungarian.** Each server picks its language. It drives the dashboard and every
   message the bot sends there.
-- 🛡️ **Raid safe.** At most 10 welcome messages per server per minute (configurable).
+- 🛡️ **Raid safe.** At most 10 welcome and 10 goodbye messages per server per minute (configurable).
 - 📱 **Dashboard for phone and desktop.** Sign in with Discord. You only see servers where you have
   the *Manage Server* permission.
 - 🚀 **Guided setup.** The first time you open a server's dashboard (after the bot joins, or when
@@ -100,6 +102,7 @@ Copy `.env.example` to `.env` and fill it in. Every variable is documented there
 | `DEFAULT_LOCALE` | | `en` | Language for new servers: `en` or `hu` |
 | `TRUST_PROXY` | | `true` | Trust `X-Forwarded-*` headers from your reverse proxy |
 | `WELCOME_MAX_PER_MINUTE` | | `10` | Welcome messages per server per minute |
+| `GOODBYE_MAX_PER_MINUTE` | | `10` | Goodbye messages per server per minute |
 | `SEND_CONCURRENCY` | | `4` | Discord messages sent in parallel across all servers |
 | `CLEANUP_AFTER_DAYS` | | `30` | Keep data of servers that removed the bot this long |
 | `BOT_DISABLED` | | `false` | Run only the dashboard (UI development) |
@@ -279,7 +282,7 @@ Every feature is one folder in [`features/`](features) plus one line in the regi
 ```
 features/
   index.ts              ← registry: add your manifest here
-  goodbye/
+  leveling/
     manifest.ts         ← shared by bot and dashboard: id, emoji, translations, Zod schema, embed builder
     server.ts           ← Discord event handlers, API routes, database migrations
     web.tsx             ← dashboard page (default export)
@@ -295,7 +298,7 @@ features/
    import en from './i18n/en.json';
    import hu from './i18n/hu.json';
 
-   export const goodbyeManifest = defineFeature({ id: 'goodbye', emoji: 'soon', messages: { en, hu } });
+   export const levelingManifest = defineFeature({ id: 'leveling', emoji: 'sparkle', messages: { en, hu } });
    ```
 
    Build embeds with `buildEmbed` from `@shifubot/shared` so they follow the shared format.
@@ -303,13 +306,13 @@ features/
 2. **`server.ts`** default exports `defineServerFeature({ manifest, migrations, tables, setup })`.
    `setup(ctx)` receives the Discord client, database, logger, send queue and server settings and
    returns:
-   - `events`: discord.js event handlers, e.g. `{ [Events.GuildMemberRemove]: (member) => … }`
-   - `routes(router)`: Hono routes mounted at `/api/guilds/:guildId/features/goodbye`. The Manage
+   - `events`: discord.js event handlers, e.g. `{ [Events.MessageCreate]: (message) => … }`
+   - `routes(router)`: Hono routes mounted at `/api/guilds/:guildId/features/leveling`. The Manage
      Server check, CSRF check and rate limit already ran; read `c.get('guild')`, `c.get('member')`
      and `c.get('locale')`. Validate bodies with `parseJsonBody(c.req.raw, schema)`.
    - `isEnabled(guildId)` for the overview page, and an optional `onGuildCreate(guild)`.
 
-   Migration ids must start with the feature id (`goodbye_001_settings`). List every table with a
+   Migration ids must start with the feature id (`leveling_001_settings`). List every table with a
    `guild_id` column in `tables` so cleanup can delete it.
 
 3. **`web.tsx`** default exports a React component. Use `useGuild()`, `useT()` and the UI kit in
@@ -323,11 +326,11 @@ features/
 5. **Register it** in `features/index.ts`:
 
    ```ts
-   export const features = [welcomeManifest, goodbyeManifest] as const;
+   export const features = [welcomeManifest, goodbyeManifest, levelingManifest] as const;
    ```
 
 That is it. The bot loads `server.ts`, the dashboard finds `web.tsx` (and `setup.tsx`), the navigation gets an entry,
-translations become available as `t('goodbye.…')` with typed keys, and `bun test` checks that both
+translations become available as `t('leveling.…')` with typed keys, and `bun test` checks that both
 languages have every key.
 
 ---
@@ -338,7 +341,7 @@ languages have every key.
 apps/bot          Bun process: discord.js client, Hono API, SQLite, static dashboard hosting
 apps/web          React + Vite + Tailwind dashboard
 packages/shared   Design tokens, i18n layer, embed format, placeholder parser, API types
-features/         Feature modules (welcome) and their registry
+features/         Feature modules (welcome, goodbye) and their registry
 pelican/          Pelican egg
 ```
 

@@ -10,6 +10,7 @@ import { DEFAULT_EMBED_COLOR, colors, hexToInt } from './tokens';
 /** The emoji set shared by Discord messages and the dashboard copy. */
 export const emoji = {
   welcome: '👋',
+  goodbye: '🚪',
   success: '✅',
   warning: '⚠️',
   error: '⛔',

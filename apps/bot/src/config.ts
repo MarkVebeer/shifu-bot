@@ -32,6 +32,7 @@ const envSchema = z.object({
   DEFAULT_LOCALE: z.enum(LOCALES).default(DEFAULT_LOCALE),
   TRUST_PROXY: bool.default('true'),
   WELCOME_MAX_PER_MINUTE: z.coerce.number().int().min(1).max(120).default(10),
+  GOODBYE_MAX_PER_MINUTE: z.coerce.number().int().min(1).max(120).default(10),
   SEND_CONCURRENCY: z.coerce.number().int().min(1).max(50).default(4),
   CLEANUP_AFTER_DAYS: z.coerce.number().int().min(1).max(3650).default(30),
 });
@@ -74,6 +75,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     defaultLocale: raw.DEFAULT_LOCALE,
     trustProxy: raw.TRUST_PROXY,
     welcomeMaxPerMinute: raw.WELCOME_MAX_PER_MINUTE,
+    goodbyeMaxPerMinute: raw.GOODBYE_MAX_PER_MINUTE,
     sendConcurrency: raw.SEND_CONCURRENCY,
     cleanupAfterDays: raw.CLEANUP_AFTER_DAYS,
   };

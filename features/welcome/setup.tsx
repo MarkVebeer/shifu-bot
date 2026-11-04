@@ -6,7 +6,7 @@ import { api } from '../../apps/web/src/lib/api';
 import { useT } from '../../apps/web/src/lib/i18n';
 import { defineSetupSection, type SetupSectionProps } from '../../apps/web/src/lib/setup';
 import { Switch } from '../../apps/web/src/ui/primitives';
-import { WelcomeChannelPicker } from './channel-picker';
+import { ChannelPicker } from '../../apps/web/src/ui/channel-picker';
 import { welcomeManifest, type WelcomeSettings } from './manifest';
 import type { WelcomeResponse } from './server';
 
@@ -22,7 +22,7 @@ function WelcomeSetup({ value, onChange }: SetupSectionProps<WelcomeSettings>) {
       />
       {value.enabled && (
         <div className="animate-fade-in">
-          <WelcomeChannelPicker
+          <ChannelPicker
             id="setup-welcome-channel"
             value={value.channelId}
             onChange={(channelId) => onChange({ ...value, channelId })}

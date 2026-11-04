@@ -33,6 +33,17 @@
     "comingSoon": "Coming soon",
     "skipToContent": "Skip to content"
   },
+  "channelPicker": {
+    "label": "Channel",
+    "help": "Only text channels where ShifuBot can write are listed.",
+    "placeholder": "Choose a channel",
+    "noChannels": "ShifuBot cannot write in any text channel. Give it the Send Messages and Embed Links permissions."
+  },
+  "colorField": {
+    "label": "Accent color",
+    "hex": "Hex value",
+    "reset": "Use brand color"
+  },
   "toast": {
     "saved": "Changes saved",
     "saveFailed": "Could not save your changes",
@@ -43,7 +54,7 @@
     "subtitle": "Sign in with Discord to configure the bot for the servers you manage.",
     "button": "Continue with Discord",
     "note": "We only read your username and the list of servers you manage. We never see your password.",
-    "pointWelcome": "Beautiful welcome messages",
+    "pointWelcome": "Welcome and goodbye messages",
     "pointLanguages": "English and Hungarian",
     "pointOpenSource": "Open source and self hosted"
   },
@@ -115,8 +126,7 @@
     "body": "ShifuBot is built from feature modules. New ones will appear here as they ship.",
     "ideaRoles": "Reaction roles",
     "ideaLogs": "Moderation log",
-    "ideaLeveling": "Leveling",
-    "ideaGoodbye": "Goodbye messages"
+    "ideaLeveling": "Leveling"
   },
   "errors": {
     "title": "Something went wrong",

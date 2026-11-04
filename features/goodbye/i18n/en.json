@@ -1,0 +1,66 @@
+{
+  "name": "Goodbye",
+  "description": "Say farewell with a styled embed when a member leaves the server.",
+  "defaults": {
+    "title": "Goodbye, {username}",
+    "description": "{username} has left {server}. We are now {memberCount} members. Hope to see you again!"
+  },
+  "form": {
+    "general": "General",
+    "content": "Message",
+    "style": "Style",
+    "enabled": "Send goodbye messages",
+    "enabledHelp": "Post a message when someone leaves, is kicked or banned. Bots are skipped.",
+    "title": "Title",
+    "description": "Description",
+    "defaultHint": "Leave empty to use the default text in the server language.",
+    "placeholders": "Placeholders",
+    "insertPlaceholder": "Insert {name}",
+    "unknownPlaceholder": "Unknown placeholder: {names}",
+    "color": "Accent color",
+    "showAvatar": "Show member avatar",
+    "showAvatarHelp": "Displays the avatar as a thumbnail in the corner.",
+    "banner": "Banner image URL",
+    "bannerHelp": "A wide image shown at the bottom. Must start with http:// or https://.",
+    "footer": "Footer text",
+    "footerHelp": "Leave empty for the standard ShifuBot footer."
+  },
+  "placeholder": {
+    "username": "The member's name",
+    "server": "The server name",
+    "memberCount": "Member count after they left"
+  },
+  "status": {
+    "noChannel": "Pick a channel so ShifuBot knows where to post.",
+    "channelMissing": "The selected channel no longer exists. Choose another one.",
+    "missingPermissions": "ShifuBot is missing permissions in this channel: {permissions}.",
+    "lastError": "The last goodbye message failed: {error}",
+    "rateLimited": "Mass leave protection: at most {count} goodbye messages per minute."
+  },
+  "test": {
+    "button": "Send test",
+    "sending": "Sending…",
+    "sent": "Test message sent to #{channel}",
+    "failed": "Test failed: {error}",
+    "help": "Sends the message above to the channel as if you just left."
+  },
+  "preview": {
+    "title": "Live preview",
+    "hint": "This is exactly what Discord will show.",
+    "botTag": "APP",
+    "today": "Today at {time}"
+  },
+  "setup": {
+    "title": "Goodbye messages",
+    "description": "Say farewell when someone leaves. Fine tune texts and colors later on the Goodbye page.",
+    "channelRequired": "Pick a channel, or turn goodbye messages off for now.",
+    "summaryOn": "On",
+    "summaryOff": "Off"
+  },
+  "errors": {
+    "channel_missing": "channel not found",
+    "missing_permissions": "missing permissions",
+    "no_channel": "no channel selected",
+    "send_failed": "Discord rejected the message"
+  }
+}

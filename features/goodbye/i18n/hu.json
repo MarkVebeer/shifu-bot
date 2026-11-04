@@ -1,0 +1,66 @@
+{
+  "name": "Búcsúzás",
+  "description": "Búcsúzz el egy stílusos embeddel, amikor valaki elhagyja a szervert.",
+  "defaults": {
+    "title": "Viszlát, {username}",
+    "description": "{username} elhagyta a(z) {server} szervert. Most {memberCount} tagunk van. Reméljük, még találkozunk!"
+  },
+  "form": {
+    "general": "Általános",
+    "content": "Üzenet",
+    "style": "Megjelenés",
+    "enabled": "Búcsúüzenetek küldése",
+    "enabledHelp": "Üzenetet küld, amikor valaki kilép, kirúgják vagy kitiltják. A botokat kihagyja.",
+    "title": "Cím",
+    "description": "Leírás",
+    "defaultHint": "Hagyd üresen, és a szerver nyelvén szóló alapszöveg jelenik meg.",
+    "placeholders": "Helyőrzők",
+    "insertPlaceholder": "{name} beszúrása",
+    "unknownPlaceholder": "Ismeretlen helyőrző: {names}",
+    "color": "Kiemelő szín",
+    "showAvatar": "Tag profilképének mutatása",
+    "showAvatarHelp": "A profilkép kis képként jelenik meg a sarokban.",
+    "banner": "Banner kép URL",
+    "bannerHelp": "Széles kép az üzenet alján. http:// vagy https:// kezdetű legyen.",
+    "footer": "Lábléc szöveg",
+    "footerHelp": "Hagyd üresen az alapértelmezett ShifuBot lábléchez."
+  },
+  "placeholder": {
+    "username": "A tag neve",
+    "server": "A szerver neve",
+    "memberCount": "Taglétszám a kilépés után"
+  },
+  "status": {
+    "noChannel": "Válassz csatornát, hogy a ShifuBot tudja, hová írjon.",
+    "channelMissing": "A kiválasztott csatorna már nem létezik. Válassz másikat.",
+    "missingPermissions": "A ShifuBotnak hiányzó jogai vannak ezen a csatornán: {permissions}.",
+    "lastError": "Az utolsó búcsúüzenet nem ment el: {error}",
+    "rateLimited": "Tömeges kilépés elleni védelem: percenként legfeljebb {count} búcsúüzenet."
+  },
+  "test": {
+    "button": "Teszt küldése",
+    "sending": "Küldés…",
+    "sent": "Teszt üzenet elküldve ide: #{channel}",
+    "failed": "A teszt nem sikerült: {error}",
+    "help": "Elküldi a fenti üzenetet a csatornára, mintha most léptél volna ki."
+  },
+  "preview": {
+    "title": "Élő előnézet",
+    "hint": "Pontosan így fog megjelenni Discordon.",
+    "botTag": "APP",
+    "today": "Ma {time}"
+  },
+  "setup": {
+    "title": "Búcsúüzenetek",
+    "description": "Búcsúzz el attól, aki kilép. A szövegeket és színeket később a Búcsúzás oldalon finomíthatod.",
+    "channelRequired": "Válassz csatornát, vagy egyelőre kapcsold ki a búcsúüzeneteket.",
+    "summaryOn": "Bekapcsolva",
+    "summaryOff": "Kikapcsolva"
+  },
+  "errors": {
+    "channel_missing": "a csatorna nem található",
+    "missing_permissions": "hiányzó jogosultságok",
+    "no_channel": "nincs csatorna kiválasztva",
+    "send_failed": "a Discord elutasította az üzenetet"
+  }
+}

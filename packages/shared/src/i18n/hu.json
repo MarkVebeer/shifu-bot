@@ -33,6 +33,17 @@
     "comingSoon": "Hamarosan",
     "skipToContent": "Ugrás a tartalomhoz"
   },
+  "channelPicker": {
+    "label": "Csatorna",
+    "help": "Csak azok a szöveges csatornák jelennek meg, ahová a ShifuBot írhat.",
+    "placeholder": "Válassz csatornát",
+    "noChannels": "A ShifuBot egyik szöveges csatornába sem írhat. Adj neki Üzenetek küldése és Linkek beágyazása jogot."
+  },
+  "colorField": {
+    "label": "Kiemelő szín",
+    "hex": "Hex érték",
+    "reset": "Márkaszín használata"
+  },
   "toast": {
     "saved": "Módosítások elmentve",
     "saveFailed": "Nem sikerült menteni a módosításokat",
@@ -43,7 +54,7 @@
     "subtitle": "Jelentkezz be Discorddal, és állítsd be a botot a szervereiden, amelyeket kezelsz.",
     "button": "Folytatás Discorddal",
     "note": "Csak a felhasználónevedet és a kezelt szervereid listáját látjuk. A jelszavadat soha.",
-    "pointWelcome": "Gyönyörű üdvözlő üzenetek",
+    "pointWelcome": "Üdvözlő és búcsúüzenetek",
     "pointLanguages": "Angol és magyar nyelv",
     "pointOpenSource": "Nyílt forráskódú, saját szerveren futtatható"
   },
@@ -115,8 +126,7 @@
     "body": "A ShifuBot funkciómodulokból épül fel. Az újak itt jelennek meg, amint elkészülnek.",
     "ideaRoles": "Reakció rangok",
     "ideaLogs": "Moderációs napló",
-    "ideaLeveling": "Szintlépés",
-    "ideaGoodbye": "Búcsúüzenetek"
+    "ideaLeveling": "Szintlépés"
   },
   "errors": {
     "title": "Hiba történt",

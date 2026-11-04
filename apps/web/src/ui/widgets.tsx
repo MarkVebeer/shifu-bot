@@ -54,7 +54,7 @@ export function ColorField({
   useEffect(() => setDraft(current), [current]);
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t('welcome.form.color')}>
+      <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t('colorField.label')}>
         {accentPresets.map((preset) => (
           <button
             key={preset}
@@ -72,7 +72,7 @@ export function ColorField({
       </div>
       <div className="flex items-center gap-2">
         <label className="relative size-11 shrink-0 cursor-pointer overflow-hidden rounded-token border border-line" style={{ background: current }}>
-          <span className="sr-only">{t('welcome.form.color')}</span>
+          <span className="sr-only">{t('colorField.label')}</span>
           <input
             type="color"
             value={current.toLowerCase()}
@@ -82,7 +82,7 @@ export function ColorField({
         </label>
         <input
           id={id}
-          aria-label={t('welcome.form.colorHex')}
+          aria-label={t('colorField.hex')}
           value={draft}
           maxLength={7}
           spellCheck={false}
@@ -97,7 +97,7 @@ export function ColorField({
         />
         {value !== null && (
           <Button variant="ghost" onClick={() => onChange(null)} icon={<RotateCcw className="size-4" aria-hidden />}>
-            {t('welcome.form.resetColor')}
+            {t('colorField.reset')}
           </Button>
         )}
       </div>

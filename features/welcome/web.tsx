@@ -21,7 +21,7 @@ import {
   type WelcomeSettings,
 } from './manifest';
 import type { WelcomeResponse } from './server';
-import { WelcomeChannelPicker } from './channel-picker';
+import { ChannelPicker } from '../../apps/web/src/ui/channel-picker';
 
 type TextField = 'title' | 'description' | 'footer';
 
@@ -222,7 +222,7 @@ export default function WelcomePage() {
             <CardHeader icon={emoji.sparkle} title={t('welcome.form.general')} />
             <div className="space-y-5">
               <Switch checked={draft.enabled} onChange={(value) => update('enabled', value)} label={t('welcome.form.enabled')} description={t('welcome.form.enabledHelp')} />
-              <WelcomeChannelPicker
+              <ChannelPicker
                 id="welcome-channel"
                 value={draft.channelId}
                 onChange={(value) => update('channelId', value)}

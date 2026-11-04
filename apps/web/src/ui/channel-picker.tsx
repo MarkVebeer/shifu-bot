@@ -1,11 +1,11 @@
 import { emoji, type ChannelOption } from '@shifubot/shared';
-import { useGuild } from '../../apps/web/src/lib/guild';
-import { useT } from '../../apps/web/src/lib/i18n';
-import { useApi } from '../../apps/web/src/lib/use-api';
-import { Alert, Field, Select, Skeleton } from '../../apps/web/src/ui/primitives';
+import { useGuild } from '../lib/guild';
+import { useT } from '../lib/i18n';
+import { useApi } from '../lib/use-api';
+import { Alert, Field, Select, Skeleton } from './primitives';
 
-/** Welcome channel picker. Lists only text channels where the bot can write (plus the current one). */
-export function WelcomeChannelPicker({
+/** Channel picker for features that post messages. Lists only text channels where the bot can write (plus the current one). */
+export function ChannelPicker({
   id,
   value,
   onChange,
@@ -28,14 +28,14 @@ export function WelcomeChannelPicker({
   }, new Map());
 
   return (
-    <Field label={t('welcome.form.channel')} help={t('welcome.form.channelHelp')} htmlFor={id} error={error}>
+    <Field label={t('channelPicker.label')} help={t('channelPicker.help')} htmlFor={id} error={error}>
       {channels.loading ? (
         <Skeleton className="h-11 w-full" />
       ) : writable.length === 0 ? (
-        <Alert tone="warning">{t('welcome.form.noChannels')}</Alert>
+        <Alert tone="warning">{t('channelPicker.noChannels')}</Alert>
       ) : (
         <Select id={id} value={value ?? ''} onChange={(next) => onChange(next || null)} aria-describedby={`${id}-help`}>
-          <option value="">{t('welcome.form.channelPlaceholder')}</option>
+          <option value="">{t('channelPicker.placeholder')}</option>
           {[...groups].map(([parent, list]) => {
             const options = list.map((channel) => (
               <option key={channel.id} value={channel.id}>
