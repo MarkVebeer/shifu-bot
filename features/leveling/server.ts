@@ -32,11 +32,13 @@ import {
   levelingSettingsSchema,
   levelsFor,
   RANK_BUTTON_ID,
+  rankingXp,
   XP_RULES,
   type LeaderboardEntry,
   type LevelingSettings,
   type LevelTrack,
   type RankStats,
+  type XpSources,
 } from './manifest';
 import { isIgnoredChannel, isVoiceEligible, messageXp } from './xp';
 
@@ -70,7 +72,7 @@ export interface TopMember {
   textXp: number;
   /** Voice XP from time in voice channels. */
   voiceXp: number;
-  /** Chat XP + voice XP. The leaderboard is sorted by it. */
+  /** XP the member is ranked by: chat + voice, or only the one source that counts on the server. */
   xp: number;
   textLevel: number;
   voiceLevel: number;
@@ -87,6 +89,7 @@ export interface TopResponse {
 interface SettingsRow {
   guild_id: string;
   enabled: number;
+  xp_sources: string;
   ignored_channel_ids: string;
   announce_mode: string;
   announce_channel_id: string | null;
@@ -130,6 +133,9 @@ interface Award {
 
 const MEMBER_COLUMNS = 'user_id, xp, text_xp, voice_xp, messages, voice_minutes, display_name, avatar_url';
 
+/** Column members are ranked by, per XP source setting. Fixed values, safe to put in SQL. */
+const RANK_COLUMN = { both: 'xp', text: 'text_xp', voice: 'voice_xp' } as const satisfies Record<XpSources, keyof MemberRow>;
+
 export class LevelingStore {
   private readonly cache = new LruCache<string, LevelingSettings>(10_000);
 
@@ -142,6 +148,7 @@ export class LevelingStore {
     const parsed = row
       ? levelingSettingsSchema.safeParse({
           enabled: row.enabled === 1,
+          xpSources: row.xp_sources,
           ignoredChannelIds: JSON.parse(row.ignored_channel_ids) as unknown,
           announceMode: row.announce_mode,
           announceChannelId: row.announce_channel_id,
@@ -163,11 +170,11 @@ export class LevelingStore {
     this.db
       .query(
         `INSERT INTO leveling_settings
-           (guild_id, enabled, ignored_channel_ids, announce_mode, announce_channel_id, title, description, color,
+           (guild_id, enabled, xp_sources, ignored_channel_ids, announce_mode, announce_channel_id, title, description, color,
             mention_user, leaderboard_channel_id, leaderboard_interval, leaderboard_size, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT (guild_id) DO UPDATE SET
-           enabled = excluded.enabled, ignored_channel_ids = excluded.ignored_channel_ids,
+           enabled = excluded.enabled, xp_sources = excluded.xp_sources, ignored_channel_ids = excluded.ignored_channel_ids,
            announce_mode = excluded.announce_mode, announce_channel_id = excluded.announce_channel_id,
            title = excluded.title, description = excluded.description, color = excluded.color,
            mention_user = excluded.mention_user, leaderboard_channel_id = excluded.leaderboard_channel_id,
@@ -177,6 +184,7 @@ export class LevelingStore {
       .run(
         guildId,
         Number(s.enabled),
+        s.xpSources,
         JSON.stringify(s.ignoredChannelIds),
         s.announceMode,
         s.announceChannelId,
@@ -266,17 +274,18 @@ export class LevelingStore {
     return this.db.transaction(() => members.map((member) => this.addXp(guildId, member, XP_RULES.voicePerMinute, 'voice')))();
   }
 
-  /** Top members by total XP (chat + voice). */
-  top(guildId: string, limit: number): MemberRow[] {
+  /** Top members by the XP that counts: total (chat + voice), or only chat or voice XP. */
+  top(guildId: string, limit: number, sources: XpSources = 'both'): MemberRow[] {
+    const column = RANK_COLUMN[sources];
     return this.db
       .query<MemberRow, [string, number]>(
         `SELECT ${MEMBER_COLUMNS} FROM leveling_members
-         WHERE guild_id = ? AND left_at IS NULL AND xp > 0 ORDER BY xp DESC, user_id LIMIT ?`,
+         WHERE guild_id = ? AND left_at IS NULL AND ${column} > 0 ORDER BY ${column} DESC, user_id LIMIT ?`,
       )
       .all(guildId, limit);
   }
 
-  stats(guildId: string, userId: string): RankStats {
+  stats(guildId: string, userId: string, sources: XpSources = 'both'): RankStats {
     const row = this.db
       .query<MemberRow, [string, string]>(`SELECT ${MEMBER_COLUMNS} FROM leveling_members WHERE guild_id = ? AND user_id = ?`)
       .get(guildId, userId);
@@ -286,12 +295,14 @@ export class LevelingStore {
       messages: row?.messages ?? 0,
       voiceMinutes: row?.voice_minutes ?? 0,
     };
-    if (!row || row.xp <= 0) return { ...base, position: null };
+    const column = RANK_COLUMN[sources];
+    const score = row ? row[column] : 0;
+    if (!row || score <= 0) return { ...base, position: null };
     const ahead = this.db
       .query<{ count: number }, [string, number]>(
-        'SELECT COUNT(*) AS count FROM leveling_members WHERE guild_id = ? AND left_at IS NULL AND xp > ?',
+        `SELECT COUNT(*) AS count FROM leveling_members WHERE guild_id = ? AND left_at IS NULL AND ${column} > ?`,
       )
-      .get(guildId, row.xp)!.count;
+      .get(guildId, score)!.count;
     return { ...base, position: ahead + 1 };
   }
 
@@ -384,6 +395,15 @@ export default defineServerFeature({
         DELETE FROM leveling_members;
       `,
     },
+    {
+      // What earns XP: both (default), messages only or voice only. Single source servers rank by that track.
+      id: 'leveling_003_xp_sources',
+      sql: `
+        ALTER TABLE leveling_settings ADD COLUMN xp_sources TEXT NOT NULL DEFAULT 'both';
+        CREATE INDEX idx_leveling_members_rank_text ON leveling_members (guild_id, text_xp DESC) WHERE left_at IS NULL;
+        CREATE INDEX idx_leveling_members_rank_voice ON leveling_members (guild_id, voice_xp DESC) WHERE left_at IS NULL;
+      `,
+    },
   ],
 
   setup(ctx: AppContext) {
@@ -402,7 +422,9 @@ export default defineServerFeature({
     const texts = (guildId: string) => levelingManifest.messages[guildSettings.locale(guildId)];
 
     const entriesFor = (guildId: string, size: number): LeaderboardEntry[] =>
-      store.top(guildId, size).map((row) => ({ userId: row.user_id, textXp: row.text_xp, voiceXp: row.voice_xp }));
+      store
+        .top(guildId, size, store.get(guildId).xpSources)
+        .map((row) => ({ userId: row.user_id, textXp: row.text_xp, voiceXp: row.voice_xp }));
 
     /** Post, update or remove the leaderboard so it matches the settings and the current XP. */
     async function refreshPanel(guild: Guild, options: { forceNew?: boolean; scheduled?: boolean } = {}) {
@@ -459,6 +481,10 @@ export default defineServerFeature({
       }
     }
 
+    /**
+     * `source` is where the XP was earned: the text channel of a message, or the voice channel
+     * (whose built in text chat receives voice level ups in "current" mode).
+     */
     async function announce(guild: Guild, award: Award, source: GuildTextBasedChannel | null) {
       const settings = store.get(guild.id);
       const before = levelFromXp(award.before).level;
@@ -466,8 +492,14 @@ export default defineServerFeature({
       if (after <= before || settings.announceMode === 'off') return;
 
       let channel: GuildTextBasedChannel | null = null;
-      if (settings.announceMode === 'current' && source) channel = source;
-      else if (settings.announceChannelId) {
+      if (settings.announceMode === 'current') {
+        // Voice chats are often locked down: skip quietly when ShifuBot cannot write there.
+        if (!source || missingSendPermissions(guild, source).length) {
+          logger.debug('Level up not announced: cannot write where it happened', { guildId: guild.id, channelId: source?.id });
+          return;
+        }
+        channel = source;
+      } else if (settings.announceChannelId) {
         const target = guild.channels.cache.get(settings.announceChannelId);
         channel = isPostableChannel(target) ? target : null;
       }
@@ -491,7 +523,7 @@ export default defineServerFeature({
     function onMessage(message: Message) {
       if (!message.inGuild() || message.author.bot || message.webhookId || message.system) return;
       const settings = store.get(message.guildId);
-      if (!settings.enabled) return;
+      if (!settings.enabled || settings.xpSources === 'voice') return;
       if (isIgnoredChannel(channelChain(message.channel), settings.ignoredChannelIds)) return;
       const key = `${message.guildId}:${message.author.id}`;
       if (cooldown.get(key)) return;
@@ -514,7 +546,7 @@ export default defineServerFeature({
     function voiceTick() {
       for (const guildId of store.enabledGuildIds()) {
         const guild = client.guilds.cache.get(guildId);
-        if (!guild) continue;
+        if (!guild || store.get(guildId).xpSources === 'text') continue;
         const states = [...guild.voiceStates.cache.values()].filter((state) => state.channelId);
         if (!states.length) continue;
 
@@ -540,11 +572,18 @@ export default defineServerFeature({
             humansInChannel: humans.get(state.channelId!) ?? 0,
             ignored: isIgnoredChannel([state.channelId, state.channel?.parentId], settings.ignoredChannelIds),
           });
-          return ok ? [snapshot(member)] : [];
+          return ok ? [{ member: snapshot(member), channel: state.channel }] : [];
         });
         if (!eligible.length) continue;
 
-        for (const award of store.addVoiceXp(guildId, eligible)) void announce(guild, award, null);
+        const awards = store.addVoiceXp(
+          guildId,
+          eligible.map((entry) => entry.member),
+        );
+        awards.forEach((award, index) => {
+          const channel = eligible[index]!.channel;
+          void announce(guild, award, channel?.isTextBased() ? channel : null);
+        });
         dirty.add(guildId);
       }
     }
@@ -571,7 +610,7 @@ export default defineServerFeature({
       const panel = store.panel(guild.id);
       const panelChannel = panel ? guild.channels.cache.get(panel.channelId) : undefined;
       return {
-        announceChannel: settings.announceMode === 'off' ? null : channelStatus(guild, settings.announceChannelId),
+        announceChannel: settings.announceMode === 'channel' ? channelStatus(guild, settings.announceChannelId) : null,
         leaderboardChannel: channelStatus(guild, settings.leaderboardChannelId),
         panel:
           panel && panelChannel
@@ -606,8 +645,10 @@ export default defineServerFeature({
             });
           }
         };
-        if (settings.announceMode !== 'off') check(settings.announceChannelId);
-        if (settings.leaderboardChannelId !== settings.announceChannelId) check(settings.leaderboardChannelId);
+        // "current" mode posts where it happened, so there is no announcement channel to check.
+        const announceChannelId = settings.announceMode === 'channel' ? settings.announceChannelId : null;
+        check(announceChannelId);
+        if (settings.leaderboardChannelId !== announceChannelId) check(settings.leaderboardChannelId);
         return issues;
       },
 
@@ -628,7 +669,7 @@ export default defineServerFeature({
           const payload = buildRankMessage(store.get(guild.id), {
             locale: guildSettings.locale(guild.id),
             member: snapshot(member),
-            stats: store.stats(guild.id, member.id),
+            stats: store.stats(guild.id, member.id, store.get(guild.id).xpSources),
           });
           await interaction.reply({ ...payload, flags: MessageFlags.Ephemeral });
         },
@@ -667,15 +708,16 @@ export default defineServerFeature({
         router.get('/top', (c) => {
           const guild = c.get('guild');
           const body: TopResponse = {
-            members: store.top(guild.id, 25).map((row) => {
-              const levels = levelsFor({ textXp: row.text_xp, voiceXp: row.voice_xp });
+            members: store.top(guild.id, 25, store.get(guild.id).xpSources).map((row) => {
+              const xp = { textXp: row.text_xp, voiceXp: row.voice_xp };
+              const levels = levelsFor(xp);
               return {
                 userId: row.user_id,
                 displayName: row.display_name,
                 avatarUrl: row.avatar_url,
                 textXp: row.text_xp,
                 voiceXp: row.voice_xp,
-                xp: levels.totalXp,
+                xp: rankingXp(xp, store.get(guild.id).xpSources),
                 textLevel: levels.text.level,
                 voiceLevel: levels.voice.level,
                 overallLevel: levels.overall.level,

@@ -9,6 +9,7 @@ import { ChannelPicker } from '../../apps/web/src/ui/channel-picker';
 import { Switch } from '../../apps/web/src/ui/primitives';
 import { levelingManifest, type LevelingSettings } from './manifest';
 import type { LevelingResponse } from './server';
+import { XpSourcePicker } from './xp-source-picker';
 
 function LevelingSetup({ value, onChange }: SetupSectionProps<LevelingSettings>) {
   const t = useT();
@@ -21,14 +22,17 @@ function LevelingSetup({ value, onChange }: SetupSectionProps<LevelingSettings>)
         description={t('leveling.form.enabledHelp')}
       />
       {value.enabled && (
-        <div className="animate-fade-in space-y-2">
-          <ChannelPicker
-            id="setup-leveling-leaderboard"
-            label={t('leveling.form.leaderboardChannel')}
-            value={value.leaderboardChannelId}
-            onChange={(leaderboardChannelId) => onChange({ ...value, leaderboardChannelId })}
-          />
-          <p className="text-sm text-muted">{t('leveling.form.leaderboardHelp')}</p>
+        <div className="animate-fade-in space-y-5">
+          <XpSourcePicker value={value.xpSources} onChange={(xpSources) => onChange({ ...value, xpSources })} />
+          <div className="space-y-2">
+            <ChannelPicker
+              id="setup-leveling-leaderboard"
+              label={t('leveling.form.leaderboardChannel')}
+              value={value.leaderboardChannelId}
+              onChange={(leaderboardChannelId) => onChange({ ...value, leaderboardChannelId })}
+            />
+            <p className="text-sm text-muted">{t('leveling.form.leaderboardHelp')}</p>
+          </div>
         </div>
       )}
     </div>
@@ -44,6 +48,7 @@ export default defineSetupSection<LevelingSettings>({
   save: async (guild, value) => {
     await api(`/guilds/${guild.id}/features/leveling`, { method: 'PUT', body: value });
   },
-  summary: (value, t) => (value.enabled ? t('leveling.setup.summaryOn') : t('leveling.setup.summaryOff')),
+  summary: (value, t) =>
+    value.enabled ? `${t('leveling.setup.summaryOn')} · ${t(`leveling.form.sourceOptions.${value.xpSources}`)}` : t('leveling.setup.summaryOff'),
   Component: LevelingSetup,
 });

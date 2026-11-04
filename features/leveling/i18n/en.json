@@ -22,7 +22,20 @@
     "general": "General",
     "enabled": "Turn on leveling",
     "enabledHelp": "Members start earning XP right away. Bots never earn XP.",
-    "rules": "Chat XP: {min}–{max} per message, at most once a minute. Voice XP: {voice} per minute in voice while at least one other person is there; deafened members and the AFK channel earn nothing. Chat and voice level up separately.",
+    "sources": "What earns XP",
+    "sourceOptions": {
+      "both": "Messages and voice",
+      "text": "Messages only",
+      "voice": "Voice only"
+    },
+    "sourceHints": {
+      "both": "A chat level, a voice level and an overall level from both.",
+      "text": "Only the chat level. Time in voice earns nothing.",
+      "voice": "Only the voice level. Messages earn nothing."
+    },
+    "rulesText": "Chat XP: {min}–{max} per message, at most once a minute.",
+    "rulesVoice": "Voice XP: {voice} per minute in voice while at least one other person is there; deafened members and the AFK channel earn nothing.",
+    "rulesBoth": "Chat and voice level up separately.",
     "ignored": "No XP in these channels",
     "ignoredHelp": "Text or voice channels, or whole categories. Threads follow their channel.",
     "ignoredPlaceholder": "Add a channel",
@@ -31,12 +44,12 @@
     "levelUp": "Level up message",
     "announceMode": "Where to announce",
     "announceModes": {
-      "current": "Where the member chatted",
+      "current": "Where it happened",
       "channel": "In a chosen channel",
       "off": "Do not announce"
     },
     "announceModesHelp": {
-      "current": "Level ups from voice go to the channel below. Without one they stay quiet.",
+      "current": "Chat level ups go to the channel the member wrote in, voice level ups to the text chat of their voice channel. No channel to pick.",
       "channel": "Every level up goes to the channel below.",
       "off": "Members still level up, there is just no message."
     },
@@ -70,7 +83,7 @@
   },
   "leaderboard": {
     "title": "{server} leaderboard",
-    "line": "{rank} {user} · {overall} · {text} · {voice} · {xp} XP",
+    "line": "{rank} {user} · {levels} · {xp} XP",
     "legend": "{overall} level = chat XP + voice XP. Ranked by total XP.",
     "empty": "Nobody has XP yet. Start chatting!",
     "updated": "Updated {time}",
@@ -116,7 +129,7 @@
   },
   "preview": {
     "levelUpTitle": "Level up preview",
-    "levelUpHint": "Shown with your name and chat level 5. Voice level ups look the same with 🎙️ Voice.",
+    "levelUpHint": "Shown with your name at level 5.",
     "leaderboardTitle": "Leaderboard preview",
     "leaderboardHint": "With the real top members of this server.",
     "botTag": "APP",

@@ -106,7 +106,7 @@ describe('messages', () => {
     // Most chat XP, but the lowest total: must not be first.
     entries.push({ userId: '999', textXp: 4500, voiceXp: 0 });
     const payload = buildLeaderboardPanel(
-      { color: null, leaderboardSize: 5 },
+      { color: null, leaderboardSize: 5, xpSources: 'both' },
       { locale: 'en', server: { name: 'Dojo' }, entries, updatedAt: new Date('2026-01-01T00:00:00Z') },
     );
     const lines = payload.embeds[0]!.description!.split('\n');
@@ -123,13 +123,42 @@ describe('messages', () => {
   });
 
   test('empty leaderboard invites people to chat', () => {
-    const payload = buildLeaderboardPanel({ color: null, leaderboardSize: 10 }, { locale: 'hu', server: { name: 'Dojo' }, entries: [], updatedAt: new Date() });
+    const payload = buildLeaderboardPanel(
+      { color: null, leaderboardSize: 10, xpSources: 'both' },
+      { locale: 'hu', server: { name: 'Dojo' }, entries: [], updatedAt: new Date() },
+    );
     expect(payload.embeds[0]!.description).toStartWith('Még senkinek sincs XP-je.');
+  });
+
+  test('a messages only leaderboard ranks by chat XP and shows only the chat level', () => {
+    const entries = [
+      { userId: 'a', textXp: 300, voiceXp: 5000 },
+      { userId: 'b', textXp: 400, voiceXp: 0 },
+      // Voice XP left over from before the switch: not ranked.
+      { userId: 'c', textXp: 0, voiceXp: 9000 },
+    ];
+    const payload = buildLeaderboardPanel(
+      { color: null, leaderboardSize: 10, xpSources: 'text' },
+      { locale: 'en', server: { name: 'Dojo' }, entries, updatedAt: new Date('2026-01-01T00:00:00Z') },
+    );
+    const lines = payload.embeds[0]!.description!.split('\n');
+    expect(lines[0]).toBe('🥇 <@b> · 💬 Chat 2 · 400 XP');
+    expect(lines[1]).toBe('🥈 <@a> · 💬 Chat 2 · 300 XP');
+    expect(lines.some((line) => line.includes('<@c>'))).toBe(false);
+    expect(payload.embeds[0]!.description).not.toContain('Overall');
+  });
+
+  test('a voice only leaderboard shows only the voice level', () => {
+    const payload = buildLeaderboardPanel(
+      { color: null, leaderboardSize: 10, xpSources: 'voice' },
+      { locale: 'hu', server: { name: 'Dojo' }, entries: [{ userId: 'a', textXp: 999, voiceXp: 100 }], updatedAt: new Date() },
+    );
+    expect(payload.embeds[0]!.description!.split('\n')[0]).toBe('🥇 <@a> · 🎙️ Hang 1 · 100 XP');
   });
 
   test('rank message shows the place and a block for overall, chat and voice', () => {
     const payload = buildRankMessage(
-      { color: null },
+      { color: null, xpSources: 'both' },
       { locale: 'en', member, stats: { position: 3, textXp: 150, voiceXp: 40, messages: 7, voiceMinutes: 4 } },
     );
     const blocks = payload.embeds[0]!.description!.split('\n\n');
@@ -143,6 +172,16 @@ describe('messages', () => {
     // Voice: 40 XP = level 0, 40 / 100.
     expect(blocks[3]).toStartWith('**🎙️ Voice level 0** · 40 XP · 4 minutes in voice');
     expect(blocks[3]).toContain('40 / 100');
+  });
+
+  test('rank message on a voice only server shows only the voice level', () => {
+    const payload = buildRankMessage(
+      { color: null, xpSources: 'voice' },
+      { locale: 'en', member, stats: { position: 1, textXp: 150, voiceXp: 40, messages: 7, voiceMinutes: 4 } },
+    );
+    const blocks = payload.embeds[0]!.description!.split('\n\n');
+    expect(blocks).toHaveLength(2);
+    expect(blocks[1]).toStartWith('**🎙️ Voice level 0**');
   });
 });
 
@@ -227,6 +266,26 @@ describe('LevelingStore', () => {
     });
     const [row] = store.top(guildId, 10);
     expect(row).toMatchObject({ xp: 150 + XP_RULES.voicePerMinute, text_xp: 150, voice_xp: XP_RULES.voicePerMinute });
+  });
+
+  test('single source servers rank by that track only', () => {
+    const store = createStore();
+    store.addXp(guildId, mei, 200, 'text');
+    store.addXp(guildId, { ...mei, id: 'u2' }, 100, 'text');
+    store.addXp(guildId, { ...mei, id: 'u2' }, 500, 'voice');
+    expect(store.top(guildId, 10, 'text').map((row) => row.user_id)).toEqual(['u1', 'u2']);
+    expect(store.top(guildId, 10, 'voice').map((row) => row.user_id)).toEqual(['u2']);
+    expect(store.stats(guildId, 'u1', 'text').position).toBe(1);
+    expect(store.stats(guildId, 'u1', 'voice').position).toBeNull();
+  });
+
+  test('settings remember what earns XP', () => {
+    const db = new Database(':memory:');
+    migrate(db, levelingFeature.migrations, silent);
+    const store = new LevelingStore(db);
+    expect(store.get(guildId).xpSources).toBe('both');
+    store.save(guildId, { ...defaultLevelingSettings, xpSources: 'voice' });
+    expect(store.get(guildId).xpSources).toBe('voice');
   });
 
   test('the leaderboard place follows total XP', () => {

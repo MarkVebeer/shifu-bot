@@ -45,6 +45,25 @@ export type LevelTrack = (typeof LEVEL_TRACKS)[number];
 /** Emoji of each level kind, used everywhere so chat, voice and overall are never confused. */
 export const LEVEL_EMOJI = { text: 'chat', voice: 'voice', overall: 'overall' } as const;
 
+/** What earns XP on a server: messages and voice, messages only, or voice only. */
+export const XP_SOURCES = ['both', 'text', 'voice'] as const;
+export type XpSources = (typeof XP_SOURCES)[number];
+
+/** The tracks that count for a server, in display order. */
+export function activeTracks(sources: XpSources): LevelTrack[] {
+  return sources === 'both' ? ['text', 'voice'] : [sources];
+}
+
+/** The level kinds to show: the overall level only exists when both tracks count. */
+export function shownLevels(sources: XpSources): (LevelTrack | 'overall')[] {
+  return sources === 'both' ? ['overall', 'text', 'voice'] : [sources];
+}
+
+/** XP a member is ranked by: the total when both count, otherwise the one active track. */
+export function rankingXp(xp: TrackXp, sources: XpSources): number {
+  return sources === 'both' ? xp.textXp + xp.voiceXp : sources === 'text' ? xp.textXp : xp.voiceXp;
+}
+
 export const LEVEL_UP_PLACEHOLDERS = ['user', 'username', 'level', 'track', 'server'] as const;
 export const ANNOUNCE_MODES = ['current', 'channel', 'off'] as const;
 export type AnnounceMode = (typeof ANNOUNCE_MODES)[number];
@@ -57,9 +76,11 @@ const oneOf = <T extends readonly number[]>(values: T, message: string) =>
 
 export const levelingSettingsSchema = z.object({
   enabled: z.boolean(),
+  xpSources: z.enum(XP_SOURCES),
   /** Text, voice channels and categories where nobody earns XP. */
   ignoredChannelIds: z.array(snowflake).max(100, 'At most 100 channels').transform((ids) => [...new Set(ids)]),
   announceMode: z.enum(ANNOUNCE_MODES),
+  /** Only used when announceMode is "channel". "current" posts where it happened and needs no channel. */
   announceChannelId: snowflake.nullable(),
   /** Empty string means "use the default text of the server language". */
   title: z.string().trim().max(200, 'Title can be at most 200 characters'),
@@ -76,6 +97,7 @@ export type LevelingSettings = z.infer<typeof levelingSettingsSchema>;
 
 export const defaultLevelingSettings: LevelingSettings = {
   enabled: false,
+  xpSources: 'both',
   ignoredChannelIds: [],
   announceMode: 'current',
   announceChannelId: null,
@@ -195,27 +217,33 @@ export interface LeaderboardEntry extends TrackXp {
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
-/** Ranked by total XP (chat + voice); each line shows the overall, chat and voice level. */
+/**
+ * Ranked by the XP that counts on the server (see rankingXp). With both sources each line shows the
+ * overall, chat and voice level; with one source only that level.
+ */
 export function buildLeaderboardPanel(
-  settings: Pick<LevelingSettings, 'color' | 'leaderboardSize'>,
+  settings: Pick<LevelingSettings, 'color' | 'leaderboardSize' | 'xpSources'>,
   ctx: { locale: Locale; server: { name: string }; entries: LeaderboardEntry[]; updatedAt: Date },
 ): MessagePayload {
   const texts = levelingManifest.messages[ctx.locale];
   const lines = [...ctx.entries]
-    .sort((a, b) => b.textXp + b.voiceXp - (a.textXp + a.voiceXp))
+    .filter((entry) => rankingXp(entry, settings.xpSources) > 0)
+    .sort((a, b) => rankingXp(b, settings.xpSources) - rankingXp(a, settings.xpSources))
     .slice(0, settings.leaderboardSize)
     .map((entry, index) => {
       const levels = levelsFor(entry);
       return renderPlaceholders(texts.leaderboard.line, {
         rank: MEDALS[index] ?? `\`#${index + 1}\``,
         user: `<@${entry.userId}>`,
-        overall: `${levelLabel('overall', ctx.locale)} ${levels.overall.level}`,
-        text: `${levelLabel('text', ctx.locale)} ${levels.text.level}`,
-        voice: `${levelLabel('voice', ctx.locale)} ${levels.voice.level}`,
-        xp: formatNumber(levels.totalXp, ctx.locale),
+        levels: shownLevels(settings.xpSources)
+          .map((kind) => `${levelLabel(kind, ctx.locale)} ${levels[kind].level}`)
+          .join(' · '),
+        xp: formatNumber(rankingXp(entry, settings.xpSources), ctx.locale),
       });
     });
-  const legend = renderPlaceholders(texts.leaderboard.legend, { overall: levelLabel('overall', ctx.locale) });
+  // The legend explains the overall level, which only exists when both sources count.
+  const legend =
+    settings.xpSources === 'both' ? `*${renderPlaceholders(texts.leaderboard.legend, { overall: levelLabel('overall', ctx.locale) })}*\n` : '';
   // <t:…:R> is rendered by Discord as "2 minutes ago" and keeps counting by itself.
   const updated = renderPlaceholders(texts.leaderboard.updated, { time: `<t:${Math.floor(ctx.updatedAt.getTime() / 1000)}:R>` });
   return {
@@ -223,7 +251,7 @@ export function buildLeaderboardPanel(
       buildEmbed({
         emoji: levelingManifest.emoji,
         title: renderPlaceholders(texts.leaderboard.title, { server: ctx.server.name }),
-        description: lines.length ? `${lines.join('\n')}\n\n*${legend}*\n${updated}` : `${texts.leaderboard.empty}\n\n${updated}`,
+        description: lines.length ? `${lines.join('\n')}\n\n${legend}${updated}` : `${texts.leaderboard.empty}\n\n${updated}`,
         color: settings.color,
         footer: brandFooter(ctx.locale, texts.name),
       }),
@@ -241,15 +269,15 @@ export function buildLeaderboardPanel(
 }
 
 export interface RankStats extends TrackXp {
-  /** 1 based place on the leaderboard (by total XP), null when the member has no XP yet. */
+  /** 1 based place on the leaderboard (by rankingXp), null when the member has no XP that counts yet. */
   position: number | null;
   messages: number;
   voiceMinutes: number;
 }
 
-/** The private "My rank" answer: overall, chat and voice level, each with its progress. */
+/** The private "My rank" answer: each level that counts on the server, with its progress. */
 export function buildRankMessage(
-  settings: Pick<LevelingSettings, 'color'>,
+  settings: Pick<LevelingSettings, 'color' | 'xpSources'>,
   ctx: { locale: Locale; member: { displayName: string; avatarUrl: string }; stats: RankStats },
 ): MessagePayload {
   const texts = levelingManifest.messages[ctx.locale];
@@ -266,11 +294,14 @@ export function buildRankMessage(
       left: n(progress.needed - progress.current),
       extra,
     });
+  const blocks = {
+    overall: () => block('overall', levels.overall, levels.totalXp, texts.rank.overallExtra),
+    text: () => block('text', levels.text, ctx.stats.textXp, renderPlaceholders(texts.rank.textExtra, { messages: n(ctx.stats.messages) })),
+    voice: () => block('voice', levels.voice, ctx.stats.voiceXp, renderPlaceholders(texts.rank.voiceExtra, { minutes: n(ctx.stats.voiceMinutes) })),
+  };
   const description = [
     renderPlaceholders(texts.rank.position, { position: ctx.stats.position ? `#${ctx.stats.position}` : '–' }),
-    block('overall', levels.overall, levels.totalXp, texts.rank.overallExtra),
-    block('text', levels.text, ctx.stats.textXp, renderPlaceholders(texts.rank.textExtra, { messages: n(ctx.stats.messages) })),
-    block('voice', levels.voice, ctx.stats.voiceXp, renderPlaceholders(texts.rank.voiceExtra, { minutes: n(ctx.stats.voiceMinutes) })),
+    ...shownLevels(settings.xpSources).map((kind) => blocks[kind]()),
   ].join('\n\n');
   return {
     embeds: [

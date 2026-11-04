@@ -22,7 +22,20 @@
     "general": "Általános",
     "enabled": "Szintrendszer bekapcsolása",
     "enabledHelp": "A tagok azonnal elkezdenek XP-t gyűjteni. A botok soha nem kapnak XP-t.",
-    "rules": "Chat XP: {min}–{max} üzenetenként, legfeljebb percenként egyszer. Hang XP: {voice} percenként voice-ban, ha legalább még egy ember ott van; a süketített tagok és az AFK csatorna nem kapnak semmit. A chat és a hang szint külön lép.",
+    "sources": "Mi ad XP-t",
+    "sourceOptions": {
+      "both": "Üzenetek és voice",
+      "text": "Csak üzenetek",
+      "voice": "Csak voice"
+    },
+    "sourceHints": {
+      "both": "Chat szint, hang szint és a kettőből összesített szint.",
+      "text": "Csak chat szint. A voice-ban töltött idő nem ad XP-t.",
+      "voice": "Csak hang szint. Az üzenetek nem adnak XP-t."
+    },
+    "rulesText": "Chat XP: {min}–{max} üzenetenként, legfeljebb percenként egyszer.",
+    "rulesVoice": "Hang XP: {voice} percenként voice-ban, ha legalább még egy ember ott van; a süketített tagok és az AFK csatorna nem kapnak semmit.",
+    "rulesBoth": "A chat és a hang szint külön lép.",
     "ignored": "Nincs XP ezekben a csatornákban",
     "ignoredHelp": "Szöveges vagy voice csatornák, illetve egész kategóriák. A threadek a csatornájukat követik.",
     "ignoredPlaceholder": "Csatorna hozzáadása",
@@ -31,12 +44,12 @@
     "levelUp": "Szintlépés üzenet",
     "announceMode": "Hová jelentse be",
     "announceModes": {
-      "current": "Ahol a tag írt",
+      "current": "Ahol történt",
       "channel": "Egy választott csatornába",
       "off": "Ne jelentse be"
     },
     "announceModesHelp": {
-      "current": "A voice-ból jövő szintlépések a lenti csatornába mennek. Ha nincs ilyen, nem lesz üzenet.",
+      "current": "A chat szintlépés oda megy, ahol a tag írt, a hang szintlépés a voice csatornája szöveges chatjébe. Nem kell csatornát választani.",
       "channel": "Minden szintlépés a lenti csatornába megy.",
       "off": "A tagok ugyanúgy szintet lépnek, csak nincs üzenet."
     },
@@ -70,7 +83,7 @@
   },
   "leaderboard": {
     "title": "{server} toplista",
-    "line": "{rank} {user} · {overall} · {text} · {voice} · {xp} XP",
+    "line": "{rank} {user} · {levels} · {xp} XP",
     "legend": "{overall} szint = chat XP + hang XP. Az összes XP alapján rangsorolva.",
     "empty": "Még senkinek sincs XP-je. Kezdjetek el chatelni!",
     "updated": "Frissítve {time}",
@@ -116,7 +129,7 @@
   },
   "preview": {
     "levelUpTitle": "Szintlépés előnézet",
-    "levelUpHint": "A te neveddel és 5-ös chat szinttel. A hang szintlépés ugyanígy néz ki 🎙️ Hang felirattal.",
+    "levelUpHint": "A te neveddel, 5-ös szinttel.",
     "leaderboardTitle": "Toplista előnézet",
     "leaderboardHint": "A szerver valódi legjobb tagjaival.",
     "botTag": "APP",

@@ -16,6 +16,7 @@ import { Alert, Avatar, Button, Card, CardHeader, Field, Input, Select, Skeleton
 import { useToast } from '../../apps/web/src/ui/toast';
 import { ColorField, ConfirmDialog, SaveBar } from '../../apps/web/src/ui/widgets';
 import {
+  activeTracks,
   ANNOUNCE_MODES,
   buildLeaderboardPanel,
   buildLevelUpMessage,
@@ -24,12 +25,14 @@ import {
   LEVEL_EMOJI,
   LEVEL_UP_PLACEHOLDERS,
   levelingSettingsSchema,
+  shownLevels,
   XP_RULES,
   type AnnounceMode,
   type LevelingSettings,
   type LevelTrack,
 } from './manifest';
 import type { ChannelStatus, LevelingErrorCode, LevelingResponse, TopResponse } from './server';
+import { XpSourcePicker } from './xp-source-picker';
 
 type TextField = 'title' | 'description';
 
@@ -69,6 +72,8 @@ export default function LevelingPage() {
   const now = useMemo(() => new Date(), []);
   const memberName = me?.user.globalName ?? me?.user.username ?? 'member';
   const topMembers = top.data?.members ?? [];
+  // The list is ranked with the saved setting, so it is labeled with that one too.
+  const topSources = leveling.data?.settings.xpSources ?? 'both';
   const n = (value: number) => value.toLocaleString(guild.locale);
 
   const levelUpPayload = useMemo(() => {
@@ -78,7 +83,7 @@ export default function LevelingPage() {
       {
         locale: guild.locale,
         member: { id: me.user.id, displayName: memberName, avatarUrl: me.user.avatarUrl },
-        track: 'text',
+        track: activeTracks(draft.xpSources)[0]!,
         level: 5,
         server: { name: guild.name },
         now,
@@ -90,7 +95,7 @@ export default function LevelingPage() {
   const leaderboardPayload = useMemo(() => {
     if (!draft) return null;
     return buildLeaderboardPanel(
-      { color: fieldError('color') ? null : draft.color, leaderboardSize: draft.leaderboardSize },
+      { color: fieldError('color') ? null : draft.color, leaderboardSize: draft.leaderboardSize, xpSources: draft.xpSources },
       {
         locale: guild.locale,
         server: { name: guild.name },
@@ -179,8 +184,10 @@ export default function LevelingPage() {
       });
   };
   if (draft.enabled) {
-    if (draft.announceMode === 'channel' && !draft.announceChannelId) warnings.push({ tone: 'warning', text: t('leveling.status.noAnnounceChannel') });
-    channelWarning(status.announceChannel, draft.announceChannelId, saved?.announceChannelId);
+    if (draft.announceMode === 'channel') {
+      if (!draft.announceChannelId) warnings.push({ tone: 'warning', text: t('leveling.status.noAnnounceChannel') });
+      channelWarning(status.announceChannel, draft.announceChannelId, saved?.announceChannelId);
+    }
     channelWarning(status.leaderboardChannel, draft.leaderboardChannelId, saved?.leaderboardChannelId);
   }
   if (status.lastError && saved?.enabled) warnings.push({ tone: 'warning', text: t('leveling.status.lastError', { error: errorLabel(status.lastError.code) }) });
@@ -266,10 +273,16 @@ export default function LevelingPage() {
             <CardHeader
               icon={emoji.sparkle}
               title={t('leveling.form.general')}
-              description={t('leveling.form.rules', { min: XP_RULES.messageMin, max: XP_RULES.messageMax, voice: XP_RULES.voicePerMinute })}
+              description={[
+                draft.xpSources !== 'voice' && t('leveling.form.rulesText', { min: XP_RULES.messageMin, max: XP_RULES.messageMax }),
+                draft.xpSources !== 'text' && t('leveling.form.rulesVoice', { voice: XP_RULES.voicePerMinute }),
+                draft.xpSources === 'both' && t('leveling.form.rulesBoth'),
+              ]
+                .filter(Boolean)
+                .join(' ')}
             />
             <ul className="mb-5 grid gap-2 sm:grid-cols-3" aria-label={t('leveling.levels.title')}>
-              {(['text', 'voice', 'overall'] as const).map((kind) => (
+              {shownLevels(draft.xpSources).map((kind) => (
                 <li key={kind} className="glass-raised px-3 py-2.5">
                   <LevelBadge kind={kind} />
                   <p className="mt-1.5 text-xs text-muted">{t(`leveling.levels.${kind}Help`)}</p>
@@ -278,6 +291,7 @@ export default function LevelingPage() {
             </ul>
             <div className="space-y-5">
               <Switch checked={draft.enabled} onChange={(value) => update('enabled', value)} label={t('leveling.form.enabled')} description={t('leveling.form.enabledHelp')} />
+              <XpSourcePicker value={draft.xpSources} onChange={(value) => update('xpSources', value)} />
               <ChannelMultiPicker
                 id="leveling-ignored"
                 value={draft.ignoredChannelIds}
@@ -306,13 +320,16 @@ export default function LevelingPage() {
               </Field>
               {draft.announceMode !== 'off' && (
                 <>
-                  <ChannelPicker
-                    id="leveling-announce-channel"
-                    label={t('leveling.form.announceChannel')}
-                    value={draft.announceChannelId}
-                    onChange={(value) => update('announceChannelId', value)}
-                    error={fieldError('announceChannelId')}
-                  />
+                  {/* "Where it happened" speaks for itself: a channel is only needed for "In a chosen channel". */}
+                  {draft.announceMode === 'channel' && (
+                    <ChannelPicker
+                      id="leveling-announce-channel"
+                      label={t('leveling.form.announceChannel')}
+                      value={draft.announceChannelId}
+                      onChange={(value) => update('announceChannelId', value)}
+                      error={fieldError('announceChannelId')}
+                    />
+                  )}
                   <Field label={t('leveling.form.title')} htmlFor="leveling-title" error={fieldError('title')} warning={placeholderHint('title')}>
                     <Input
                       id="leveling-title"
@@ -431,13 +448,23 @@ export default function LevelingPage() {
                     <p className="shrink-0 font-mono text-xs text-muted">{t('leveling.top.xp', { xp: n(member.xp) })}</p>
                   </div>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    <LevelBadge kind="overall" level={member.overallLevel} detail={t('leveling.top.overallDetail')} />
-                    <LevelBadge kind="text" level={member.textLevel} />
-                    <LevelBadge kind="voice" level={member.voiceLevel} />
+                    {shownLevels(topSources).map((kind) => (
+                      <LevelBadge
+                        key={kind}
+                        kind={kind}
+                        level={{ overall: member.overallLevel, text: member.textLevel, voice: member.voiceLevel }[kind]}
+                        detail={kind === 'overall' ? t('leveling.top.overallDetail') : undefined}
+                      />
+                    ))}
                   </div>
                   <p className="mt-1 text-xs text-muted">
-                    {t('leveling.top.textDetail', { xp: n(member.textXp), messages: n(member.messages) })} ·{' '}
-                    {t('leveling.top.voiceDetail', { xp: n(member.voiceXp), minutes: n(member.voiceMinutes) })}
+                    {activeTracks(topSources)
+                      .map((track) =>
+                        track === 'text'
+                          ? t('leveling.top.textDetail', { xp: n(member.textXp), messages: n(member.messages) })
+                          : t('leveling.top.voiceDetail', { xp: n(member.voiceXp), minutes: n(member.voiceMinutes) }),
+                      )
+                      .join(' · ')}
                   </p>
                 </div>
               </li>

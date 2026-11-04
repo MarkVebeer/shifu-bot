@@ -19,7 +19,9 @@ discord.js, Hono, SQLite and React. Self host it on a Pelican panel, with Docker
 - 🏆 **Leveling.** Every member has three levels: a 💬 **chat level** from chat XP (15–25 XP per
   message, at most once a minute), a 🎙️ **voice level** from voice XP (10 XP a minute, only with
   company, not deafened, not in the AFK channel), and a ⭐ **overall level** from both added
-  together. Chat and voice level ups are announced separately, where the member chatted or in a
+  together. Each server picks what earns XP: messages and voice, messages only, or voice only (then
+  only that level is shown and ranked). Level ups are announced where they happened (chat level ups
+  in the channel the member wrote in, voice level ups in their voice channel's text chat) or in a
   channel you pick, with your own text. A leaderboard panel in a channel is ranked by total XP,
   shows all three levels, refreshes itself (every 1, 5, 15 or 60 minutes, and only when something
   changed) and has a **My rank** button. Turn off XP for chosen text, voice channels or categories.
