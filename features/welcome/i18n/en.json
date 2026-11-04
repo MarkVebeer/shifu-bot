@@ -11,8 +11,6 @@
     "style": "Style",
     "enabled": "Send welcome messages",
     "enabledHelp": "Post a message when someone joins. Bots are skipped.",
-    "language": "Server language",
-    "languageHelp": "Changes the dashboard and the default texts the bot sends.",
     "channel": "Channel",
     "channelHelp": "Only text channels where ShifuBot can write are listed.",
     "channelPlaceholder": "Choose a channel",

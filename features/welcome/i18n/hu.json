@@ -11,8 +11,6 @@
     "style": "Megjelenés",
     "enabled": "Üdvözlő üzenetek küldése",
     "enabledHelp": "Üzenetet küld, amikor valaki csatlakozik. A botokat kihagyja.",
-    "language": "Szerver nyelve",
-    "languageHelp": "Megváltoztatja a vezérlőpultot és a bot alapértelmezett szövegeit.",
     "channel": "Csatorna",
     "channelHelp": "Csak azok a szöveges csatornák jelennek meg, ahová a ShifuBot írhat.",
     "channelPlaceholder": "Válassz csatornát",

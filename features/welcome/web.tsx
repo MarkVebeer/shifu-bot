@@ -1,7 +1,7 @@
 /**
  * Welcome feature: dashboard page.
  */
-import { colors, emoji, findUnknownPlaceholders, type Locale } from '@shifubot/shared';
+import { colors, emoji, findUnknownPlaceholders } from '@shifubot/shared';
 import { Eye, Send } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../apps/web/src/lib/api';
@@ -12,7 +12,7 @@ import { useApi } from '../../apps/web/src/lib/use-api';
 import { DiscordMessagePreview } from '../../apps/web/src/ui/discord-preview';
 import { Alert, Button, Card, CardHeader, Field, Input, Skeleton, Switch, Textarea, cx } from '../../apps/web/src/ui/primitives';
 import { useToast } from '../../apps/web/src/ui/toast';
-import { ColorField, LanguageSwitcher, SaveBar } from '../../apps/web/src/ui/widgets';
+import { ColorField, SaveBar } from '../../apps/web/src/ui/widgets';
 import {
   WELCOME_PLACEHOLDERS,
   buildWelcomeMessage,
@@ -21,7 +21,6 @@ import {
   type WelcomeSettings,
 } from './manifest';
 import type { WelcomeResponse } from './server';
-import { getTranslator } from '..';
 import { WelcomeChannelPicker } from './channel-picker';
 
 type TextField = 'title' | 'description' | 'footer';
@@ -30,12 +29,11 @@ export default function WelcomePage() {
   const { t, locale: uiLocale } = useI18n();
   const toast = useToast();
   const { me } = useAuth();
-  const { guild, reload, setDirty } = useGuild();
+  const { guild, setDirty } = useGuild();
   const base = `/guilds/${guild.id}`;
   const welcome = useApi<WelcomeResponse>(`${base}/features/welcome`);
 
   const [draft, setDraft] = useState<WelcomeSettings | null>(null);
-  const [draftLocale, setDraftLocale] = useState<Locale>(guild.locale);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const saved = welcome.data?.settings;
@@ -43,9 +41,8 @@ export default function WelcomePage() {
   useEffect(() => {
     if (saved && !draft) setDraft(saved);
   }, [saved, draft]);
-  useEffect(() => setDraftLocale(guild.locale), [guild.locale]);
 
-  const dirty = Boolean(draft && saved && (JSON.stringify(draft) !== JSON.stringify(saved) || draftLocale !== guild.locale));
+  const dirty = Boolean(draft && saved && JSON.stringify(draft) !== JSON.stringify(saved));
   useEffect(() => setDirty(dirty), [dirty, setDirty]);
   useEffect(() => () => setDirty(false), [setDirty]);
 
@@ -72,13 +69,13 @@ export default function WelcomePage() {
       color: fieldError('color') ? null : draft.color,
     };
     return buildWelcomeMessage(previewSettings, {
-      locale: draftLocale,
+      locale: guild.locale,
       member: { id: me.user.id, username: me.user.username, displayName: memberName, avatarUrl: me.user.avatarUrl },
       server: { name: guild.name, memberCount: guild.memberCount },
       now,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draft, draftLocale, me, guild, now, memberName, validation]);
+  }, [draft, me, guild, now, memberName, validation]);
 
   if (welcome.error) return <Alert tone="danger">{errorText(t, welcome.error)}</Alert>;
   if (!draft || !welcome.data) return <WelcomeSkeleton />;
@@ -110,12 +107,7 @@ export default function WelcomePage() {
       const response = await api<WelcomeResponse>(`${base}/features/welcome`, { method: 'PUT', body: validation.data });
       welcome.setData(response);
       setDraft(response.settings);
-      if (draftLocale !== guild.locale) {
-        await api(`${base}/settings`, { method: 'PUT', body: { locale: draftLocale } });
-        await reload();
-      }
-      // Use the newly saved language: `t` still belongs to the previous one.
-      toast.success(getTranslator(draftLocale)('toast.saved'));
+      toast.success(t('toast.saved'));
     } catch (error) {
       toast.error(`${t('toast.saveFailed')}: ${errorText(t, error)}`);
     } finally {
@@ -123,10 +115,7 @@ export default function WelcomePage() {
     }
   };
 
-  const discard = () => {
-    setDraft(welcome.data!.settings);
-    setDraftLocale(guild.locale);
-  };
+  const discard = () => setDraft(welcome.data!.settings);
 
   const sendTest = async () => {
     if (!validation?.success) {
@@ -174,8 +163,8 @@ export default function WelcomePage() {
     return unknown.length ? t('welcome.form.unknownPlaceholder', { names: unknown.map((n) => `{${n}}`).join(', ') }) : undefined;
   };
 
-  // Default texts follow the selected (maybe not yet saved) server language.
-  const defaults = welcomeManifest.messages[draftLocale].defaults;
+  // Default texts follow the server language (set on the Settings page).
+  const defaults = welcomeManifest.messages[guild.locale].defaults;
 
   const timeLabel = t('welcome.preview.today', {
     time: new Intl.DateTimeFormat(uiLocale, { hour: '2-digit', minute: '2-digit' }).format(now),
@@ -233,9 +222,6 @@ export default function WelcomePage() {
             <CardHeader icon={emoji.sparkle} title={t('welcome.form.general')} />
             <div className="space-y-5">
               <Switch checked={draft.enabled} onChange={(value) => update('enabled', value)} label={t('welcome.form.enabled')} description={t('welcome.form.enabledHelp')} />
-              <Field label={t('welcome.form.language')} help={t('welcome.form.languageHelp')} htmlFor="welcome-language">
-                <LanguageSwitcher id="welcome-language" value={draftLocale} onChange={setDraftLocale} />
-              </Field>
               <WelcomeChannelPicker
                 id="welcome-channel"
                 value={draft.channelId}
