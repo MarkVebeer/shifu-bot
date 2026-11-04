@@ -66,6 +66,12 @@ export function shownLevels(sources: XpSources): (LevelTrack | 'overall')[] {
   return sources === 'both' ? ['overall', 'text', 'voice'] : [sources];
 }
 
+/** A level kind the web leaderboard can rank by. */
+export type LeaderboardKind = LevelTrack | 'overall';
+
+/** Path of the web leaderboard, relative to the dashboard address. */
+export const leaderboardPath = (guildId: string) => `/servers/${guildId}/leveling`;
+
 /** XP a member is ranked by: the total when both count, otherwise the one active track. */
 export function rankingXp(xp: TrackXp, sources: XpSources): number {
   return sources === 'both' ? xp.textXp + xp.voiceXp : sources === 'text' ? xp.textXp : xp.voiceXp;
@@ -230,7 +236,14 @@ const MEDALS = ['🥇', '🥈', '🥉'];
  */
 export function buildLeaderboardPanel(
   settings: Pick<LevelingSettings, 'color' | 'leaderboardSize' | 'xpSources'>,
-  ctx: { locale: Locale; server: { name: string }; entries: LeaderboardEntry[]; updatedAt: Date },
+  ctx: {
+    locale: Locale;
+    server: { name: string };
+    entries: LeaderboardEntry[];
+    updatedAt: Date;
+    /** Absolute URL of the web leaderboard. */
+    listUrl: string;
+  },
 ): MessagePayload {
   const texts = levelingManifest.messages[ctx.locale];
   const lines = [...ctx.entries]
@@ -255,19 +268,23 @@ export function buildLeaderboardPanel(
   const updated = renderPlaceholders(texts.leaderboard.updated, { time: `<t:${Math.floor(ctx.updatedAt.getTime() / 1000)}:R>` });
   return {
     embeds: [
-      buildEmbed({
-        emoji: levelingManifest.emoji,
-        title: renderPlaceholders(texts.leaderboard.title, { server: ctx.server.name }),
-        description: lines.length ? `${lines.join('\n')}\n\n${legend}${updated}` : `${texts.leaderboard.empty}\n\n${updated}`,
-        color: settings.color,
-        footer: brandFooter(ctx.locale, texts.name),
-      }),
+      {
+        ...buildEmbed({
+          emoji: levelingManifest.emoji,
+          title: renderPlaceholders(texts.leaderboard.title, { server: ctx.server.name }),
+          description: lines.length ? `${lines.join('\n')}\n\n${legend}${updated}` : `${texts.leaderboard.empty}\n\n${updated}`,
+          color: settings.color,
+          footer: brandFooter(ctx.locale, texts.name),
+        }),
+        url: ctx.listUrl,
+      },
     ],
     components: [
       {
         type: 1,
         components: [
           { type: 2, style: ButtonStyle.Primary, label: texts.leaderboard.rankButton, custom_id: RANK_BUTTON_ID, emoji: { name: '📊' } },
+          { type: 2, style: ButtonStyle.Link, label: texts.leaderboard.fullList, url: ctx.listUrl, emoji: { name: '📜' } },
         ],
       },
     ],

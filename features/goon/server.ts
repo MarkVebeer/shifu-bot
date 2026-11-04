@@ -31,7 +31,6 @@ export interface GoonResponse {
 
 /** The full list page (member route). */
 export interface GoonListResponse {
-  server: { id: string; name: string; iconUrl: string | null };
   total: number;
   /** Members with at least one goon. */
   members: number;
@@ -239,7 +238,6 @@ export default defineServerFeature({
           const list = store.list(guild.id, query);
           const members = query.q?.trim() ? store.list(guild.id, { limit: 1 }).matches : list.matches;
           const body: GoonListResponse = {
-            server: { id: guild.id, name: guild.name, iconUrl: guild.iconURL({ size: 128 }) },
             total: store.total(guild.id),
             members,
             matches: list.matches,

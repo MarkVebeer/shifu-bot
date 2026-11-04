@@ -3,6 +3,25 @@
     "name": "ShifuBot",
     "tagline": "Nyugodt, barátságos segítő a Discord közösségedhez."
   },
+  "memberPages": {
+    "tabs": "A szerver listái",
+    "signInTitle": "Csak tagoknak",
+    "signInBody": "Lépj be Discorddal, hogy lásd a szerver listáit. Csak a szerver tagjai láthatják.",
+    "signIn": "Belépés Discorddal",
+    "notMemberTitle": "Csak tagoknak",
+    "notMemberBody": "Be vagy lépve, de nem vagy tagja ennek a szervernek. Ezeket a listákat csak a tagjai láthatják.",
+    "notFoundTitle": "Nem található",
+    "notFoundBody": "Ez a lista nem létezik, vagy ki van kapcsolva ezen a szerveren.",
+    "errorTitle": "Valami hiba történt",
+    "retry": "Újra",
+    "search": "Keresés név szerint",
+    "searchLabel": "Tagok keresése",
+    "you": "Te",
+    "yourPlace": "A helyezésed",
+    "loadMore": "Továbbiak",
+    "matches": "{count} találat",
+    "noResults": "Senki nem felel meg ennek: „{q}”."
+  },
   "lang": {
     "label": "Nyelv",
     "en": "English",

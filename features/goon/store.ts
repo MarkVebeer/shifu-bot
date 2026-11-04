@@ -6,6 +6,7 @@
 import type { Database } from 'bun:sqlite';
 import { LruCache } from '../../apps/bot/src/core/lru-cache';
 import type { PanelRef } from '../../apps/bot/src/core/panel';
+import { escapeLike, foldName, namePattern } from '../../apps/bot/src/core/search';
 import { defaultGoonSettings, goonSettingsSchema, type GoonEntry, type GoonSettings } from './manifest';
 
 export const GOON_TABLES = ['goon_settings', 'goon_members', 'goon_presses'];
@@ -89,14 +90,7 @@ export interface GoonListEntry extends GoonTopEntry {
 
 export const LIST_PAGE_MAX = 100;
 
-/**
- * Lowercase without accents, so "adam" and "ÁDÁM" both find "Ádám".
- * Done in JavaScript because SQLite's LOWER() only knows ASCII letters.
- */
-export const foldName = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
-
-/** Escape % and _ so a search for "50%" finds the text, not everything. */
-export const escapeLike = (text: string) => text.replace(/[\\%_]/g, (char) => `\\${char}`);
+export { escapeLike, foldName };
 
 export type PressResult = { ok: true; count: number; pressedAt: number } | { ok: false; nextAt: number };
 
@@ -205,7 +199,7 @@ export class GoonStore {
    * The search runs after ranking, so results keep their real place.
    */
   list(guildId: string, options: { q?: string; offset?: number; limit?: number } = {}): { entries: GoonListEntry[]; matches: number } {
-    const q = foldName(options.q?.trim() ?? '');
+    const pattern = namePattern(options.q);
     const limit = Math.min(Math.max(options.limit ?? 50, 1), LIST_PAGE_MAX);
     const offset = Math.max(options.offset ?? 0, 0);
     const ranked = `
@@ -214,8 +208,8 @@ export class GoonStore {
                ROW_NUMBER() OVER (ORDER BY count DESC, last_press_at ASC, user_id ASC) AS rank
         FROM goon_members WHERE guild_id = ? AND count > 0
       )`;
-    const where = q ? `WHERE search_name LIKE ? ESCAPE '\\'` : '';
-    const params = q ? [guildId, `%${escapeLike(q)}%`] : [guildId];
+    const where = pattern ? `WHERE search_name LIKE ? ESCAPE '\\'` : '';
+    const params = pattern ? [guildId, pattern] : [guildId];
     const rows = this.db
       .query<{ user_id: string; count: number; display_name: string | null; avatar_url: string | null; rank: number }, (string | number)[]>(
         `${ranked} SELECT * FROM ranked ${where} ORDER BY rank LIMIT ? OFFSET ?`,

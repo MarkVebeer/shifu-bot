@@ -81,13 +81,25 @@
     "track": "Which level went up: Chat or Voice",
     "server": "The server name"
   },
+  "list": {
+    "rankBy": "Rank by",
+    "members": "{count} members on the list",
+    "overallHint": "overall level = chat XP + voice XP",
+    "level": "Lvl {level}",
+    "levelUnit": "level",
+    "xp": "{xp} XP",
+    "nextLevel": "{left} XP to the next level",
+    "notOnList": "You are not on this list yet. Chat or talk in voice to earn XP.",
+    "empty": "Nobody has XP yet. Start chatting!"
+  },
   "leaderboard": {
     "title": "{server} leaderboard",
     "line": "{rank} {user} · {levels} · {xp} XP",
     "legend": "{overall} level = chat XP + voice XP. Ranked by total XP.",
     "empty": "Nobody has XP yet. Start chatting!",
     "updated": "Updated {time}",
-    "rankButton": "My rank"
+    "rankButton": "My rank",
+    "fullList": "Full leaderboard"
   },
   "rank": {
     "title": "{username}'s rank",
@@ -125,6 +137,8 @@
     "resetTitle": "Reset all XP?",
     "resetBody": "Every member of this server goes back to chat level 0 and voice level 0. This cannot be undone.",
     "resetConfirm": "Reset everything",
+    "openList": "Open the full leaderboard",
+    "openListHelp": "Every member of the server can open it after signing in with Discord.",
     "resetDone": "All XP was reset"
   },
   "preview": {

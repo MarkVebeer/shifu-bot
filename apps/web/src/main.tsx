@@ -3,7 +3,7 @@ import '@fontsource/jetbrains-mono/400.css';
 import '@fontsource/jetbrains-mono/600.css';
 import './index.css';
 
-import { StrictMode, Suspense } from 'react';
+import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createBrowserRouter, Navigate, Outlet, RouterProvider, useParams } from 'react-router';
 import { featurePages, memberPages } from './features';
@@ -15,6 +15,7 @@ import { LoginPage } from './pages/LoginPage';
 import { FeatureNotFound, NotFoundPage } from './pages/NotFoundPage';
 import { OverviewPage } from './pages/OverviewPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { MemberShell } from './ui/member-shell';
 import { Skeleton } from './ui/primitives';
 import { ToastProvider } from './ui/toast';
 
@@ -46,14 +47,9 @@ function FullSkeleton() {
 
 /** A feature's page for every member of a server, without the dashboard around it. */
 function MemberPageRoute() {
-  const { featureId } = useParams();
-  const page = memberPages.find((item) => item.id === featureId);
-  if (!page) return <NotFoundPage />;
-  return (
-    <Suspense fallback={<FullSkeleton />}>
-      <page.Page />
-    </Suspense>
-  );
+  const { guildId = '', featureId = '' } = useParams();
+  if (!memberPages.some((item) => item.id === featureId)) return <NotFoundPage />;
+  return <MemberShell guildId={guildId} featureId={featureId} />;
 }
 
 function FeatureRoute() {

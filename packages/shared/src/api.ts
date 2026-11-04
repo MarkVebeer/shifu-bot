@@ -22,6 +22,12 @@ export interface MeResponse {
   csrfToken: string;
 }
 
+/** GET /api/servers/:guildId: the server and its member pages (feature ids), for the page tabs. */
+export interface MemberPagesResponse {
+  server: { id: string; name: string; iconUrl: string | null };
+  pages: string[];
+}
+
 export interface GuildListItem {
   id: string;
   name: string;

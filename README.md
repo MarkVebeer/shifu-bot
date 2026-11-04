@@ -26,7 +26,9 @@ discord.js, Hono, SQLite and React. Self host it on a Pelican panel, with Docker
   in the channel the member wrote in, voice level ups in their voice channel's text chat) or in a
   channel you pick, with your own text. A leaderboard panel in a channel is ranked by total XP,
   shows all three levels, refreshes itself (every 1, 5, 15 or 60 minutes, and only when something
-  changed) and has a **My rank** button. Turn off XP for chosen text, voice channels or categories.
+  changed) and has a **My rank** and a **Full leaderboard** button. The full leaderboard is a page for
+  members (`/servers/<id>/leveling`) with every member, ranked by overall, chat or voice level,
+  with search and the viewer's own place. Turn off XP for chosen text, voice channels or categories.
   Upgrading from a version with a single level resets everyone's XP once.
 - 📋 **Audit log** (off by default). Records what a moderator would look for and shows it on the
   dashboard, searchable and filterable by time, category, event type, member (who did it or who it
@@ -43,7 +45,8 @@ discord.js, Hono, SQLite and React. Self host it on a Pelican panel, with Docker
   minutes by default), and a member can undo their own presses for 5 minutes, only as many as they
   made. The panel shows the server total and the top 20. **Full list** opens a clean page
   (`/servers/<id>/goon`) with every member's place, a search and the viewer's own place. Only
-  members of the server can open it: they sign in with Discord and ShifuBot checks membership.
+  members of the server can open these member pages: they sign in with Discord and ShifuBot checks
+  membership. Tabs at the top switch between the server's lists (leveling, goon counter).
 - 🌐 **English and Hungarian.** Each server picks its language. It drives the dashboard and every
   message the bot sends there.
 - 🛡️ **Raid safe.** At most 10 welcome and 10 goodbye messages per server per minute (configurable).
@@ -377,8 +380,9 @@ features/
    - `memberRoutes(router)` (optional): read-only routes for every member of the server, mounted at
      `/api/servers/:guildId/leveling`. The user is signed in and a member, and the feature is
      enabled; read `c.get('guild')` and `c.get('session')`. The matching page is `public.tsx`, shown
-     at `/servers/:guildId/leveling` without the dashboard around it (the goon counter's full list
-     is an example). Signed out visitors get a sign-in button that returns them to the page.
+     at `/servers/:guildId/leveling` inside `MemberShell` (`apps/web/src/ui/member-shell.tsx`):
+     no dashboard menu, a tab per enabled member page, sign-in and "members only" handled for you.
+     `apps/web/src/ui/member-list.tsx` has the search, paging and ranked rows the existing lists use.
    - `isEnabled(guildId)` for the overview page, and an optional `onGuildCreate(guild)`.
    - `health(guild)` (optional): channel or role problems for the dashboard permission check.
 

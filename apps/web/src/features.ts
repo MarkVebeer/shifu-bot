@@ -26,8 +26,8 @@ export const featurePages: FeaturePage[] = features.flatMap((feature) => {
 
 const publicPages = import.meta.glob<{ default: ComponentType }>('../../../features/*/public.tsx');
 
-/** Member pages, shown at /servers/:guildId/<id>. */
-export const memberPages: { id: string; Page: LazyExoticComponent<ComponentType> }[] = features.flatMap((feature) => {
+/** Member pages, shown at /servers/:guildId/<id> with tabs between them. */
+export const memberPages: { id: string; emoji: string; Page: LazyExoticComponent<ComponentType> }[] = features.flatMap((feature) => {
   const loader = publicPages[`../../../features/${feature.id}/public.tsx`];
-  return loader ? [{ id: feature.id, Page: lazy(loader) }] : [];
+  return loader ? [{ id: feature.id, emoji: emoji[feature.emoji], Page: lazy(loader) }] : [];
 });

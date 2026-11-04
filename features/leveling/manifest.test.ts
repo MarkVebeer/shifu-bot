@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+﻿import { describe, expect, test } from 'bun:test';
 import { Database } from 'bun:sqlite';
 import { migrate } from '../../apps/bot/src/db/database';
 import {
@@ -17,6 +17,8 @@ import {
 } from './manifest';
 import levelingFeature, { LevelingStore } from './server';
 import { isIgnoredChannel, isVoiceEligible, messageXp, voiceDay, voiceXpAfter, voiceXpGrant, type VoiceSnapshot } from './xp';
+
+const listUrl = 'https://shifu.example.com/servers/123/leveling';
 
 describe('level curve', () => {
   test('uses 5·L² + 50·L + 100 per level', () => {
@@ -127,10 +129,12 @@ describe('messages', () => {
     entries.push({ userId: '999', textXp: 4500, voiceXp: 0 });
     const payload = buildLeaderboardPanel(
       { color: null, leaderboardSize: 5, xpSources: 'both' },
-      { locale: 'en', server: { name: 'Dojo' }, entries, updatedAt: new Date('2026-01-01T00:00:00Z') },
+      { locale: 'en', server: { name: 'Dojo' }, entries, updatedAt: new Date('2026-01-01T00:00:00Z'), listUrl },
     );
     const lines = payload.embeds[0]!.description!.split('\n');
     expect(payload.embeds[0]!.title).toBe('🏆 Dojo leaderboard');
+    expect(payload.embeds[0]!.url).toBe(listUrl);
+    expect(payload.components![0]!.components[1]).toMatchObject({ style: 5, url: listUrl, label: 'Full leaderboard' });
     // 5,000 total XP is overall level 10; 4,000 chat XP is chat level 9; 1,000 voice XP is voice level 4.
     expect(lines[0]).toBe('🥇 <@1000> · ⭐ Overall 10 · 💬 Chat 9 · 🎙️ Voice 4 · 5,000 XP');
     expect(lines[3]).toStartWith('`#4` <@1003>');
@@ -145,7 +149,7 @@ describe('messages', () => {
   test('empty leaderboard invites people to chat', () => {
     const payload = buildLeaderboardPanel(
       { color: null, leaderboardSize: 10, xpSources: 'both' },
-      { locale: 'hu', server: { name: 'Dojo' }, entries: [], updatedAt: new Date() },
+      { locale: 'hu', server: { name: 'Dojo' }, entries: [], updatedAt: new Date(), listUrl },
     );
     expect(payload.embeds[0]!.description).toStartWith('Még senkinek sincs XP-je.');
   });
@@ -159,7 +163,7 @@ describe('messages', () => {
     ];
     const payload = buildLeaderboardPanel(
       { color: null, leaderboardSize: 10, xpSources: 'text' },
-      { locale: 'en', server: { name: 'Dojo' }, entries, updatedAt: new Date('2026-01-01T00:00:00Z') },
+      { locale: 'en', server: { name: 'Dojo' }, entries, updatedAt: new Date('2026-01-01T00:00:00Z'), listUrl } ,
     );
     const lines = payload.embeds[0]!.description!.split('\n');
     expect(lines[0]).toBe('🥇 <@b> · 💬 Chat 2 · 400 XP');
@@ -171,7 +175,7 @@ describe('messages', () => {
   test('a voice only leaderboard shows only the voice level', () => {
     const payload = buildLeaderboardPanel(
       { color: null, leaderboardSize: 10, xpSources: 'voice' },
-      { locale: 'hu', server: { name: 'Dojo' }, entries: [{ userId: 'a', textXp: 999, voiceXp: 100 }], updatedAt: new Date() },
+      { locale: 'hu', server: { name: 'Dojo' }, entries: [{ userId: 'a', textXp: 999, voiceXp: 100 }], updatedAt: new Date(), listUrl },
     );
     expect(payload.embeds[0]!.description!.split('\n')[0]).toBe('🥇 <@a> · 🎙️ Hang 1 · 100 XP');
   });
@@ -319,6 +323,36 @@ describe('LevelingStore', () => {
     expect(store.get(guildId).xpSources).toBe('both');
     store.save(guildId, { ...defaultLevelingSettings, xpSources: 'voice' });
     expect(store.get(guildId).xpSources).toBe('voice');
+  });
+
+  test('web leaderboard: ranks by the chosen kind, hides members who left, search keeps the real place', () => {
+    const store = createStore();
+    store.addXp(guildId, { ...mei, id: 'a', displayName: 'Ádám' }, 300, 'text');
+    store.addXp(guildId, { ...mei, id: 'b', displayName: 'Bea' }, 100, 'text');
+    store.addXp(guildId, { ...mei, id: 'b', displayName: 'Bea' }, 400, 'voice');
+    store.addXp(guildId, { ...mei, id: 'c', displayName: 'Cili' }, 50, 'text');
+    store.addXp(guildId, { ...mei, id: 'gone', displayName: 'Gone' }, 999, 'text');
+    store.setLeft(guildId, 'gone', true);
+
+    const overall = store.list(guildId, { by: 'overall' });
+    expect(overall.entries.map((e) => [e.rank, e.userId])).toEqual([
+      [1, 'b'],
+      [2, 'a'],
+      [3, 'c'],
+    ]);
+    expect(overall.members).toBe(3);
+    expect(store.list(guildId, { by: 'text' }).entries.map((e) => e.userId)).toEqual(['a', 'b', 'c']);
+    // Only members with voice XP are on the voice list.
+    expect(store.list(guildId, { by: 'voice' })).toMatchObject({ members: 1, matches: 1 });
+
+    const search = store.list(guildId, { by: 'overall', q: 'adam' });
+    expect(search.entries.map((e) => [e.rank, e.userId])).toEqual([[2, 'a']]);
+    expect(search).toMatchObject({ matches: 1, members: 3 });
+    expect(store.list(guildId, { by: 'overall', offset: 1, limit: 1 }).entries.map((e) => e.rank)).toEqual([2]);
+
+    expect(store.rankOf(guildId, 'c', 'overall')).toMatchObject({ rank: 3, textXp: 50, voiceXp: 0 });
+    expect(store.rankOf(guildId, 'c', 'voice')).toBeNull();
+    expect(store.rankOf(guildId, 'gone', 'text')).toBeNull();
   });
 
   test('the leaderboard place follows total XP', () => {

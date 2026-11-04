@@ -22,6 +22,7 @@ import {
   buildLevelUpMessage,
   LEADERBOARD_INTERVALS,
   LEADERBOARD_SIZES,
+  leaderboardPath,
   LEVEL_EMOJI,
   LEVEL_UP_PLACEHOLDERS,
   levelingSettingsSchema,
@@ -101,6 +102,7 @@ export default function LevelingPage() {
         server: { name: guild.name },
         entries: topMembers.map((member) => ({ userId: member.userId, textXp: member.textXp, voiceXp: member.voiceXp })),
         updatedAt: now,
+        listUrl: `${window.location.origin}${leaderboardPath(guild.id)}`,
       },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -475,11 +477,25 @@ export default function LevelingPage() {
             ))}
           </ol>
         )}
-        {topMembers.length > 0 && (
-          <Button variant="ghost" onClick={() => setConfirmReset(true)} icon={<RotateCcw className="size-4" aria-hidden />}>
-            {t('leveling.top.reset')}
-          </Button>
-        )}
+        <div className="flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <a
+              href={leaderboardPath(guild.id)}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+            >
+              <ExternalLink className="size-4" aria-hidden />
+              {t('leveling.top.openList')}
+            </a>
+            <p className="text-xs text-muted">{t('leveling.top.openListHelp')}</p>
+          </div>
+          {topMembers.length > 0 && (
+            <Button variant="ghost" onClick={() => setConfirmReset(true)} icon={<RotateCcw className="size-4" aria-hidden />}>
+              {t('leveling.top.reset')}
+            </Button>
+          )}
+        </div>
       </Card>
 
       <ConfirmDialog

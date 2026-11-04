@@ -3,6 +3,25 @@
     "name": "ShifuBot",
     "tagline": "A calm, friendly helper for your Discord community."
   },
+  "memberPages": {
+    "tabs": "Lists of this server",
+    "signInTitle": "Members only",
+    "signInBody": "Sign in with Discord to see this server's lists. Only members of the server can see them.",
+    "signIn": "Sign in with Discord",
+    "notMemberTitle": "Members only",
+    "notMemberBody": "You are signed in, but not as a member of this server. Only its members can see these lists.",
+    "notFoundTitle": "Not found",
+    "notFoundBody": "This list does not exist, or it is turned off on this server.",
+    "errorTitle": "Something went wrong",
+    "retry": "Try again",
+    "search": "Search by name",
+    "searchLabel": "Search members",
+    "you": "You",
+    "yourPlace": "Your place",
+    "loadMore": "Show more",
+    "matches": "{count} matches",
+    "noResults": "Nobody matches “{q}”."
+  },
   "lang": {
     "label": "Language",
     "en": "English",

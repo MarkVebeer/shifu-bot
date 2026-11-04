@@ -21,9 +21,14 @@ import { LruCache } from '../../apps/bot/src/core/lru-cache';
 import { syncPanelMessage, type PanelErrorCode, type PanelRef } from '../../apps/bot/src/core/panel';
 import { isPostableChannel, missingSendPermissions } from '../../apps/bot/src/core/permissions';
 import { WindowLimiter } from '../../apps/bot/src/core/send-queue';
-import { ApiError, parseJsonBody } from '../../apps/bot/src/http/errors';
+import { foldName, namePattern } from '../../apps/bot/src/core/search';
+import { ApiError, parseInput, parseJsonBody } from '../../apps/bot/src/http/errors';
+import { z } from 'zod';
 import {
   buildLeaderboardPanel,
+  leaderboardPath,
+  shownLevels,
+  type LeaderboardKind,
   buildLevelUpMessage,
   buildRankMessage,
   defaultLevelingSettings,
@@ -136,6 +141,54 @@ const MEMBER_COLUMNS = 'user_id, xp, text_xp, voice_xp, messages, voice_minutes,
 /** Column members are ranked by, per XP source setting. Fixed values, safe to put in SQL. */
 const RANK_COLUMN = { both: 'xp', text: 'text_xp', voice: 'voice_xp' } as const satisfies Record<XpSources, keyof MemberRow>;
 
+/** Column for each level kind on the web leaderboard. Fixed values, safe to put in SQL. */
+const KIND_COLUMN = { overall: 'xp', text: 'text_xp', voice: 'voice_xp' } as const satisfies Record<LeaderboardKind, keyof MemberRow>;
+
+export const LIST_PAGE_MAX = 100;
+
+const listQuerySchema = z.object({
+  by: z.enum(['overall', 'text', 'voice']).optional(),
+  q: z.string().max(100).optional(),
+  offset: z.coerce.number().int().min(0).max(1_000_000).optional(),
+  limit: z.coerce.number().int().min(1).max(LIST_PAGE_MAX).optional(),
+});
+
+/** One row of the web leaderboard. Levels are computed on the page with levelsFor(). */
+export interface LeaderboardListEntry {
+  rank: number;
+  userId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  textXp: number;
+  voiceXp: number;
+  messages: number;
+  voiceMinutes: number;
+}
+
+/** The web leaderboard (member route). */
+export interface LeaderboardListResponse {
+  /** What earns XP on this server: decides which level kinds can be shown. */
+  xpSources: XpSources;
+  by: LeaderboardKind;
+  /** Members on this list (with XP of this kind). */
+  members: number;
+  /** Members matching the search (equal to members without a search). */
+  matches: number;
+  entries: LeaderboardListEntry[];
+  me: LeaderboardListEntry | null;
+}
+
+const listEntry = (row: MemberRow & { rank: number }): LeaderboardListEntry => ({
+  rank: row.rank,
+  userId: row.user_id,
+  displayName: row.display_name,
+  avatarUrl: row.avatar_url,
+  textXp: row.text_xp,
+  voiceXp: row.voice_xp,
+  messages: row.messages,
+  voiceMinutes: row.voice_minutes,
+});
+
 export class LevelingStore {
   private readonly cache = new LruCache<string, LevelingSettings>(10_000);
 
@@ -243,14 +296,18 @@ export class LevelingStore {
     const text = track === 'text' ? xp : 0;
     const voice = track === 'voice' ? xp : 0;
     const row = this.db
-      .query<{ text_xp: number; voice_xp: number }, [string, string, number, number, number, number, number, string, string, number]>(
+      .query<
+        { text_xp: number; voice_xp: number },
+        [string, string, number, number, number, number, number, string, string, string, number]
+      >(
         `INSERT INTO leveling_members
-           (guild_id, user_id, xp, text_xp, voice_xp, messages, voice_minutes, display_name, avatar_url, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           (guild_id, user_id, xp, text_xp, voice_xp, messages, voice_minutes, display_name, search_name, avatar_url, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT (guild_id, user_id) DO UPDATE SET
            xp = xp + excluded.xp, text_xp = text_xp + excluded.text_xp, voice_xp = voice_xp + excluded.voice_xp,
            messages = messages + excluded.messages, voice_minutes = voice_minutes + excluded.voice_minutes,
-           display_name = excluded.display_name, avatar_url = excluded.avatar_url, left_at = NULL, updated_at = excluded.updated_at
+           display_name = excluded.display_name, search_name = excluded.search_name, avatar_url = excluded.avatar_url,
+           left_at = NULL, updated_at = excluded.updated_at
          RETURNING text_xp, voice_xp`,
       )
       .get(
@@ -262,6 +319,7 @@ export class LevelingStore {
         track === 'text' ? 1 : 0,
         track === 'voice' ? 1 : 0,
         member.displayName,
+        foldName(member.displayName),
         member.avatarUrl,
         Date.now(),
       )!;
@@ -327,6 +385,54 @@ export class LevelingStore {
       )
       .get(guildId, score)!.count;
     return { ...base, position: ahead + 1 };
+  }
+
+  /**
+   * The full leaderboard for the member page, ranked by one level kind: overall (total XP), chat or voice.
+   * Members who left are not listed. The search runs after ranking, so results keep their real place.
+   */
+  list(
+    guildId: string,
+    options: { by: LeaderboardKind; q?: string; offset?: number; limit?: number },
+  ): { entries: LeaderboardListEntry[]; matches: number; members: number } {
+    const column = KIND_COLUMN[options.by];
+    const limit = Math.min(Math.max(options.limit ?? 50, 1), LIST_PAGE_MAX);
+    const offset = Math.max(options.offset ?? 0, 0);
+    const pattern = namePattern(options.q);
+    const ranked = `
+      WITH ranked AS (
+        SELECT user_id, text_xp, voice_xp, messages, voice_minutes, display_name, search_name, avatar_url,
+               ROW_NUMBER() OVER (ORDER BY ${column} DESC, user_id) AS rank
+        FROM leveling_members WHERE guild_id = ? AND left_at IS NULL AND ${column} > 0
+      )`;
+    const where = pattern ? `WHERE search_name LIKE ? ESCAPE '\\'` : '';
+    const params = pattern ? [guildId, pattern] : [guildId];
+    const rows = this.db
+      .query<MemberRow & { rank: number }, (string | number)[]>(`${ranked} SELECT * FROM ranked ${where} ORDER BY rank LIMIT ? OFFSET ?`)
+      .all(...params, limit, offset);
+    const count = (filter: string, values: string[]) =>
+      this.db.query<{ n: number }, string[]>(`${ranked} SELECT COUNT(*) AS n FROM ranked ${filter}`).get(...values)?.n ?? 0;
+    const members = count('', [guildId]);
+    return {
+      entries: rows.map(listEntry),
+      matches: pattern ? count(where, params) : members,
+      members,
+    };
+  }
+
+  /** One member's row and place for a level kind, or null when they are not on that list. */
+  rankOf(guildId: string, userId: string, by: LeaderboardKind): LeaderboardListEntry | null {
+    const column = KIND_COLUMN[by];
+    const row = this.db
+      .query<MemberRow & { rank: number }, [string, string]>(
+        `SELECT * FROM (
+           SELECT user_id, text_xp, voice_xp, messages, voice_minutes, display_name, avatar_url,
+                  ROW_NUMBER() OVER (ORDER BY ${column} DESC, user_id) AS rank
+           FROM leveling_members WHERE guild_id = ? AND left_at IS NULL AND ${column} > 0
+         ) WHERE user_id = ?`,
+      )
+      .get(guildId, userId);
+    return row ? listEntry(row) : null;
   }
 
   setLeft(guildId: string, userId: string, left: boolean): boolean {
@@ -435,6 +541,15 @@ export default defineServerFeature({
         ALTER TABLE leveling_members ADD COLUMN voice_day_minutes INTEGER NOT NULL DEFAULT 0;
       `,
     },
+    {
+      // Name search on the web leaderboard. Old rows get an ASCII lowercase name now and the full
+      // folded one (accents removed) the next time they earn XP.
+      id: 'leveling_005_search_name',
+      sql: `
+        ALTER TABLE leveling_members ADD COLUMN search_name TEXT;
+        UPDATE leveling_members SET search_name = LOWER(display_name);
+      `,
+    },
   ],
 
   setup(ctx: AppContext) {
@@ -475,6 +590,7 @@ export default defineServerFeature({
                 server: { name: guild.name },
                 entries,
                 updatedAt: new Date(),
+                listUrl: `${ctx.config.publicUrl.replace(/\/+$/, '')}${leaderboardPath(guild.id)}`,
               }),
             }
           : null,
@@ -771,6 +887,28 @@ export default defineServerFeature({
           ctx.audit.record(guild.id, { type: 'shifubot.xpReset', actorId: c.get('session').userId, data: { feature: 'leveling' } });
           await refreshPanel(guild);
           return c.json({ members: [] } satisfies TopResponse);
+        });
+      },
+
+      memberRoutes(router) {
+        /** The web leaderboard: every member, ranked by one level kind, with search and paging. */
+        router.get('/', (c) => {
+          const guild = c.get('guild');
+          const query = parseInput(listQuerySchema, c.req.query(), 'List query');
+          const { xpSources } = store.get(guild.id);
+          const kinds = shownLevels(xpSources);
+          // Only kinds that count on this server; the first one is the server's own ranking.
+          const by: LeaderboardKind = query.by && kinds.includes(query.by) ? query.by : kinds[0]!;
+          const list = store.list(guild.id, { by, q: query.q, offset: query.offset, limit: query.limit });
+          const body: LeaderboardListResponse = {
+            xpSources,
+            by,
+            members: list.members,
+            matches: list.matches,
+            entries: list.entries,
+            me: store.rankOf(guild.id, c.get('session').userId, by),
+          };
+          return c.json(body);
         });
       },
     };

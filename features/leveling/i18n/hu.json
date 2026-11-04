@@ -81,13 +81,25 @@
     "track": "Melyik szint lépett: Chat vagy Hang",
     "server": "A szerver neve"
   },
+  "list": {
+    "rankBy": "Rangsor alapja",
+    "members": "{count} tag a listán",
+    "overallHint": "összesített szint = chat XP + hang XP",
+    "level": "{level}. szint",
+    "levelUnit": "szint",
+    "xp": "{xp} XP",
+    "nextLevel": "Még {left} XP a következő szintig",
+    "notOnList": "Még nem vagy ezen a listán. Chatelj vagy beszélgess hangcsatornán, hogy XP-t szerezz.",
+    "empty": "Még senkinek sincs XP-je. Kezdjetek el chatelni!"
+  },
   "leaderboard": {
     "title": "{server} toplista",
     "line": "{rank} {user} · {levels} · {xp} XP",
     "legend": "{overall} szint = chat XP + hang XP. Az összes XP alapján rangsorolva.",
     "empty": "Még senkinek sincs XP-je. Kezdjetek el chatelni!",
     "updated": "Frissítve {time}",
-    "rankButton": "Saját rangom"
+    "rankButton": "Saját rangom",
+    "fullList": "Teljes toplista"
   },
   "rank": {
     "title": "{username} rangja",
@@ -125,6 +137,8 @@
     "resetTitle": "Nullázod az összes XP-t?",
     "resetBody": "A szerver minden tagja visszaesik 0-s chat és 0-s hang szintre. Ez nem vonható vissza.",
     "resetConfirm": "Mindent nullázok",
+    "openList": "Teljes toplista megnyitása",
+    "openListHelp": "A szerver minden tagja megnyithatja, miután belépett Discorddal.",
     "resetDone": "Az összes XP nullázva"
   },
   "preview": {

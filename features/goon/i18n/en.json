@@ -71,29 +71,11 @@
     "today": "Today at {time}"
   },
   "list": {
-    "title": "Goon counter",
     "total": "{count} goons in total",
     "members": "{count} members on the list",
-    "search": "Search by name",
-    "searchLabel": "Search members",
-    "you": "You",
-    "yourPlace": "Your place",
     "notOnList": "You are not on the list yet. Press the button on the panel in Discord to get on it.",
     "goons": "goons",
-    "loadMore": "Show more",
-    "loading": "Loading…",
-    "empty": "Nobody has gooned yet. Be the first!",
-    "noResults": "Nobody matches “{q}”.",
-    "matches": "{count} matches",
-    "signInTitle": "Members only",
-    "signInBody": "Sign in with Discord to see the full goon list of this server. Only members of the server can see it.",
-    "signIn": "Sign in with Discord",
-    "notMemberTitle": "Members only",
-    "notMemberBody": "You are signed in, but not as a member of this server. Only its members can see this list.",
-    "notFoundTitle": "Not found",
-    "notFoundBody": "This list does not exist, or the goon counter is turned off on this server.",
-    "errorTitle": "Something went wrong",
-    "retry": "Try again"
+    "empty": "Nobody has gooned yet. Be the first!"
   },
   "setup": {
     "title": "Goon counter",

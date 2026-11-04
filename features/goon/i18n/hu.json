@@ -71,29 +71,11 @@
     "today": "Ma {time}-kor"
   },
   "list": {
-    "title": "Goon számláló",
     "total": "Összesen {count} goon",
     "members": "{count} tag a listán",
-    "search": "Keresés név szerint",
-    "searchLabel": "Tagok keresése",
-    "you": "Te",
-    "yourPlace": "A helyezésed",
     "notOnList": "Még nem vagy a listán. Nyomd meg a gombot a Discordos panelen, és felkerülsz.",
     "goons": "goon",
-    "loadMore": "Továbbiak",
-    "loading": "Betöltés…",
-    "empty": "Még senki nem goonolt. Légy te az első!",
-    "noResults": "Senki nem felel meg ennek: „{q}”.",
-    "matches": "{count} találat",
-    "signInTitle": "Csak tagoknak",
-    "signInBody": "Lépj be Discorddal, hogy lásd a szerver teljes goon listáját. Csak a szerver tagjai láthatják.",
-    "signIn": "Belépés Discorddal",
-    "notMemberTitle": "Csak tagoknak",
-    "notMemberBody": "Be vagy lépve, de nem vagy tagja ennek a szervernek. Ezt a listát csak a tagjai láthatják.",
-    "notFoundTitle": "Nem található",
-    "notFoundBody": "Ez a lista nem létezik, vagy a goon számláló ki van kapcsolva ezen a szerveren.",
-    "errorTitle": "Valami hiba történt",
-    "retry": "Újra"
+    "empty": "Még senki nem goonolt. Légy te az első!"
   },
   "setup": {
     "title": "Goon számláló",
