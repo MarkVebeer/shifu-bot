@@ -6,6 +6,7 @@ import { getTranslator } from '../../../../features';
 import { api } from '../lib/api';
 import { GuildContext, type GuildContextValue } from '../lib/guild';
 import { errorText, I18nProvider, useT } from '../lib/i18n';
+import { usePermissionReport } from '../lib/use-permissions';
 import { useSetupDrafts } from '../lib/use-setup-drafts';
 import { Alert, Avatar, Button, cx, Logo, Skeleton } from '../ui/primitives';
 import { useToast } from '../ui/toast';
@@ -19,7 +20,8 @@ export function SetupWizard({ guild, reload, rerun }: { guild: GuildOverview; re
   const draftLocale = (setup.drafts?.language as { locale?: unknown } | undefined)?.locale;
   // The wizard speaks the language picked in the first step right away.
   const locale = isLocale(draftLocale) ? draftLocale : guild.locale;
-  const context = useMemo<GuildContextValue>(() => ({ guild, reload, setDirty: () => {} }), [guild, reload]);
+  const permissions = usePermissionReport(guild.id);
+  const context = useMemo<GuildContextValue>(() => ({ guild, reload, setDirty: () => {}, permissions }), [guild, reload, permissions]);
 
   return (
     <I18nProvider locale={locale}>

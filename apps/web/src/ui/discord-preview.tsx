@@ -2,7 +2,7 @@
  * Renders a MessagePayload (the exact object the bot sends) the way the Discord
  * client shows it. Supports the markdown subset used in embeds.
  */
-import { intToHex, type EmbedData, type MessagePayload } from '@shifubot/shared';
+import { ButtonStyle, discordPreviewColors, intToHex, type ActionRowData, type EmbedData, type MessagePayload } from '@shifubot/shared';
 import { Fragment, type ReactNode } from 'react';
 
 interface PreviewProps {
@@ -83,6 +83,29 @@ function Embed({ embed, mentions, timestampLabel }: { embed: EmbedData; mentions
   );
 }
 
+const BUTTON_COLORS: Record<number, string> = {
+  [ButtonStyle.Primary]: discordPreviewColors.buttonPrimary,
+  [ButtonStyle.Secondary]: discordPreviewColors.buttonSecondary,
+  [ButtonStyle.Success]: discordPreviewColors.buttonSuccess,
+};
+
+function ActionRow({ row }: { row: ActionRowData }) {
+  return (
+    <div className="mt-2 flex flex-wrap gap-2">
+      {row.components.map((button) => (
+        <span
+          key={button.custom_id}
+          className="inline-flex min-h-8 items-center gap-1.5 rounded-[3px] px-4 text-sm font-medium text-white"
+          style={{ background: BUTTON_COLORS[button.style] }}
+        >
+          {button.emoji && <span aria-hidden>{button.emoji.name}</span>}
+          {button.label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export function DiscordMessagePreview({ payload, bot, mentions, botTag, timestampLabel }: PreviewProps) {
   return (
     <div className="overflow-hidden rounded-panel bg-discord-bg px-3 py-4 font-sans text-discord-text sm:px-4">
@@ -100,6 +123,7 @@ export function DiscordMessagePreview({ payload, bot, mentions, botTag, timestam
           {payload.embeds.map((embed, index) => (
             <Embed key={index} embed={embed} mentions={mentions} timestampLabel={timestampLabel} />
           ))}
+          {payload.components?.map((row, index) => <ActionRow key={index} row={row} />)}
         </div>
       </div>
     </div>

@@ -1,0 +1,109 @@
+{
+  "name": "Verification",
+  "description": "Keep bots out: new members solve a captcha before they get access to the server.",
+  "defaults": {
+    "title": "Verify to enter {server}",
+    "descriptionCaptcha": "Click the button below and type the code from the picture. It takes a few seconds and keeps bots out of {server}.",
+    "descriptionButton": "Click the button below to confirm you are a real person and unlock the rest of {server}.",
+    "button": "Verify"
+  },
+  "form": {
+    "general": "General",
+    "panel": "Panel message",
+    "style": "Style",
+    "protection": "Protection",
+    "rules": "Captcha codes expire after {minutes} minutes and allow {attempts} tries. Each member can ask for at most 5 pictures per minute.",
+    "enabled": "Turn on verification",
+    "enabledHelp": "ShifuBot posts a panel with a Verify button in the channel below.",
+    "channel": "Panel channel",
+    "mode": "Verification method",
+    "modeCaptcha": "Captcha",
+    "modeCaptchaHelp": "Members type a code from a picture. Stops automated accounts.",
+    "modeButton": "Button only",
+    "modeButtonHelp": "One click. Fast, but only stops the simplest bots.",
+    "title": "Title",
+    "description": "Description",
+    "buttonLabel": "Button label",
+    "defaultHint": "Leave empty to use the default text in the server language.",
+    "placeholders": "Placeholders",
+    "insertPlaceholder": "Insert {name}",
+    "unknownPlaceholder": "Unknown placeholder: {names}",
+    "color": "Accent color",
+    "minAccountAge": "Minimum account age",
+    "minAccountAgeHelp": "Accounts younger than this cannot verify. Fresh accounts are a common sign of raids. 0 turns it off.",
+    "days": "days",
+    "restoreOnRejoin": "Remember verified members",
+    "restoreOnRejoinHelp": "Gives the role back automatically when someone who verified before rejoins.",
+    "lockHint": "Verification only gives a role. To keep unverified members out, let only the verified role see your channels, and let everyone see the panel channel."
+  },
+  "placeholder": {
+    "server": "The server name"
+  },
+  "status": {
+    "noChannel": "Pick a channel for the panel.",
+    "noRole": "Pick the role verified members get.",
+    "channelMissing": "The selected channel no longer exists. Choose another one.",
+    "missingPermissions": "ShifuBot is missing permissions in this channel: {permissions}.",
+    "lastError": "Last problem: {error}",
+    "panelLive": "The panel is live in #{channel}.",
+    "panelMissing": "The panel is not posted yet. Save, or post it again below.",
+    "verifiedCount": "{count} members verified so far"
+  },
+  "panel": {
+    "repost": "Post panel again",
+    "reposting": "Posting…",
+    "reposted": "Panel posted to #{channel}",
+    "failed": "Settings saved, but the panel could not be updated: {error}",
+    "help": "Use this if someone deleted the panel message."
+  },
+  "preview": {
+    "title": "Live preview",
+    "hint": "The panel exactly as Discord will show it.",
+    "botTag": "APP",
+    "today": "Today at {time}",
+    "captchaTitle": "What members see after clicking",
+    "captchaHint": "A new random code every time. Only the member who clicked sees it.",
+    "captchaAlt": "Example captcha image",
+    "newSample": "Show another example"
+  },
+  "setup": {
+    "title": "Verification",
+    "description": "Keep bots out with a captcha. Fine tune texts and protection later on the Verification page.",
+    "channelRequired": "Pick a channel, or turn verification off for now.",
+    "roleRequired": "Pick the role verified members get.",
+    "summaryOn": "On",
+    "summaryOff": "Off"
+  },
+  "replies": {
+    "disabled": "Verification is turned off on this server.",
+    "notConfigured": "Verification is not set up correctly. Please tell a server admin.",
+    "alreadyVerified": "You are already verified.",
+    "restored": "You verified before, so here is your role again.",
+    "tooYoung": "Your Discord account is too new to verify here. Accounts must be at least {days} days old.",
+    "captchaTitle": "Prove you are human",
+    "captchaBody": "Type the {length} characters from the picture. Click **Enter code** to answer.\nThe code expires in {minutes} minutes. You have {attempts} tries.",
+    "answerButton": "Enter code",
+    "refreshButton": "New picture",
+    "modalTitle": "Verification",
+    "modalLabel": "Code from the picture",
+    "modalPlaceholder": "e.g. AC3XKP",
+    "expired": "Your code expired or was used up. Click **Verify** on the panel again.",
+    "wrong": "That code is not right. Tries left: {left}.",
+    "tooManyAttempts": "Too many wrong tries. Click **Verify** on the panel to get a new picture.",
+    "success": "You are verified. Welcome to {server}!",
+    "roleFailed": "You solved it, but ShifuBot could not give you the role. Please tell a server admin.",
+    "slowDown": "Slow down a little. Try again in a minute."
+  },
+  "errors": {
+    "no_channel": "no channel selected",
+    "channel_missing": "channel not found",
+    "missing_permissions": "missing permissions in the panel channel",
+    "send_failed": "Discord rejected the panel message",
+    "no_role": "no role selected",
+    "role_missing": "the role no longer exists",
+    "role_managed": "the role is managed by an integration and cannot be given",
+    "no_manage_roles": "ShifuBot is missing the Manage Roles permission",
+    "role_too_high": "the role is above ShifuBot's highest role. Drag ShifuBot's role above it in Server Settings → Roles",
+    "role_failed": "Discord refused to give the role"
+  }
+}

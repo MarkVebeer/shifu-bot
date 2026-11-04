@@ -1,4 +1,5 @@
-import type { GuildOverview } from '@shifubot/shared';
+import type { GuildOverview, PermissionReport } from '@shifubot/shared';
+import type { ApiState } from './use-api';
 import { createContext, useContext } from 'react';
 
 export interface GuildContextValue {
@@ -7,6 +8,8 @@ export interface GuildContextValue {
   reload: () => Promise<void>;
   /** Mark the current page as having unsaved changes (drives the leave warning). */
   setDirty: (dirty: boolean) => void;
+  /** What ShifuBot is missing in this server. Call permissions.reload() after saving a feature. */
+  permissions: ApiState<PermissionReport>;
 }
 
 export const GuildContext = createContext<GuildContextValue | null>(null);

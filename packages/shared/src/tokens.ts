@@ -36,6 +36,9 @@ export const discordPreviewColors = {
   botTag: '#5865F2',
   link: '#00A8FC',
   codeBg: '#1E1F22',
+  buttonPrimary: '#5865F2',
+  buttonSecondary: '#4E5058',
+  buttonSuccess: '#248046',
 } as const;
 
 /** Accent colors offered in the embed color picker. */

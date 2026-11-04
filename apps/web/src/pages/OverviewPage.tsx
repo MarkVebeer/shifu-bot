@@ -5,6 +5,7 @@ import { featurePages } from '../features';
 import { useGuild } from '../lib/guild';
 import { useT } from '../lib/i18n';
 import { LocaleBadge } from '../ui/locale-badge';
+import { PermissionCheck } from '../ui/permission-check';
 import { Avatar, Badge, Card, CardHeader } from '../ui/primitives';
 
 export function OverviewPage() {
@@ -20,6 +21,8 @@ export function OverviewPage() {
           <h1 className="truncate text-2xl font-bold tracking-tight sm:text-3xl">{guild.name}</h1>
         </div>
       </header>
+
+      <PermissionCheck variant="card" />
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>

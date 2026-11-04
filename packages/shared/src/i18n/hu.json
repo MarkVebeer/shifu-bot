@@ -39,6 +39,13 @@
     "placeholder": "Válassz csatornát",
     "noChannels": "A ShifuBot egyik szöveges csatornába sem írhat. Adj neki Üzenetek küldése és Linkek beágyazása jogot."
   },
+  "rolePicker": {
+    "label": "Rang",
+    "help": "Csak a ShifuBot legmagasabb rangja alatti rangok adhatók ki. Húzd feljebb a ShifuBot rangját a Szerverbeállítások → Rangok menüben, hogy többet válassz.",
+    "placeholder": "Válassz rangot",
+    "noRoles": "Ezen a szerveren még nincs rang. Hozz létre egyet a Szerverbeállítások → Rangok menüben.",
+    "tooHigh": "a ShifuBot felett"
+  },
   "colorField": {
     "label": "Kiemelő szín",
     "hex": "Hex érték",
@@ -88,6 +95,27 @@
     "active": "Aktív",
     "inactive": "Inaktív",
     "changeInSettings": "Módosítás a Beállításokban"
+  },
+  "permissions": {
+    "title": "Bot jogosultságai",
+    "ok": "A ShifuBotnak minden joga megvan, ami az aktív funkciókhoz kell.",
+    "problemTitle": "A ShifuBotnak hiányzó jogai vannak",
+    "problemBody": "Néhány funkció nem fog működni, amíg ezt nem javítod.",
+    "neededBy": "ehhez kell: {features}",
+    "grant": "Jogok megadása",
+    "grantHelp": "Megnyitja a Discordot ezzel a szerverrel kiválasztva. Kattints az Engedélyezés gombra, és a ShifuBot rangja megkapja a hiányzó jogokat. Utána gyere vissza ide.",
+    "recheck": "Újraellenőrzés",
+    "checked": "Jogosultságok ellenőrizve",
+    "issue": "{feature}: {problem}",
+    "channelIssue": "{feature}: {problem} itt: #{channel}",
+    "channelFix": "A csatorna szintű tiltásokat a gomb nem tudja javítani. Discordon nyisd meg a csatorna beállításait → Engedélyek → ShifuBot, és engedélyezd a fent felsorolt jogokat.",
+    "openChannel": "Csatorna megnyitása",
+    "names": {
+      "ViewChannel": "Csatornák megtekintése",
+      "SendMessages": "Üzenetek küldése",
+      "EmbedLinks": "Linkek beágyazása",
+      "ManageRoles": "Rangok kezelése"
+    }
   },
   "setup": {
     "badge": "Első beállítás",

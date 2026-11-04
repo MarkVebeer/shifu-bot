@@ -50,6 +50,38 @@ export interface ChannelOption {
   canSend: boolean;
 }
 
+export interface RoleOption {
+  id: string;
+  name: string;
+  /** Hex color, null for the default (no color). */
+  color: string | null;
+  /** True when ShifuBot can give this role: below its highest role, not managed, not @everyone. */
+  assignable: boolean;
+}
+
+/** Server permissions a ShifuBot feature can need, named like discord.js PermissionsString. */
+export const BOT_PERMISSIONS = ['ViewChannel', 'SendMessages', 'EmbedLinks', 'ManageRoles'] as const;
+export type BotPermission = (typeof BOT_PERMISSIONS)[number];
+
+/** A problem a feature found that blocks it, beyond the server wide permissions. */
+export interface PermissionIssue {
+  feature: string;
+  /** Feature error code, shown as t(`<feature>.errors.<code>`). */
+  code: string;
+  channel?: { id: string; name: string };
+  /** Permissions denied in that channel by a channel override. */
+  permissions?: BotPermission[];
+}
+
+export interface PermissionReport {
+  ok: boolean;
+  /** Server wide permissions ShifuBot lacks, with the enabled features that need them. */
+  missing: { permission: BotPermission; features: string[] }[];
+  issues: PermissionIssue[];
+  /** Re-authorize link for this server. Approving it gives ShifuBot's role the missing permissions. */
+  grantUrl: string;
+}
+
 export interface ConfigResponse {
   clientId: string;
   defaultLocale: Locale;

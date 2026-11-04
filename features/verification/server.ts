@@ -1,0 +1,591 @@
+/**
+ * Verification feature: bot side. Panel message, button and modal interactions,
+ * captcha challenges, role assignment, database tables and API routes.
+ */
+import type { Database } from 'bun:sqlite';
+import {
+  buildEmbed,
+  emoji,
+  renderPlaceholders,
+  type BotPermission,
+  type Locale,
+  type MessagePayload,
+  type PermissionIssue,
+} from '@shifubot/shared';
+import {
+  DiscordAPIError,
+  Events,
+  MessageFlags,
+  type ButtonInteraction,
+  type Guild,
+  type GuildMember,
+  type Interaction,
+  type ModalSubmitInteraction,
+  type NewsChannel,
+  type Role,
+  type TextChannel,
+} from 'discord.js';
+import { defineServerFeature, type AppContext } from '../../apps/bot/src/core/feature';
+import { LruCache } from '../../apps/bot/src/core/lru-cache';
+import { isPostableChannel, missingSendPermissions, roleProblem, type RoleProblem } from '../../apps/bot/src/core/permissions';
+import { WindowLimiter } from '../../apps/bot/src/core/send-queue';
+import { ApiError, parseJsonBody } from '../../apps/bot/src/http/errors';
+import { CAPTCHA_LENGTH, randomCaptchaCode, renderCaptcha } from './captcha';
+import {
+  accountAgeDays,
+  buildVerificationPanel,
+  CAPTCHA_RULES,
+  defaultVerificationSettings,
+  verificationManifest,
+  verificationSettingsSchema,
+  VERIFY_IDS,
+  type VerificationSettings,
+} from './manifest';
+
+export type VerificationErrorCode =
+  | 'no_channel'
+  | 'channel_missing'
+  | 'missing_permissions'
+  | 'send_failed'
+  | 'no_role'
+  | RoleProblem
+  | 'role_failed';
+
+export interface VerificationStatus {
+  channelExists: boolean;
+  missingPermissions: string[];
+  /** Why the role cannot be given, or null when it is fine. */
+  roleProblem: 'no_role' | RoleProblem | null;
+  panel: { channelId: string; channelName: string; url: string } | null;
+  lastError: { code: VerificationErrorCode; at: number } | null;
+  verifiedCount: number;
+}
+
+export interface VerificationResponse {
+  settings: VerificationSettings;
+  status: VerificationStatus;
+  /** Set by PUT when the settings were saved but the panel could not be updated. */
+  panelError?: VerificationErrorCode;
+}
+
+interface SettingsRow {
+  guild_id: string;
+  enabled: number;
+  channel_id: string | null;
+  role_id: string | null;
+  mode: string;
+  title: string;
+  description: string;
+  button_label: string;
+  color: string | null;
+  min_account_age_days: number;
+  restore_on_rejoin: number;
+  panel_channel_id: string | null;
+  panel_message_id: string | null;
+  last_error: string | null;
+  last_error_at: number | null;
+}
+
+interface PanelRef {
+  channelId: string;
+  messageId: string;
+}
+
+class VerificationStore {
+  private readonly cache = new LruCache<string, VerificationSettings>(10_000);
+
+  constructor(private readonly db: Database) {}
+
+  get(guildId: string): VerificationSettings {
+    const cached = this.cache.get(guildId);
+    if (cached) return cached;
+    const row = this.row(guildId);
+    const settings: VerificationSettings = row
+      ? {
+          enabled: row.enabled === 1,
+          channelId: row.channel_id,
+          roleId: row.role_id,
+          mode: row.mode === 'button' ? 'button' : 'captcha',
+          title: row.title,
+          description: row.description,
+          buttonLabel: row.button_label,
+          color: row.color,
+          minAccountAgeDays: row.min_account_age_days,
+          restoreOnRejoin: row.restore_on_rejoin === 1,
+        }
+      : defaultVerificationSettings;
+    this.cache.set(guildId, settings);
+    return settings;
+  }
+
+  save(guildId: string, s: VerificationSettings): void {
+    this.db
+      .query(
+        `INSERT INTO verification_settings
+           (guild_id, enabled, channel_id, role_id, mode, title, description, button_label, color,
+            min_account_age_days, restore_on_rejoin, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT (guild_id) DO UPDATE SET
+           enabled = excluded.enabled, channel_id = excluded.channel_id, role_id = excluded.role_id,
+           mode = excluded.mode, title = excluded.title, description = excluded.description,
+           button_label = excluded.button_label, color = excluded.color,
+           min_account_age_days = excluded.min_account_age_days, restore_on_rejoin = excluded.restore_on_rejoin,
+           updated_at = excluded.updated_at, last_error = NULL, last_error_at = NULL`,
+      )
+      .run(
+        guildId,
+        Number(s.enabled),
+        s.channelId,
+        s.roleId,
+        s.mode,
+        s.title,
+        s.description,
+        s.buttonLabel,
+        s.color,
+        s.minAccountAgeDays,
+        Number(s.restoreOnRejoin),
+        Date.now(),
+      );
+    this.cache.delete(guildId);
+  }
+
+  ensureDefaults(guildId: string): void {
+    this.db
+      .query('INSERT OR IGNORE INTO verification_settings (guild_id, updated_at) VALUES (?, ?)')
+      .run(guildId, Date.now());
+    this.cache.delete(guildId);
+  }
+
+  panel(guildId: string): PanelRef | null {
+    const row = this.row(guildId);
+    return row?.panel_channel_id && row.panel_message_id
+      ? { channelId: row.panel_channel_id, messageId: row.panel_message_id }
+      : null;
+  }
+
+  setPanel(guildId: string, panel: PanelRef | null): void {
+    this.ensureDefaults(guildId);
+    this.db
+      .query('UPDATE verification_settings SET panel_channel_id = ?, panel_message_id = ? WHERE guild_id = ?')
+      .run(panel?.channelId ?? null, panel?.messageId ?? null, guildId);
+  }
+
+  setError(guildId: string, code: VerificationErrorCode | null): void {
+    this.db
+      .query('UPDATE verification_settings SET last_error = ?, last_error_at = ? WHERE guild_id = ?')
+      .run(code, code ? Date.now() : null, guildId);
+  }
+
+  lastError(guildId: string): VerificationStatus['lastError'] {
+    const row = this.row(guildId);
+    return row?.last_error && row.last_error_at
+      ? { code: row.last_error as VerificationErrorCode, at: row.last_error_at }
+      : null;
+  }
+
+  markVerified(guildId: string, userId: string): void {
+    this.db
+      .query('INSERT OR REPLACE INTO verification_members (guild_id, user_id, verified_at) VALUES (?, ?, ?)')
+      .run(guildId, userId, Date.now());
+  }
+
+  isVerified(guildId: string, userId: string): boolean {
+    return Boolean(
+      this.db.query('SELECT 1 FROM verification_members WHERE guild_id = ? AND user_id = ?').get(guildId, userId),
+    );
+  }
+
+  verifiedCount(guildId: string): number {
+    return (
+      this.db
+        .query<{ count: number }, [string]>('SELECT COUNT(*) AS count FROM verification_members WHERE guild_id = ?')
+        .get(guildId)?.count ?? 0
+    );
+  }
+
+  private row(guildId: string) {
+    return this.db
+      .query<SettingsRow, [string]>('SELECT * FROM verification_settings WHERE guild_id = ?')
+      .get(guildId);
+  }
+}
+
+interface Challenge {
+  code: string;
+  attempts: number;
+}
+
+type PanelResult = { ok: true; channel: TextChannel | NewsChannel | null } | { ok: false; error: VerificationErrorCode };
+
+/** Uppercase, without spaces: people often type "ac3 xkp". */
+export function normalizeAnswer(input: string): string {
+  return input.replace(/\s+/g, '').toUpperCase();
+}
+
+export default defineServerFeature({
+  manifest: verificationManifest,
+  permissions: ['ViewChannel', 'SendMessages', 'EmbedLinks', 'ManageRoles'],
+  tables: ['verification_settings', 'verification_members'],
+  migrations: [
+    {
+      id: 'verification_001_init',
+      sql: `
+        CREATE TABLE verification_settings (
+          guild_id TEXT PRIMARY KEY,
+          enabled INTEGER NOT NULL DEFAULT 0,
+          channel_id TEXT,
+          role_id TEXT,
+          mode TEXT NOT NULL DEFAULT 'captcha',
+          title TEXT NOT NULL DEFAULT '',
+          description TEXT NOT NULL DEFAULT '',
+          button_label TEXT NOT NULL DEFAULT '',
+          color TEXT,
+          min_account_age_days INTEGER NOT NULL DEFAULT 0,
+          restore_on_rejoin INTEGER NOT NULL DEFAULT 1,
+          panel_channel_id TEXT,
+          panel_message_id TEXT,
+          last_error TEXT,
+          last_error_at INTEGER,
+          updated_at INTEGER NOT NULL
+        );
+        CREATE TABLE verification_members (
+          guild_id TEXT NOT NULL,
+          user_id TEXT NOT NULL,
+          verified_at INTEGER NOT NULL,
+          PRIMARY KEY (guild_id, user_id)
+        );
+      `,
+    },
+  ],
+
+  setup(ctx: AppContext) {
+    const { db, logger, queue, guildSettings } = ctx;
+    const store = new VerificationStore(db);
+    /** Open captchas per member. Memory only: a restart just asks for a new picture. */
+    const challenges = new LruCache<string, Challenge>(50_000, CAPTCHA_RULES.expiresMinutes * 60_000);
+    /** New pictures per member per minute. Rendering costs CPU, so this also protects the bot. */
+    const captchaLimiter = new WindowLimiter(5);
+    const sampleLimiter = new WindowLimiter(20);
+
+    const texts = (locale: Locale) => verificationManifest.messages[locale];
+
+    function resolveChannel(guild: Guild, channelId: string | null) {
+      if (!channelId) return { ok: false as const, error: 'no_channel' as const };
+      const channel = guild.channels.cache.get(channelId);
+      if (!isPostableChannel(channel)) return { ok: false as const, error: 'channel_missing' as const };
+      if (missingSendPermissions(guild, channel).length) return { ok: false as const, error: 'missing_permissions' as const };
+      return { ok: true as const, channel };
+    }
+
+    function resolveRole(guild: Guild, settings: VerificationSettings): { role: Role } | { error: 'no_role' | RoleProblem } {
+      if (!settings.roleId) return { error: 'no_role' };
+      const role = guild.roles.cache.get(settings.roleId);
+      const problem = roleProblem(guild, role);
+      return problem ? { error: problem } : { role: role! };
+    }
+
+    async function deletePanel(guild: Guild, panel: PanelRef) {
+      const channel = guild.channels.cache.get(panel.channelId);
+      if (!isPostableChannel(channel)) return;
+      await channel.messages.delete(panel.messageId).catch(() => {
+        // Already gone or no access: nothing to clean up.
+      });
+    }
+
+    /** Post, update or remove the panel message so it matches the settings. */
+    async function syncPanel(guild: Guild, settings: VerificationSettings, forceNew = false): Promise<PanelResult> {
+      const existing = store.panel(guild.id);
+      if (!settings.enabled) {
+        if (existing) {
+          await deletePanel(guild, existing);
+          store.setPanel(guild.id, null);
+        }
+        return { ok: true, channel: null };
+      }
+
+      const target = resolveChannel(guild, settings.channelId);
+      if (!target.ok) return { ok: false, error: target.error };
+      const payload = buildVerificationPanel(settings, { locale: guildSettings.locale(guild.id), server: { name: guild.name } });
+
+      try {
+        if (existing && existing.channelId === target.channel.id && !forceNew) {
+          try {
+            await queue.run(`verification:${guild.id}`, () => target.channel.messages.edit(existing.messageId, payload));
+            return { ok: true, channel: target.channel };
+          } catch (error) {
+            // 10008: the panel was deleted by hand. Post a new one below.
+            if (!(error instanceof DiscordAPIError && error.code === 10008)) throw error;
+          }
+        } else if (existing) {
+          await deletePanel(guild, existing);
+        }
+        const message = await queue.run(`verification:${guild.id}`, () => target.channel.send(payload));
+        store.setPanel(guild.id, { channelId: target.channel.id, messageId: message.id });
+        return { ok: true, channel: target.channel };
+      } catch (error) {
+        const code: VerificationErrorCode =
+          error instanceof DiscordAPIError && (error.code === 50013 || error.code === 50001) ? 'missing_permissions' : 'send_failed';
+        logger.warn('Verification panel update failed', { guildId: guild.id, code, error });
+        return { ok: false, error: code };
+      }
+    }
+
+    function status(guild: Guild, settings: VerificationSettings): VerificationStatus {
+      const channel = settings.channelId ? guild.channels.cache.get(settings.channelId) : undefined;
+      const postable = isPostableChannel(channel) ? channel : null;
+      const role = resolveRole(guild, settings);
+      const panel = store.panel(guild.id);
+      const panelChannel = panel ? guild.channels.cache.get(panel.channelId) : undefined;
+      return {
+        channelExists: Boolean(postable),
+        missingPermissions: postable ? missingSendPermissions(guild, postable) : [],
+        roleProblem: 'error' in role ? role.error : null,
+        panel:
+          panel && panelChannel
+            ? {
+                channelId: panel.channelId,
+                channelName: panelChannel.name,
+                url: `https://discord.com/channels/${guild.id}/${panel.channelId}/${panel.messageId}`,
+              }
+            : null,
+        lastError: store.lastError(guild.id),
+        verifiedCount: store.verifiedCount(guild.id),
+      };
+    }
+
+    function captchaMessage(locale: Locale, code: string): MessagePayload & { files: { attachment: Buffer; name: string }[] } {
+      const t = texts(locale);
+      return {
+        embeds: [
+          {
+            ...buildEmbed({
+              emoji: verificationManifest.emoji,
+              title: t.replies.captchaTitle,
+              description: renderPlaceholders(t.replies.captchaBody, {
+                length: CAPTCHA_LENGTH,
+                minutes: CAPTCHA_RULES.expiresMinutes,
+                attempts: CAPTCHA_RULES.maxAttempts,
+              }),
+              footer: t.name,
+            }),
+            image: { url: 'attachment://captcha.png' },
+          },
+        ],
+        components: [
+          {
+            type: 1,
+            components: [
+              { type: 2, style: 3, label: t.replies.answerButton, custom_id: VERIFY_IDS.answer, emoji: { name: '⌨️' } },
+              { type: 2, style: 2, label: t.replies.refreshButton, custom_id: VERIFY_IDS.refresh, emoji: { name: '🔄' } },
+            ],
+          },
+        ],
+        files: [{ attachment: renderCaptcha(code), name: 'captcha.png' }],
+        allowedMentions: { users: [], roles: [], parse: [] },
+      };
+    }
+
+    async function grantRole(member: GuildMember, role: Role): Promise<boolean> {
+      try {
+        await member.roles.add(role, 'ShifuBot verification');
+        store.markVerified(member.guild.id, member.id);
+        return true;
+      } catch (error) {
+        logger.warn('Could not give the verified role', { guildId: member.guild.id, roleId: role.id, error });
+        store.setError(member.guild.id, 'role_failed');
+        return false;
+      }
+    }
+
+    const reply = (interaction: ButtonInteraction | ModalSubmitInteraction, icon: keyof typeof emoji, text: string) =>
+      interaction.reply({ content: `${emoji[icon]} ${text}`, flags: MessageFlags.Ephemeral });
+
+    /** Panel button and "New picture" button. */
+    async function onStart(interaction: ButtonInteraction<'cached'>, refresh: boolean) {
+      const { guild, member } = interaction;
+      const locale = guildSettings.locale(guild.id);
+      const t = texts(locale).replies;
+      const settings = store.get(guild.id);
+
+      if (!settings.enabled) return reply(interaction, 'info', t.disabled);
+      const role = resolveRole(guild, settings);
+      if ('error' in role) {
+        store.setError(guild.id, role.error);
+        return reply(interaction, 'error', t.notConfigured);
+      }
+      if (member.roles.cache.has(role.role.id)) return reply(interaction, 'success', t.alreadyVerified);
+      if (settings.minAccountAgeDays > 0 && accountAgeDays(interaction.user.createdAt) < settings.minAccountAgeDays) {
+        logger.info('Verification refused: account too new', { guildId: guild.id, userId: member.id });
+        return reply(interaction, 'warning', renderPlaceholders(t.tooYoung, { days: settings.minAccountAgeDays }));
+      }
+
+      if (settings.mode === 'button') {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        const ok = await grantRole(member, role.role);
+        await interaction.editReply(
+          ok ? `${emoji.success} ${renderPlaceholders(t.success, { server: guild.name })}` : `${emoji.error} ${t.roleFailed}`,
+        );
+        return;
+      }
+
+      const key = `${guild.id}:${member.id}`;
+      if (!captchaLimiter.tryTake(key)) return reply(interaction, 'warning', t.slowDown);
+      const code = randomCaptchaCode();
+      challenges.set(key, { code, attempts: 0 });
+      const message = captchaMessage(locale, code);
+      if (refresh) await interaction.update({ ...message, attachments: [] });
+      else await interaction.reply({ ...message, flags: MessageFlags.Ephemeral });
+    }
+
+    /** "Enter code" button: open the answer form. */
+    async function onAnswer(interaction: ButtonInteraction<'cached'>) {
+      const t = texts(guildSettings.locale(interaction.guild.id)).replies;
+      if (!challenges.get(`${interaction.guild.id}:${interaction.user.id}`)) return reply(interaction, 'warning', t.expired);
+      await interaction.showModal({
+        custom_id: VERIFY_IDS.modal,
+        title: t.modalTitle,
+        components: [
+          {
+            type: 1,
+            components: [
+              {
+                type: 4,
+                custom_id: VERIFY_IDS.codeInput,
+                label: t.modalLabel,
+                placeholder: t.modalPlaceholder,
+                style: 1,
+                min_length: CAPTCHA_LENGTH,
+                max_length: CAPTCHA_LENGTH + 4,
+                required: true,
+              },
+            ],
+          },
+        ],
+      });
+    }
+
+    /** The answer form was sent. */
+    async function onModal(interaction: ModalSubmitInteraction<'cached'>) {
+      const { guild, member } = interaction;
+      const t = texts(guildSettings.locale(guild.id)).replies;
+      const key = `${guild.id}:${member.id}`;
+      const challenge = challenges.get(key);
+      if (!challenge) return reply(interaction, 'warning', t.expired);
+
+      if (normalizeAnswer(interaction.fields.getTextInputValue(VERIFY_IDS.codeInput)) !== challenge.code) {
+        const attempts = challenge.attempts + 1;
+        if (attempts >= CAPTCHA_RULES.maxAttempts) {
+          challenges.delete(key);
+          return reply(interaction, 'error', t.tooManyAttempts);
+        }
+        challenges.set(key, { ...challenge, attempts });
+        return reply(interaction, 'warning', renderPlaceholders(t.wrong, { left: CAPTCHA_RULES.maxAttempts - attempts }));
+      }
+
+      challenges.delete(key);
+      const settings = store.get(guild.id);
+      const role = resolveRole(guild, settings);
+      if (!settings.enabled || 'error' in role) return reply(interaction, 'error', t.notConfigured);
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      const ok = await grantRole(member, role.role);
+      logger.info('Member verified', { guildId: guild.id, userId: member.id, ok });
+      await interaction.editReply(
+        ok ? `${emoji.success} ${renderPlaceholders(t.success, { server: guild.name })}` : `${emoji.error} ${t.roleFailed}`,
+      );
+    }
+
+    const response = (guild: Guild, settings: VerificationSettings, panelError?: VerificationErrorCode): VerificationResponse => ({
+      settings,
+      status: status(guild, settings),
+      ...(panelError ? { panelError } : {}),
+    });
+
+    return {
+      isEnabled: (guildId) => store.get(guildId).enabled,
+
+      onGuildCreate: (guild) => store.ensureDefaults(guild.id),
+
+      health: (guild) => {
+        const settings = store.get(guild.id);
+        const issues: Omit<PermissionIssue, 'feature'>[] = [];
+        const channel = settings.channelId ? guild.channels.cache.get(settings.channelId) : undefined;
+        if (settings.channelId && !isPostableChannel(channel)) issues.push({ code: 'channel_missing' });
+        if (isPostableChannel(channel)) {
+          const missing = missingSendPermissions(guild, channel) as BotPermission[];
+          if (missing.length) issues.push({ code: 'missing_permissions', channel: { id: channel.id, name: channel.name }, permissions: missing });
+        }
+        const role = resolveRole(guild, settings);
+        if ('error' in role && role.error !== 'no_role') issues.push({ code: role.error });
+        return issues;
+      },
+
+      events: {
+        [Events.InteractionCreate]: async (interaction: Interaction) => {
+          if (!interaction.inCachedGuild()) return;
+          if (interaction.isButton()) {
+            if (interaction.customId === VERIFY_IDS.start) await onStart(interaction, false);
+            else if (interaction.customId === VERIFY_IDS.refresh) await onStart(interaction, true);
+            else if (interaction.customId === VERIFY_IDS.answer) await onAnswer(interaction);
+          } else if (interaction.isModalSubmit() && interaction.customId === VERIFY_IDS.modal) {
+            await onModal(interaction);
+          }
+        },
+
+        /** Members who verified before get their role back when they rejoin. */
+        [Events.GuildMemberAdd]: async (member: GuildMember) => {
+          if (member.user.bot) return;
+          const settings = store.get(member.guild.id);
+          if (!settings.enabled || !settings.restoreOnRejoin || !store.isVerified(member.guild.id, member.id)) return;
+          const role = resolveRole(member.guild, settings);
+          if ('error' in role) return;
+          if (await grantRole(member, role.role)) {
+            logger.info('Verified role restored on rejoin', { guildId: member.guild.id, userId: member.id });
+          }
+        },
+      },
+
+      routes(router) {
+        router.get('/', (c) => {
+          const guild = c.get('guild');
+          return c.json(response(guild, store.get(guild.id)));
+        });
+
+        router.put('/', async (c) => {
+          const guild = c.get('guild');
+          const settings = await parseJsonBody(c.req.raw, verificationSettingsSchema);
+          store.save(guild.id, settings);
+          logger.info('Verification settings saved', { guildId: guild.id, userId: c.get('session').userId });
+          const result = await syncPanel(guild, settings);
+          if (!result.ok) store.setError(guild.id, result.error);
+          return c.json(response(guild, store.get(guild.id), result.ok ? undefined : result.error));
+        });
+
+        const repostLimiter = new WindowLimiter(5);
+        /** Post a fresh panel, e.g. after someone deleted it. Uses the saved settings. */
+        router.post('/panel', async (c) => {
+          const guild = c.get('guild');
+          if (!repostLimiter.tryTake(guild.id)) {
+            throw new ApiError(429, 'rate_limited', 'You can post the panel at most 5 times per minute');
+          }
+          const settings = store.get(guild.id);
+          const result = await syncPanel(guild, settings, true);
+          if (!result.ok) {
+            store.setError(guild.id, result.error);
+            throw new ApiError(409, result.error, `Cannot post the panel: ${result.error.replaceAll('_', ' ')}`);
+          }
+          store.setError(guild.id, null);
+          return c.json({ ...response(guild, settings), channel: result.channel && { id: result.channel.id, name: result.channel.name } });
+        });
+
+        /** A sample captcha for the dashboard preview. */
+        router.get('/captcha.png', (c) => {
+          if (!sampleLimiter.tryTake(c.get('guild').id)) throw new ApiError(429, 'rate_limited', 'Too many sample images');
+          return c.body(new Uint8Array(renderCaptcha(randomCaptchaCode())), 200, {
+            'Content-Type': 'image/png',
+            'Cache-Control': 'no-store',
+          });
+        });
+      },
+    };
+  },
+});

@@ -39,6 +39,13 @@
     "placeholder": "Choose a channel",
     "noChannels": "ShifuBot cannot write in any text channel. Give it the Send Messages and Embed Links permissions."
   },
+  "rolePicker": {
+    "label": "Role",
+    "help": "Only roles below ShifuBot's highest role can be given. Drag ShifuBot's role higher in Server Settings → Roles to unlock more.",
+    "placeholder": "Choose a role",
+    "noRoles": "This server has no roles yet. Create one in Server Settings → Roles.",
+    "tooHigh": "above ShifuBot"
+  },
   "colorField": {
     "label": "Accent color",
     "hex": "Hex value",
@@ -88,6 +95,27 @@
     "active": "Active",
     "inactive": "Inactive",
     "changeInSettings": "Change in Settings"
+  },
+  "permissions": {
+    "title": "Bot permissions",
+    "ok": "ShifuBot has every permission its active features need.",
+    "problemTitle": "ShifuBot is missing permissions",
+    "problemBody": "Some features will not work until this is fixed.",
+    "neededBy": "needed by {features}",
+    "grant": "Grant permissions",
+    "grantHelp": "Opens Discord with this server selected. Click Authorize and ShifuBot's role gets the missing permissions. Then come back here.",
+    "recheck": "Check again",
+    "checked": "Permissions checked",
+    "issue": "{feature}: {problem}",
+    "channelIssue": "{feature}: {problem} in #{channel}",
+    "channelFix": "Channel overrides cannot be fixed with the button. In Discord open the channel's settings → Permissions → ShifuBot and allow the permissions listed above.",
+    "openChannel": "Open channel",
+    "names": {
+      "ViewChannel": "View Channels",
+      "SendMessages": "Send Messages",
+      "EmbedLinks": "Embed Links",
+      "ManageRoles": "Manage Roles"
+    }
   },
   "setup": {
     "badge": "First time setup",

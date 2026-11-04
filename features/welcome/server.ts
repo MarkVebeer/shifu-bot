@@ -2,6 +2,7 @@
  * Welcome feature: bot side. Event handler, database table and API routes.
  */
 import type { Database } from 'bun:sqlite';
+import type { BotPermission } from '@shifubot/shared';
 import { DiscordAPIError, Events, type Guild, type GuildMember } from 'discord.js';
 import { defineServerFeature, type AppContext } from '../../apps/bot/src/core/feature';
 import { LruCache } from '../../apps/bot/src/core/lru-cache';
@@ -135,6 +136,7 @@ function memberContext(member: GuildMember) {
 
 export default defineServerFeature({
   manifest: welcomeManifest,
+  permissions: ['ViewChannel', 'SendMessages', 'EmbedLinks'],
   tables: ['welcome_settings'],
   migrations: [
     {
@@ -222,6 +224,15 @@ export default defineServerFeature({
       isEnabled: (guildId) => store.get(guildId).enabled,
 
       onGuildCreate: (guild) => store.ensureDefaults(guild.id),
+
+      health: (guild) => {
+        const { channelId } = store.get(guild.id);
+        const target = resolveChannel(guild, channelId);
+        if (target.ok || target.error === 'no_channel') return [];
+        const channel = guild.channels.cache.get(channelId!);
+        if (target.error === 'channel_missing' || !channel) return [{ code: 'channel_missing' }];
+        return [{ code: target.error, channel: { id: channel.id, name: channel.name }, permissions: target.missing as BotPermission[] }];
+      },
 
       events: {
         [Events.GuildMemberAdd]: (member: GuildMember) => {

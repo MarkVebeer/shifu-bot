@@ -4,10 +4,12 @@ import { Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } f
 import { Link, NavLink, Outlet, useBlocker, useMatch, useParams } from 'react-router';
 import { featurePages } from '../features';
 import { useAuth } from '../lib/auth';
+import { usePermissionReport } from '../lib/use-permissions';
 import { GuildContext, type GuildContextValue } from '../lib/guild';
 import { errorText, I18nProvider, useT } from '../lib/i18n';
 import { useApi } from '../lib/use-api';
 import { Alert, Avatar, Button, cx, Logo, Skeleton } from '../ui/primitives';
+import { PermissionCheck } from '../ui/permission-check';
 import { ConfirmDialog } from '../ui/widgets';
 import { SetupWizard } from './SetupWizard';
 
@@ -52,6 +54,8 @@ function GuildShell({ guild, reload }: { guild: GuildOverview; reload: () => Pro
   const { me, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const [dirty, setDirty] = useState(false);
+  const permissions = usePermissionReport(guild.id);
+  const onOverview = useMatch('/guilds/:guildId');
 
   const blocker = useBlocker(({ currentLocation, nextLocation }) => dirty && currentLocation.pathname !== nextLocation.pathname);
 
@@ -88,7 +92,10 @@ function GuildShell({ guild, reload }: { guild: GuildOverview; reload: () => Pro
   ];
 
   const stableSetDirty = useCallback((value: boolean) => setDirty(value), []);
-  const context = useMemo<GuildContextValue>(() => ({ guild, reload, setDirty: stableSetDirty }), [guild, reload, stableSetDirty]);
+  const context = useMemo<GuildContextValue>(
+    () => ({ guild, reload, setDirty: stableSetDirty, permissions }),
+    [guild, reload, stableSetDirty, permissions],
+  );
 
   return (
     <GuildContext.Provider value={context}>
@@ -175,6 +182,12 @@ function GuildShell({ guild, reload }: { guild: GuildOverview; reload: () => Pro
           </header>
 
           <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 pb-32 pt-6 sm:px-6 lg:px-10 lg:pb-12 lg:pt-10">
+            {/* The overview shows the full permission card instead. */}
+            {!onOverview && (
+              <div className="mb-6 empty:hidden">
+                <PermissionCheck variant="banner" />
+              </div>
+            )}
             <Suspense fallback={<PageSkeleton />}>
               <Outlet />
             </Suspense>

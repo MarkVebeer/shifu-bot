@@ -1,15 +1,18 @@
 import {
   guildSettingsSchema,
+  type BotPermission,
   snowflake,
   type ChannelOption,
   type GuildListItem,
   type GuildOverview,
+  type PermissionReport,
+  type RoleOption,
 } from '@shifubot/shared';
 import { DiscordAPIError, PermissionFlagsBits, type GuildMember } from 'discord.js';
 import { Hono } from 'hono';
 import type { AppContext, FeatureInstance, GuildRouteEnv, ServerFeature } from '../core/feature';
 import { LruCache } from '../core/lru-cache';
-import { INVITE_PERMISSIONS, isPostableChannel, missingSendPermissions } from '../core/permissions';
+import { INVITE_PERMISSIONS, isPostableChannel, missingSendPermissions, roleProblem } from '../core/permissions';
 import { fetchUserGuilds, guildIconUrl, type OAuthGuild } from './discord-oauth';
 import { ApiError, parseInput, parseJsonBody } from './errors';
 import { csrfProtection, requireSession } from './middleware';
@@ -158,6 +161,59 @@ export function guildRoutes(
         canSend: missingSendPermissions(guild, channel).length === 0,
       }));
     return c.json({ channels });
+  });
+
+  /**
+   * What ShifuBot is missing for the features that are turned on: server wide
+   * permissions (fixable with the re-authorize link) and channel or role problems
+   * reported by the features (fixable only in Discord's settings).
+   */
+  app.get('/:guildId/permissions', (c) => {
+    const guild = c.get('guild');
+    const me = guild.members.me;
+    const enabled = features.filter(({ instance }) => instance.isEnabled?.(guild.id));
+
+    const neededBy = new Map<BotPermission, string[]>();
+    for (const { feature } of enabled) {
+      for (const permission of feature.permissions) {
+        neededBy.set(permission, [...(neededBy.get(permission) ?? []), feature.manifest.id]);
+      }
+    }
+    const missing = [...neededBy]
+      .filter(([permission]) => !me?.permissions.has(PermissionFlagsBits[permission]))
+      .map(([permission, ids]) => ({ permission, features: ids }));
+    const missingSet = new Set(missing.map((item) => item.permission));
+
+    const issues = enabled
+      .flatMap(({ feature, instance }) => (instance.health?.(guild) ?? []).map((issue) => ({ feature: feature.manifest.id, ...issue })))
+      // A server wide gap already explains these; listing them twice would only confuse.
+      .map((issue) => (issue.permissions ? { ...issue, permissions: issue.permissions.filter((p) => !missingSet.has(p)) } : issue))
+      .filter((issue) => !(issue.code === 'missing_permissions' && issue.permissions?.length === 0))
+      .filter((issue) => !(issue.code === 'no_manage_roles' && missingSet.has('ManageRoles')));
+
+    const body: PermissionReport = {
+      ok: missing.length === 0 && issues.length === 0,
+      missing,
+      issues,
+      grantUrl: inviteUrl(config.discord.clientId, guild.id),
+    };
+    c.header('Cache-Control', 'no-store');
+    return c.json(body);
+  });
+
+  /** Roles from highest to lowest, without @everyone. */
+  app.get('/:guildId/roles', (c) => {
+    const guild = c.get('guild');
+    const roles: RoleOption[] = guild.roles.cache
+      .filter((role) => role.id !== guild.id)
+      .sort((a, b) => b.comparePositionTo(a))
+      .map((role) => ({
+        id: role.id,
+        name: role.name,
+        color: role.color ? role.hexColor.toUpperCase() : null,
+        assignable: roleProblem(guild, role) === null,
+      }));
+    return c.json({ roles });
   });
 
   for (const { feature, instance } of features) {

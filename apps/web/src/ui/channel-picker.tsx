@@ -10,8 +10,11 @@ export function ChannelPicker({
   value,
   onChange,
   error,
+  label,
 }: {
   id: string;
+  /** Overrides the default "Channel" label. */
+  label?: string;
   value: string | null;
   onChange: (channelId: string | null) => void;
   error?: string;
@@ -28,7 +31,7 @@ export function ChannelPicker({
   }, new Map());
 
   return (
-    <Field label={t('channelPicker.label')} help={t('channelPicker.help')} htmlFor={id} error={error}>
+    <Field label={label ?? t('channelPicker.label')} help={t('channelPicker.help')} htmlFor={id} error={error}>
       {channels.loading ? (
         <Skeleton className="h-11 w-full" />
       ) : writable.length === 0 ? (

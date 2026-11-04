@@ -29,7 +29,7 @@ export default function GoodbyePage() {
   const { t, locale: uiLocale } = useI18n();
   const toast = useToast();
   const { me } = useAuth();
-  const { guild, setDirty } = useGuild();
+  const { guild, setDirty, permissions } = useGuild();
   const base = `/guilds/${guild.id}`;
   const goodbye = useApi<GoodbyeResponse>(`${base}/features/goodbye`);
 
@@ -107,6 +107,7 @@ export default function GoodbyePage() {
       const response = await api<GoodbyeResponse>(`${base}/features/goodbye`, { method: 'PUT', body: validation.data });
       goodbye.setData(response);
       setDraft(response.settings);
+      void permissions.reload();
       toast.success(t('toast.saved'));
     } catch (error) {
       toast.error(`${t('toast.saveFailed')}: ${errorText(t, error)}`);

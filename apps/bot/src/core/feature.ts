@@ -1,5 +1,5 @@
 import type { Database } from 'bun:sqlite';
-import type { FeatureManifest, Locale } from '@shifubot/shared';
+import type { BotPermission, FeatureManifest, Locale, PermissionIssue } from '@shifubot/shared';
 import type { Awaitable, Client, ClientEvents, Guild, GuildMember } from 'discord.js';
 import type { Hono } from 'hono';
 import type { Config } from '../config';
@@ -43,10 +43,17 @@ export interface FeatureInstance {
   isEnabled?: (guildId: string) => boolean;
   /** Called when the bot joins a server, after core defaults exist. */
   onGuildCreate?: (guild: Guild) => Awaitable<void>;
+  /**
+   * Channel and role problems that stop the feature from working, for the
+   * dashboard permission check. Only called while the feature is enabled.
+   */
+  health?: (guild: Guild) => Omit<PermissionIssue, 'feature'>[];
 }
 
 export interface ServerFeature {
   manifest: FeatureManifest;
+  /** Server wide permissions the feature needs while enabled. Must be part of INVITE_PERMISSIONS. */
+  permissions: BotPermission[];
   /** SQL migrations. Ids must start with the feature id. */
   migrations: Migration[];
   /** Tables with a guild_id column. Rows are deleted when the bot left a server long ago. */

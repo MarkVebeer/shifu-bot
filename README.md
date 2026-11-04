@@ -11,6 +11,10 @@ discord.js, Hono, SQLite and React. Self host it on a Pelican panel, with Docker
   watch a live preview that looks exactly like Discord, and send a test message to yourself.
 - 🚪 **Goodbye messages.** The same editor and live preview for a farewell embed when someone
   leaves, is kicked or banned. It never pings the member who left.
+- 🛡️ **Verification.** Keeps bots out. ShifuBot posts a panel with a Verify button; new members
+  solve a captcha (or just click, in button mode) and get the verified role. Optional minimum
+  account age, and members who verified before get their role back when they rejoin. The
+  captcha images are drawn in plain TypeScript, so there are no native modules to install.
 - 🌐 **English and Hungarian.** Each server picks its language. It drives the dashboard and every
   message the bot sends there.
 - 🛡️ **Raid safe.** At most 10 welcome and 10 goodbye messages per server per minute (configurable).
@@ -65,7 +69,7 @@ The dashboard shows an **Invite bot** button for every server you manage that do
 bot yet. You can also build the link yourself:
 
 ```
-https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&scope=bot%20applications.commands&permissions=19456
+https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&scope=bot%20applications.commands&permissions=268454912
 ```
 
 | Scope | Why |
@@ -78,9 +82,30 @@ https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&scope=bot%20applic
 | View Channels | 1024 | See the welcome channel |
 | Send Messages | 2048 | Post welcome messages |
 | Embed Links | 16384 | Send embeds |
+| Manage Roles | 268435456 | Give the verified role (verification feature) |
 
-`19456` is the sum. The dashboard warns you when the bot is missing one of them in the chosen
-channel. The dashboard login itself uses the `identify` and `guilds` OAuth scopes.
+`268454912` is the sum. The dashboard warns you when the bot is missing one of them in the chosen
+channel, or when it cannot give the chosen role. For verification, also drag the ShifuBot role above
+the verified role in **Server Settings → Roles**. The dashboard login itself uses the `identify` and `guilds` OAuth scopes.
+
+The dashboard checks these permissions for every feature that is turned on. When something is
+missing it shows a banner (and a card on the overview page) with a **Grant permissions** button. It
+opens this invite link for the server; approving it gives ShifuBot's role the missing permissions,
+and the dashboard checks again when you come back to the tab. Channel overrides and role order
+cannot be changed by a link, so for those the banner names the channel or role and how to fix it.
+
+### Verification channel permissions
+
+Verification only gives a role, so the channels decide what unverified members can see:
+
+1. Create a role such as **Verified** and pick it on the Verification page.
+2. On your normal channels (or their categories), deny **View Channel** for `@everyone` and allow it
+   for **Verified**.
+3. On the verification channel, allow **View Channel** for `@everyone` and deny **Send Messages**, so
+   the panel stays clean.
+
+Already existing servers that invited ShifuBot before verification existed must also give it the
+**Manage Roles** permission.
 
 ---
 
@@ -311,6 +336,11 @@ features/
      Server check, CSRF check and rate limit already ran; read `c.get('guild')`, `c.get('member')`
      and `c.get('locale')`. Validate bodies with `parseJsonBody(c.req.raw, schema)`.
    - `isEnabled(guildId)` for the overview page, and an optional `onGuildCreate(guild)`.
+   - `health(guild)` (optional): channel or role problems for the dashboard permission check.
+
+   Also list the server wide permissions the feature needs in `permissions`, e.g.
+   `['ViewChannel', 'SendMessages', 'EmbedLinks']`. They must be part of `INVITE_PERMISSIONS`
+   (a test checks it).
 
    Migration ids must start with the feature id (`leveling_001_settings`). List every table with a
    `guild_id` column in `tables` so cleanup can delete it.
@@ -341,7 +371,7 @@ languages have every key.
 apps/bot          Bun process: discord.js client, Hono API, SQLite, static dashboard hosting
 apps/web          React + Vite + Tailwind dashboard
 packages/shared   Design tokens, i18n layer, embed format, placeholder parser, API types
-features/         Feature modules (welcome, goodbye) and their registry
+features/         Feature modules (welcome, goodbye, verification) and their registry
 pelican/          Pelican egg
 ```
 

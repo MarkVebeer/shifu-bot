@@ -14,7 +14,7 @@ import { SaveBar } from '../ui/widgets';
 export function SettingsPage() {
   const t = useT();
   const toast = useToast();
-  const { guild, reload, setDirty } = useGuild();
+  const { guild, reload, setDirty, permissions } = useGuild();
   const setup = useSetupDrafts(guild);
   const [saving, setSaving] = useState(false);
   const [showProblems, setShowProblems] = useState(false);
@@ -36,6 +36,7 @@ export function SettingsPage() {
       // After a language change `t` still speaks the old language.
       toast.success(getTranslator(isLocale(locale) ? locale : guild.locale)('toast.saved'));
       setShowProblems(false);
+      void permissions.reload();
       if (languageChanged) await reload();
     } catch (error) {
       toast.error(`${t('toast.saveFailed')}: ${errorText(t, error)}`);

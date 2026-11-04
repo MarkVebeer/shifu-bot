@@ -11,6 +11,7 @@ import { DEFAULT_EMBED_COLOR, colors, hexToInt } from './tokens';
 export const emoji = {
   welcome: '👋',
   goodbye: '🚪',
+  verification: '🛡️',
   success: '✅',
   warning: '⚠️',
   error: '⛔',
@@ -44,9 +45,27 @@ export interface EmbedData {
   timestamp?: string;
 }
 
+/** Discord button styles used by ShifuBot. */
+export const ButtonStyle = { Primary: 1, Secondary: 2, Success: 3 } as const;
+
+export interface ButtonData {
+  type: 2;
+  style: (typeof ButtonStyle)[keyof typeof ButtonStyle];
+  label: string;
+  custom_id: string;
+  emoji?: { name: string };
+}
+
+export interface ActionRowData {
+  type: 1;
+  components: ButtonData[];
+}
+
 export interface MessagePayload {
   content?: string;
   embeds: EmbedData[];
+  /** Buttons below the message, in the Discord API shape. */
+  components?: ActionRowData[];
   allowedMentions: { users: string[]; roles: string[]; parse: [] };
 }
 
