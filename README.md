@@ -12,7 +12,8 @@ discord.js, Hono, SQLite and React. Self host it on a Pelican panel, with Docker
 - 🚪 **Goodbye messages.** The same editor and live preview for a farewell embed when someone
   leaves, is kicked or banned. It never pings the member who left.
 - 🛡️ **Verification.** Keeps bots out. ShifuBot posts a panel with a Verify button; new members
-  solve a captcha (or just click, in button mode) and get the verified role. Optional minimum
+  solve a captcha (or just click, in button mode) and get the verified role. Set how many wrong
+  tries are allowed and what happens after (try again, timeout, kick or ban). Optional minimum
   account age, and members who verified before get their role back when they rejoin. The
   captcha images are drawn in plain TypeScript, so there are no native modules to install.
 - 🌐 **English and Hungarian.** Each server picks its language. It drives the dashboard and every

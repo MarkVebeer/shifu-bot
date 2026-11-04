@@ -21,11 +21,11 @@ import type { Session, SessionStore } from './session';
 const MANAGE_GUILD = PermissionFlagsBits.ManageGuild;
 const ADMINISTRATOR = PermissionFlagsBits.Administrator;
 
-export function inviteUrl(clientId: string, guildId?: string): string {
+export function inviteUrl(clientId: string, guildId?: string, permissions = INVITE_PERMISSIONS): string {
   const params = new URLSearchParams({
     client_id: clientId,
     scope: 'bot applications.commands',
-    permissions: INVITE_PERMISSIONS.toString(),
+    permissions: permissions.toString(),
   });
   if (guildId) {
     params.set('guild_id', guildId);
@@ -174,8 +174,8 @@ export function guildRoutes(
     const enabled = features.filter(({ instance }) => instance.isEnabled?.(guild.id));
 
     const neededBy = new Map<BotPermission, string[]>();
-    for (const { feature } of enabled) {
-      for (const permission of feature.permissions) {
+    for (const { feature, instance } of enabled) {
+      for (const permission of instance.requiredPermissions?.(guild.id) ?? feature.permissions) {
         neededBy.set(permission, [...(neededBy.get(permission) ?? []), feature.manifest.id]);
       }
     }
@@ -195,7 +195,12 @@ export function guildRoutes(
       ok: missing.length === 0 && issues.length === 0,
       missing,
       issues,
-      grantUrl: inviteUrl(config.discord.clientId, guild.id),
+      // The usual invite permissions plus optional ones the current settings need (e.g. Ban Members).
+      grantUrl: inviteUrl(
+        config.discord.clientId,
+        guild.id,
+        [...neededBy.keys()].reduce((bits, permission) => bits | PermissionFlagsBits[permission], INVITE_PERMISSIONS),
+      ),
     };
     c.header('Cache-Control', 'no-store');
     return c.json(body);

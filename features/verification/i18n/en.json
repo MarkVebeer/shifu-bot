@@ -12,7 +12,7 @@
     "panel": "Panel message",
     "style": "Style",
     "protection": "Protection",
-    "rules": "Captcha codes expire after {minutes} minutes and allow {attempts} tries. Each member can ask for at most 5 pictures per minute.",
+    "rules": "Captcha codes expire after {minutes} minutes. Wrong answers are counted per member for {window} minutes, so a new picture does not reset them.",
     "enabled": "Turn on verification",
     "enabledHelp": "ShifuBot posts a panel with a Verify button in the channel below.",
     "channel": "Panel channel",
@@ -34,7 +34,27 @@
     "days": "days",
     "restoreOnRejoin": "Remember verified members",
     "restoreOnRejoinHelp": "Gives the role back automatically when someone who verified before rejoins.",
-    "lockHint": "Verification only gives a role. To keep unverified members out, let only the verified role see your channels, and let everyone see the panel channel."
+    "lockHint": "Verification only gives a role. To keep unverified members out, let only the verified role see your channels, and let everyone see the panel channel.",
+    "maxAttempts": "Tries",
+    "maxAttemptsHelp": "Wrong answers a member may give before the action below runs.",
+    "failAction": "When the tries run out",
+    "failActions": {
+      "retry": "Let them try again",
+      "timeout": "Timeout",
+      "kick": "Kick",
+      "ban": "Ban"
+    },
+    "failActionHelp": {
+      "retry": "Nothing happens. The member can ask for a new picture right away.",
+      "timeout": "The member cannot chat or verify until the timeout ends. Needs the Timeout Members permission.",
+      "kick": "The member is removed but can rejoin with an invite. Needs the Kick Members permission.",
+      "ban": "The member is banned until an admin lifts it. Needs the Ban Members permission."
+    },
+    "failActionWarning": "Real people mistype too. A timeout is usually enough; kick or ban mostly makes sense during a raid.",
+    "timeoutMinutes": "Timeout length",
+    "timeoutMinutesHelp": "1 minute to 28 days (40320 minutes).",
+    "minutes": "minutes",
+    "captchaOnly": "Tries and actions apply only to the captcha method."
   },
   "placeholder": {
     "server": "The server name"
@@ -81,7 +101,7 @@
     "restored": "You verified before, so here is your role again.",
     "tooYoung": "Your Discord account is too new to verify here. Accounts must be at least {days} days old.",
     "captchaTitle": "Prove you are human",
-    "captchaBody": "Type the {length} characters from the picture. Click **Enter code** to answer.\nThe code expires in {minutes} minutes. You have {attempts} tries.",
+    "captchaBody": "Type the {length} characters from the picture. Click **Enter code** to answer.\nThe code expires in {minutes} minutes. Tries left: {attempts}.",
     "answerButton": "Enter code",
     "refreshButton": "New picture",
     "modalTitle": "Verification",
@@ -92,7 +112,11 @@
     "tooManyAttempts": "Too many wrong tries. Click **Verify** on the panel to get a new picture.",
     "success": "You are verified. Welcome to {server}!",
     "roleFailed": "You solved it, but ShifuBot could not give you the role. Please tell a server admin.",
-    "slowDown": "Slow down a little. Try again in a minute."
+    "slowDown": "Slow down a little. Try again in a minute.",
+    "failedTimeout": "Too many wrong tries. You are timed out for {minutes} minutes. Try again after that.",
+    "failedKick": "Too many wrong tries. You will be removed from the server. You can rejoin and try again.",
+    "failedBan": "Too many wrong tries. You will be banned from the server.",
+    "timedOut": "You are timed out. You can verify again {time}."
   },
   "errors": {
     "no_channel": "no channel selected",
@@ -104,6 +128,7 @@
     "role_managed": "the role is managed by an integration and cannot be given",
     "no_manage_roles": "ShifuBot is missing the Manage Roles permission",
     "role_too_high": "the role is above ShifuBot's highest role. Drag ShifuBot's role above it in Server Settings → Roles",
-    "role_failed": "Discord refused to give the role"
+    "role_failed": "Discord refused to give the role",
+    "fail_action_failed": "ShifuBot could not punish a member who failed the captcha: it is missing the permission, or the member's role is above ShifuBot's"
   }
 }

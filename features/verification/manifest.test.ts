@@ -9,7 +9,9 @@ import {
   verificationSettingsSchema,
   VERIFY_IDS,
 } from './manifest';
-import { normalizeAnswer } from './server';
+import verificationFeature, { normalizeAnswer } from './server';
+import { Database } from 'bun:sqlite';
+import { migrate } from '../../apps/bot/src/db/database';
 
 const ctx = { locale: 'en' as const, server: { name: 'Shifu Dojo' } };
 
@@ -64,6 +66,11 @@ describe('verificationSettingsSchema', () => {
       { minAccountAgeDays: 400 },
       { minAccountAgeDays: 1.5 },
       { buttonLabel: 'x'.repeat(81) },
+      { maxAttempts: 0 },
+      { maxAttempts: 11 },
+      { failAction: 'explode' },
+      { timeoutMinutes: 0 },
+      { timeoutMinutes: 40_321 },
     ];
     for (const patch of bad) {
       expect(verificationSettingsSchema.safeParse({ ...defaultVerificationSettings, ...patch }).success).toBe(false);
@@ -112,5 +119,21 @@ describe('captcha', () => {
     expect(png.subarray(37, 41).toString('ascii')).toBe('IDAT');
     const raw = inflateSync(png.subarray(41, 41 + idatLength));
     expect([...raw]).toEqual([0, 255, 0, 0, 0, 255, 0, 0, 0, 0, 255, 10, 20, 30]);
+  });
+});
+
+describe('migrations', () => {
+  test('a database created before fail actions existed gets the new columns with safe defaults', () => {
+    const db = new Database(':memory:');
+    const logger = { info: () => {}, warn: () => {}, error: () => {}, debug: () => {} } as never;
+    const [first, ...rest] = verificationFeature.migrations;
+    migrate(db, [first!], logger);
+    db.query("INSERT INTO verification_settings (guild_id, updated_at) VALUES ('1', 0)").run();
+    migrate(db, [first!, ...rest], logger);
+    expect(db.query('SELECT max_attempts, fail_action, timeout_minutes FROM verification_settings').get()).toEqual({
+      max_attempts: 3,
+      fail_action: 'retry',
+      timeout_minutes: 10,
+    });
   });
 });

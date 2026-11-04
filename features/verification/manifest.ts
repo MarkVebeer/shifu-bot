@@ -42,8 +42,16 @@ export const VERIFY_IDS = {
 /** Captcha rules, shown in the dashboard and enforced by the bot. */
 export const CAPTCHA_RULES = {
   expiresMinutes: 5,
-  maxAttempts: 3,
+  /** Wrong answers are counted per member for this long, across new pictures too. */
+  attemptsWindowMinutes: 60,
 } as const;
+
+/** What happens when a member runs out of captcha tries. */
+export const FAIL_ACTIONS = ['retry', 'timeout', 'kick', 'ban'] as const;
+export type FailAction = (typeof FAIL_ACTIONS)[number];
+
+/** Discord's longest timeout: 28 days. */
+export const MAX_TIMEOUT_MINUTES = 40_320;
 
 export const verificationSettingsSchema = z.object({
   enabled: z.boolean(),
@@ -59,6 +67,11 @@ export const verificationSettingsSchema = z.object({
   minAccountAgeDays: z.number().int().min(0, 'Must be 0 or more').max(365, 'At most 365 days'),
   /** Give the role again, without a captcha, to members who verified before and rejoin. */
   restoreOnRejoin: z.boolean(),
+  /** Wrong captcha answers allowed before failAction runs. */
+  maxAttempts: z.number().int().min(1, 'At least 1 try').max(10, 'At most 10 tries'),
+  failAction: z.enum(FAIL_ACTIONS),
+  /** Length of the timeout when failAction is "timeout". */
+  timeoutMinutes: z.number().int().min(1, 'At least 1 minute').max(MAX_TIMEOUT_MINUTES, 'At most 28 days (40320 minutes)'),
 });
 
 export type VerificationSettings = z.infer<typeof verificationSettingsSchema>;
@@ -74,6 +87,9 @@ export const defaultVerificationSettings: VerificationSettings = {
   color: null,
   minAccountAgeDays: 0,
   restoreOnRejoin: true,
+  maxAttempts: 3,
+  failAction: 'retry',
+  timeoutMinutes: 10,
 };
 
 export interface PanelContext {

@@ -12,7 +12,7 @@
     "panel": "Panel üzenet",
     "style": "Megjelenés",
     "protection": "Védelem",
-    "rules": "A captcha kódok {minutes} perc után lejárnak, és {attempts} próbálkozást engednek. Egy tag percenként legfeljebb 5 képet kérhet.",
+    "rules": "A captcha kódok {minutes} perc után lejárnak. A rossz válaszokat tagonként {window} percig számoljuk, így egy új kép nem nullázza le őket.",
     "enabled": "Hitelesítés bekapcsolása",
     "enabledHelp": "A ShifuBot kirak egy panelt Hitelesítés gombbal a lenti csatornába.",
     "channel": "Panel csatorna",
@@ -34,7 +34,27 @@
     "days": "nap",
     "restoreOnRejoin": "Hitelesített tagok megjegyzése",
     "restoreOnRejoinHelp": "Automatikusan visszaadja a rangot annak, aki korábban már hitelesített és újra belép.",
-    "lockHint": "A hitelesítés csak egy rangot ad. Hogy a nem hitelesített tagok ne lássanak mindent, a csatornáidat csak a hitelesített rang lássa, a panel csatornát pedig mindenki."
+    "lockHint": "A hitelesítés csak egy rangot ad. Hogy a nem hitelesített tagok ne lássanak mindent, a csatornáidat csak a hitelesített rang lássa, a panel csatornát pedig mindenki.",
+    "maxAttempts": "Próbálkozások",
+    "maxAttemptsHelp": "Ennyi rossz választ adhat egy tag, mielőtt a lenti művelet lefut.",
+    "failAction": "Ha elfogynak a próbálkozások",
+    "failActions": {
+      "retry": "Újrapróbálhatja",
+      "timeout": "Timeout",
+      "kick": "Kirúgás",
+      "ban": "Kitiltás"
+    },
+    "failActionHelp": {
+      "retry": "Nem történik semmi. A tag azonnal kérhet új képet.",
+      "timeout": "A tag nem írhat és nem hitelesíthet, amíg le nem jár a timeout. Tagok időkorlátozása jog kell hozzá.",
+      "kick": "A tagot eltávolítja, de egy meghívóval visszajöhet. Tagok kirúgása jog kell hozzá.",
+      "ban": "A tagot kitiltja, amíg egy admin fel nem oldja. Tagok kitiltása jog kell hozzá."
+    },
+    "failActionWarning": "Valódi emberek is elgépelik. Általában a timeout elég; a kirúgás vagy kitiltás inkább raid idején hasznos.",
+    "timeoutMinutes": "Timeout hossza",
+    "timeoutMinutesHelp": "1 perctől 28 napig (40320 perc).",
+    "minutes": "perc",
+    "captchaOnly": "A próbálkozások és a művelet csak a captcha módra vonatkoznak."
   },
   "placeholder": {
     "server": "A szerver neve"
@@ -81,7 +101,7 @@
     "restored": "Korábban már hitelesítetted magad, ezért visszakaptad a rangodat.",
     "tooYoung": "A Discord fiókod túl új ahhoz, hogy itt hitelesítsd magad. Legalább {days} napos fiók kell.",
     "captchaTitle": "Bizonyítsd, hogy ember vagy",
-    "captchaBody": "Írd be a képen látható {length} karaktert. A válaszhoz kattints a **Kód megadása** gombra.\nA kód {minutes} perc múlva lejár. {attempts} próbálkozásod van.",
+    "captchaBody": "Írd be a képen látható {length} karaktert. A válaszhoz kattints a **Kód megadása** gombra.\nA kód {minutes} perc múlva lejár. Hátralévő próbálkozások: {attempts}.",
     "answerButton": "Kód megadása",
     "refreshButton": "Új kép",
     "modalTitle": "Hitelesítés",
@@ -92,7 +112,11 @@
     "tooManyAttempts": "Túl sok rossz próbálkozás. Kattints a **Hitelesítés** gombra a panelen egy új képért.",
     "success": "Sikeresen hitelesítetted magad. Üdv a(z) {server} szerveren!",
     "roleFailed": "Megoldottad, de a ShifuBot nem tudta odaadni a rangot. Kérlek, szólj egy adminnak.",
-    "slowDown": "Lassíts egy kicsit. Próbáld újra egy perc múlva."
+    "slowDown": "Lassíts egy kicsit. Próbáld újra egy perc múlva.",
+    "failedTimeout": "Túl sok rossz próbálkozás. {minutes} percre timeoutot kaptál. Utána próbáld újra.",
+    "failedKick": "Túl sok rossz próbálkozás. Eltávolítunk a szerverről. Visszajöhetsz és újrapróbálhatod.",
+    "failedBan": "Túl sok rossz próbálkozás. Kitiltunk a szerverről.",
+    "timedOut": "Timeoutot kaptál. Újra hitelesíthetsz {time}."
   },
   "errors": {
     "no_channel": "nincs csatorna kiválasztva",
@@ -104,6 +128,7 @@
     "role_managed": "a rangot egy integráció kezeli, nem lehet kiosztani",
     "no_manage_roles": "a ShifuBotnak nincs Rangok kezelése joga",
     "role_too_high": "a rang a ShifuBot legmagasabb rangja felett van. Húzd a ShifuBot rangját fölé a Szerverbeállítások → Rangok menüben",
-    "role_failed": "a Discord nem engedte kiosztani a rangot"
+    "role_failed": "a Discord nem engedte kiosztani a rangot",
+    "fail_action_failed": "a ShifuBot nem tudta megbüntetni a captchán elbukott tagot: hiányzik a jog, vagy a tag rangja a ShifuBot felett van"
   }
 }

@@ -114,7 +114,10 @@
       "ViewChannel": "View Channels",
       "SendMessages": "Send Messages",
       "EmbedLinks": "Embed Links",
-      "ManageRoles": "Manage Roles"
+      "ManageRoles": "Manage Roles",
+      "ModerateMembers": "Timeout Members",
+      "KickMembers": "Kick Members",
+      "BanMembers": "Ban Members"
     }
   },
   "setup": {

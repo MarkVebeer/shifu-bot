@@ -10,16 +10,19 @@ import { errorText, useI18n } from '../../apps/web/src/lib/i18n';
 import { useApi } from '../../apps/web/src/lib/use-api';
 import { ChannelPicker } from '../../apps/web/src/ui/channel-picker';
 import { DiscordMessagePreview } from '../../apps/web/src/ui/discord-preview';
-import { Alert, Button, Card, CardHeader, Field, Input, Skeleton, Switch, Textarea, cx } from '../../apps/web/src/ui/primitives';
+import { Alert, Button, Card, CardHeader, Field, Input, Select, Skeleton, Switch, Textarea, cx } from '../../apps/web/src/ui/primitives';
 import { RolePicker } from '../../apps/web/src/ui/role-picker';
 import { useToast } from '../../apps/web/src/ui/toast';
 import { ColorField, SaveBar } from '../../apps/web/src/ui/widgets';
 import {
   buildVerificationPanel,
   CAPTCHA_RULES,
+  FAIL_ACTIONS,
+  MAX_TIMEOUT_MINUTES,
   VERIFICATION_MODES,
   VERIFICATION_PLACEHOLDERS,
   verificationSettingsSchema,
+  type FailAction,
   type VerificationMode,
   type VerificationSettings,
 } from './manifest';
@@ -265,9 +268,56 @@ export default function VerificationPage() {
             <CardHeader
               icon={emoji.verification}
               title={t('verification.form.protection')}
-              description={t('verification.form.rules', { minutes: CAPTCHA_RULES.expiresMinutes, attempts: CAPTCHA_RULES.maxAttempts })}
+              description={t('verification.form.rules', { minutes: CAPTCHA_RULES.expiresMinutes, window: CAPTCHA_RULES.attemptsWindowMinutes })}
             />
             <div className="space-y-5">
+              {draft.mode === 'captcha' ? (
+                <>
+                  <Field label={t('verification.form.maxAttempts')} help={t('verification.form.maxAttemptsHelp')} htmlFor="verification-attempts" error={fieldError('maxAttempts')}>
+                    <Input
+                      id="verification-attempts"
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      max={10}
+                      value={draft.maxAttempts}
+                      onChange={(event) => update('maxAttempts', event.target.value === '' ? 0 : Math.trunc(Number(event.target.value)))}
+                      aria-invalid={Boolean(fieldError('maxAttempts'))}
+                      className="w-28 font-mono"
+                    />
+                  </Field>
+                  <Field label={t('verification.form.failAction')} help={t(`verification.form.failActionHelp.${draft.failAction}`)} htmlFor="verification-fail-action">
+                    <Select id="verification-fail-action" value={draft.failAction} onChange={(value) => update('failAction', value as FailAction)} aria-describedby="verification-fail-action-help">
+                      {FAIL_ACTIONS.map((action) => (
+                        <option key={action} value={action}>
+                          {t(`verification.form.failActions.${action}`)}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                  {draft.failAction === 'timeout' && (
+                    <Field label={t('verification.form.timeoutMinutes')} help={t('verification.form.timeoutMinutesHelp')} htmlFor="verification-timeout" error={fieldError('timeoutMinutes')}>
+                      <div className="flex items-center gap-3">
+                        <Input
+                          id="verification-timeout"
+                          type="number"
+                          inputMode="numeric"
+                          min={1}
+                          max={MAX_TIMEOUT_MINUTES}
+                          value={draft.timeoutMinutes}
+                          onChange={(event) => update('timeoutMinutes', event.target.value === '' ? 0 : Math.trunc(Number(event.target.value)))}
+                          aria-invalid={Boolean(fieldError('timeoutMinutes'))}
+                          className="w-32 font-mono"
+                        />
+                        <span className="text-sm text-muted">{t('verification.form.minutes')}</span>
+                      </div>
+                    </Field>
+                  )}
+                  {(draft.failAction === 'kick' || draft.failAction === 'ban') && <Alert tone="warning">{t('verification.form.failActionWarning')}</Alert>}
+                </>
+              ) : (
+                <p className="text-sm text-muted">{t('verification.form.captchaOnly')}</p>
+              )}
               <Field
                 label={t('verification.form.minAccountAge')}
                 help={t('verification.form.minAccountAgeHelp')}
@@ -387,6 +437,7 @@ const verificationErrorCodes: Record<VerificationErrorCode, true> = {
   no_manage_roles: true,
   role_too_high: true,
   role_failed: true,
+  fail_action_failed: true,
 };
 
 function ModePicker({ value, onChange }: { value: VerificationMode; onChange: (mode: VerificationMode) => void }) {

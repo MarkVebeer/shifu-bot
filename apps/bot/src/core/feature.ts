@@ -48,11 +48,16 @@ export interface FeatureInstance {
    * dashboard permission check. Only called while the feature is enabled.
    */
   health?: (guild: Guild) => Omit<PermissionIssue, 'feature'>[];
+  /** Permissions needed with the server's current settings. Defaults to ServerFeature.permissions. */
+  requiredPermissions?: (guildId: string) => BotPermission[];
 }
 
 export interface ServerFeature {
   manifest: FeatureManifest;
-  /** Server wide permissions the feature needs while enabled. Must be part of INVITE_PERMISSIONS. */
+  /**
+   * Server wide permissions the feature always needs while enabled. Must be part of INVITE_PERMISSIONS.
+   * Optional ones that depend on settings (e.g. Ban Members) come from FeatureInstance.requiredPermissions.
+   */
   permissions: BotPermission[];
   /** SQL migrations. Ids must start with the feature id. */
   migrations: Migration[];

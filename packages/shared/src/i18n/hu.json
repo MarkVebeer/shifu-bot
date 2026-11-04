@@ -114,7 +114,10 @@
       "ViewChannel": "Csatornák megtekintése",
       "SendMessages": "Üzenetek küldése",
       "EmbedLinks": "Linkek beágyazása",
-      "ManageRoles": "Rangok kezelése"
+      "ManageRoles": "Rangok kezelése",
+      "ModerateMembers": "Tagok időkorlátozása",
+      "KickMembers": "Tagok kirúgása",
+      "BanMembers": "Tagok kitiltása"
     }
   },
   "setup": {

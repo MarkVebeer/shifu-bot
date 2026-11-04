@@ -60,7 +60,15 @@ export interface RoleOption {
 }
 
 /** Server permissions a ShifuBot feature can need, named like discord.js PermissionsString. */
-export const BOT_PERMISSIONS = ['ViewChannel', 'SendMessages', 'EmbedLinks', 'ManageRoles'] as const;
+export const BOT_PERMISSIONS = [
+  'ViewChannel',
+  'SendMessages',
+  'EmbedLinks',
+  'ManageRoles',
+  'ModerateMembers',
+  'KickMembers',
+  'BanMembers',
+] as const;
 export type BotPermission = (typeof BOT_PERMISSIONS)[number];
 
 /** A problem a feature found that blocks it, beyond the server wide permissions. */

@@ -36,9 +36,11 @@ import {
   buildVerificationPanel,
   CAPTCHA_RULES,
   defaultVerificationSettings,
+  FAIL_ACTIONS,
   verificationManifest,
   verificationSettingsSchema,
   VERIFY_IDS,
+  type FailAction,
   type VerificationSettings,
 } from './manifest';
 
@@ -49,7 +51,8 @@ export type VerificationErrorCode =
   | 'send_failed'
   | 'no_role'
   | RoleProblem
-  | 'role_failed';
+  | 'role_failed'
+  | 'fail_action_failed';
 
 export interface VerificationStatus {
   channelExists: boolean;
@@ -80,6 +83,9 @@ interface SettingsRow {
   color: string | null;
   min_account_age_days: number;
   restore_on_rejoin: number;
+  max_attempts: number;
+  fail_action: string;
+  timeout_minutes: number;
   panel_channel_id: string | null;
   panel_message_id: string | null;
   last_error: string | null;
@@ -112,6 +118,9 @@ class VerificationStore {
           color: row.color,
           minAccountAgeDays: row.min_account_age_days,
           restoreOnRejoin: row.restore_on_rejoin === 1,
+          maxAttempts: row.max_attempts,
+          failAction: (FAIL_ACTIONS as readonly string[]).includes(row.fail_action) ? (row.fail_action as FailAction) : 'retry',
+          timeoutMinutes: row.timeout_minutes,
         }
       : defaultVerificationSettings;
     this.cache.set(guildId, settings);
@@ -123,13 +132,14 @@ class VerificationStore {
       .query(
         `INSERT INTO verification_settings
            (guild_id, enabled, channel_id, role_id, mode, title, description, button_label, color,
-            min_account_age_days, restore_on_rejoin, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            min_account_age_days, restore_on_rejoin, max_attempts, fail_action, timeout_minutes, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT (guild_id) DO UPDATE SET
            enabled = excluded.enabled, channel_id = excluded.channel_id, role_id = excluded.role_id,
            mode = excluded.mode, title = excluded.title, description = excluded.description,
            button_label = excluded.button_label, color = excluded.color,
            min_account_age_days = excluded.min_account_age_days, restore_on_rejoin = excluded.restore_on_rejoin,
+           max_attempts = excluded.max_attempts, fail_action = excluded.fail_action, timeout_minutes = excluded.timeout_minutes,
            updated_at = excluded.updated_at, last_error = NULL, last_error_at = NULL`,
       )
       .run(
@@ -144,6 +154,9 @@ class VerificationStore {
         s.color,
         s.minAccountAgeDays,
         Number(s.restoreOnRejoin),
+        s.maxAttempts,
+        s.failAction,
+        s.timeoutMinutes,
         Date.now(),
       );
     this.cache.delete(guildId);
@@ -212,8 +225,17 @@ class VerificationStore {
 
 interface Challenge {
   code: string;
-  attempts: number;
 }
+
+/** Extra permission each fail action needs. */
+const FAIL_ACTION_PERMISSION: Record<FailAction, BotPermission | null> = {
+  retry: null,
+  timeout: 'ModerateMembers',
+  kick: 'KickMembers',
+  ban: 'BanMembers',
+};
+
+const BASE_PERMISSIONS: BotPermission[] = ['ViewChannel', 'SendMessages', 'EmbedLinks', 'ManageRoles'];
 
 type PanelResult = { ok: true; channel: TextChannel | NewsChannel | null } | { ok: false; error: VerificationErrorCode };
 
@@ -224,7 +246,7 @@ export function normalizeAnswer(input: string): string {
 
 export default defineServerFeature({
   manifest: verificationManifest,
-  permissions: ['ViewChannel', 'SendMessages', 'EmbedLinks', 'ManageRoles'],
+  permissions: BASE_PERMISSIONS,
   tables: ['verification_settings', 'verification_members'],
   migrations: [
     {
@@ -256,6 +278,14 @@ export default defineServerFeature({
         );
       `,
     },
+    {
+      id: 'verification_002_fail_action',
+      sql: `
+        ALTER TABLE verification_settings ADD COLUMN max_attempts INTEGER NOT NULL DEFAULT 3;
+        ALTER TABLE verification_settings ADD COLUMN fail_action TEXT NOT NULL DEFAULT 'retry';
+        ALTER TABLE verification_settings ADD COLUMN timeout_minutes INTEGER NOT NULL DEFAULT 10;
+      `,
+    },
   ],
 
   setup(ctx: AppContext) {
@@ -263,6 +293,11 @@ export default defineServerFeature({
     const store = new VerificationStore(db);
     /** Open captchas per member. Memory only: a restart just asks for a new picture. */
     const challenges = new LruCache<string, Challenge>(50_000, CAPTCHA_RULES.expiresMinutes * 60_000);
+    /**
+     * Wrong answers per member. Kept apart from the picture so "New picture"
+     * cannot be used to get unlimited tries.
+     */
+    const failures = new LruCache<string, number>(50_000, CAPTCHA_RULES.attemptsWindowMinutes * 60_000);
     /** New pictures per member per minute. Rendering costs CPU, so this also protects the bot. */
     const captchaLimiter = new WindowLimiter(5);
     const sampleLimiter = new WindowLimiter(20);
@@ -353,7 +388,7 @@ export default defineServerFeature({
       };
     }
 
-    function captchaMessage(locale: Locale, code: string): MessagePayload & { files: { attachment: Buffer; name: string }[] } {
+    function captchaMessage(locale: Locale, code: string, attemptsLeft: number): MessagePayload & { files: { attachment: Buffer; name: string }[] } {
       const t = texts(locale);
       return {
         embeds: [
@@ -364,7 +399,7 @@ export default defineServerFeature({
               description: renderPlaceholders(t.replies.captchaBody, {
                 length: CAPTCHA_LENGTH,
                 minutes: CAPTCHA_RULES.expiresMinutes,
-                attempts: CAPTCHA_RULES.maxAttempts,
+                attempts: attemptsLeft,
               }),
               footer: t.name,
             }),
@@ -414,6 +449,10 @@ export default defineServerFeature({
         return reply(interaction, 'error', t.notConfigured);
       }
       if (member.roles.cache.has(role.role.id)) return reply(interaction, 'success', t.alreadyVerified);
+      if (member.isCommunicationDisabled()) {
+        const until = Math.floor(member.communicationDisabledUntilTimestamp / 1000);
+        return reply(interaction, 'warning', renderPlaceholders(t.timedOut, { time: `<t:${until}:R>` }));
+      }
       if (settings.minAccountAgeDays > 0 && accountAgeDays(interaction.user.createdAt) < settings.minAccountAgeDays) {
         logger.info('Verification refused: account too new', { guildId: guild.id, userId: member.id });
         return reply(interaction, 'warning', renderPlaceholders(t.tooYoung, { days: settings.minAccountAgeDays }));
@@ -431,8 +470,8 @@ export default defineServerFeature({
       const key = `${guild.id}:${member.id}`;
       if (!captchaLimiter.tryTake(key)) return reply(interaction, 'warning', t.slowDown);
       const code = randomCaptchaCode();
-      challenges.set(key, { code, attempts: 0 });
-      const message = captchaMessage(locale, code);
+      challenges.set(key, { code });
+      const message = captchaMessage(locale, code, settings.maxAttempts - (failures.get(key) ?? 0));
       if (refresh) await interaction.update({ ...message, attachments: [] });
       else await interaction.reply({ ...message, flags: MessageFlags.Ephemeral });
     }
@@ -472,18 +511,20 @@ export default defineServerFeature({
       const challenge = challenges.get(key);
       if (!challenge) return reply(interaction, 'warning', t.expired);
 
+      const settings = store.get(guild.id);
       if (normalizeAnswer(interaction.fields.getTextInputValue(VERIFY_IDS.codeInput)) !== challenge.code) {
-        const attempts = challenge.attempts + 1;
-        if (attempts >= CAPTCHA_RULES.maxAttempts) {
+        const attempts = (failures.get(key) ?? 0) + 1;
+        if (attempts >= settings.maxAttempts) {
           challenges.delete(key);
-          return reply(interaction, 'error', t.tooManyAttempts);
+          failures.delete(key);
+          return applyFailAction(interaction, settings);
         }
-        challenges.set(key, { ...challenge, attempts });
-        return reply(interaction, 'warning', renderPlaceholders(t.wrong, { left: CAPTCHA_RULES.maxAttempts - attempts }));
+        failures.set(key, attempts);
+        return reply(interaction, 'warning', renderPlaceholders(t.wrong, { left: settings.maxAttempts - attempts }));
       }
 
       challenges.delete(key);
-      const settings = store.get(guild.id);
+      failures.delete(key);
       const role = resolveRole(guild, settings);
       if (!settings.enabled || 'error' in role) return reply(interaction, 'error', t.notConfigured);
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });
@@ -492,6 +533,40 @@ export default defineServerFeature({
       await interaction.editReply(
         ok ? `${emoji.success} ${renderPlaceholders(t.success, { server: guild.name })}` : `${emoji.error} ${t.roleFailed}`,
       );
+    }
+
+    /** The member used up every try: run the action chosen on the dashboard. */
+    async function applyFailAction(interaction: ModalSubmitInteraction<'cached'>, settings: VerificationSettings) {
+      const { guild, member } = interaction;
+      const t = texts(guildSettings.locale(guild.id)).replies;
+      const action = settings.failAction;
+      const reason = 'ShifuBot verification: too many wrong captcha answers';
+      logger.info('Verification failed, running fail action', { guildId: guild.id, userId: member.id, action });
+      if (action === 'retry') return reply(interaction, 'error', t.tooManyAttempts);
+
+      // Owners, admins and members above ShifuBot's role cannot be punished by the bot.
+      const allowed = action === 'timeout' ? member.moderatable : action === 'kick' ? member.kickable : member.bannable;
+      if (!allowed) {
+        logger.warn('Verification fail action not possible', { guildId: guild.id, userId: member.id, action });
+        store.setError(guild.id, 'fail_action_failed');
+        return reply(interaction, 'error', t.tooManyAttempts);
+      }
+
+      try {
+        if (action === 'timeout') {
+          await member.timeout(settings.timeoutMinutes * 60_000, reason);
+          await reply(interaction, 'warning', renderPlaceholders(t.failedTimeout, { minutes: settings.timeoutMinutes }));
+        } else {
+          // Answer first: after a kick or ban the reply could no longer reach them.
+          await reply(interaction, 'error', action === 'kick' ? t.failedKick : t.failedBan);
+          if (action === 'kick') await member.kick(reason);
+          else await member.ban({ reason });
+        }
+      } catch (error) {
+        logger.warn('Verification fail action failed', { guildId: guild.id, userId: member.id, action, error });
+        store.setError(guild.id, 'fail_action_failed');
+        if (!interaction.replied) await reply(interaction, 'error', t.tooManyAttempts);
+      }
     }
 
     const response = (guild: Guild, settings: VerificationSettings, panelError?: VerificationErrorCode): VerificationResponse => ({
@@ -504,6 +579,12 @@ export default defineServerFeature({
       isEnabled: (guildId) => store.get(guildId).enabled,
 
       onGuildCreate: (guild) => store.ensureDefaults(guild.id),
+
+      requiredPermissions: (guildId) => {
+        const settings = store.get(guildId);
+        const extra = settings.mode === 'captcha' ? FAIL_ACTION_PERMISSION[settings.failAction] : null;
+        return extra ? [...BASE_PERMISSIONS, extra] : BASE_PERMISSIONS;
+      },
 
       health: (guild) => {
         const settings = store.get(guild.id);
