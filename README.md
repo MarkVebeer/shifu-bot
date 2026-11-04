@@ -38,6 +38,14 @@ discord.js, Hono, SQLite and React. Self host it on a Pelican panel, with Docker
   left out on purpose: sent messages, typing, single reactions, poll votes, muting yourself, status
   and activity changes. Each category and event type can be turned off, events are kept 7–180
   days, and viewers only see events from channels they can see.
+- 🍆 **Goon counter** (off by default). A panel in a channel has an **I gooned** and an **Undo**
+  button. Each press adds one to the member's count, and ShifuBot writes it after their nickname
+  (`Mark [12]`, format configurable). Only the number changes: if members rename themselves, the
+  new name stays and the number goes after it at the next press. Presses have a cooldown (3 minutes
+  by default), and a member can undo their own presses for 5 minutes, only as many as they made.
+  The panel shows the server total and the top 10. Renaming needs the Manage Nicknames permission;
+  Discord never lets bots rename the server owner or members above ShifuBot's role, their count is
+  still kept.
 - 🌐 **English and Hungarian.** Each server picks its language. It drives the dashboard and every
   message the bot sends there.
 - 🛡️ **Raid safe.** At most 10 welcome and 10 goodbye messages per server per minute (configurable).

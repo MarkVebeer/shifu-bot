@@ -24,6 +24,7 @@ export const emoji = {
   sparkle: '✨',
   test: '🧪',
   log: '📋',
+  goon: '🍆',
   globe: '🌐',
   overview: '🧭',
   settings: '⚙️',

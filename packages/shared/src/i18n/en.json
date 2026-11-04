@@ -117,7 +117,8 @@
       "KickMembers": "Kick Members",
       "BanMembers": "Ban Members",
       "ViewAuditLog": "View Audit Log",
-      "ManageGuild": "Manage Server"
+      "ManageGuild": "Manage Server",
+      "ManageNicknames": "Manage Nicknames"
     }
   },
   "setup": {

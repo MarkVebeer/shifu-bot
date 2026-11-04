@@ -1,0 +1,103 @@
+{
+  "name": "Goon counter",
+  "description": "Members press a button every time they gooned. ShifuBot counts it and writes the number after their nickname.",
+  "defaults": {
+    "title": "Goon counter of {server}",
+    "description": "Gooned? Press the button and your count goes up by one. Pressed it by accident? **Undo** takes it back for a few minutes.",
+    "button": "I gooned",
+    "undo": "Undo"
+  },
+  "panel": {
+    "line": "{rank} {user} — **{count}**",
+    "total": "🍆 Server total: **{count}**",
+    "top": "Top 10",
+    "empty": "Nobody has gooned yet. Be the first!",
+    "repost": "Post panel again",
+    "reposting": "Posting…",
+    "reposted": "Panel posted to #{channel}",
+    "failed": "Settings saved, but the panel could not be updated: {error}",
+    "help": "Use this if someone deleted the panel message."
+  },
+  "form": {
+    "general": "General",
+    "panel": "Panel message",
+    "rules": "Rules",
+    "names": "Nicknames",
+    "style": "Style",
+    "enabled": "Turn on the goon counter",
+    "enabledHelp": "ShifuBot posts a panel with the buttons in the channel below.",
+    "channel": "Panel channel",
+    "cooldown": "Cooldown",
+    "cooldownHelp": "Minutes a member must wait between two presses. 0 turns it off.",
+    "undoWindow": "Undo window",
+    "undoWindowHelp": "For this many minutes a member can take back a press. Only their own presses, and only as many as they made.",
+    "minutes": "minutes",
+    "renameMembers": "Write the count after nicknames",
+    "renameMembersHelp": "Only the number is changed. If a member renames themselves, their new name stays and the number goes after it at the next press.",
+    "nameFormat": "Format",
+    "nameFormatHelp": "{count} is replaced by the number. Start with a space to keep it apart from the name.",
+    "nameFormatExample": "Example:",
+    "nameFormatLater": "Members get the new format at their next press.",
+    "showLeaderboard": "Show the top 10 and the server total",
+    "showLeaderboardHelp": "The panel is updated at most every 15 seconds.",
+    "title": "Title",
+    "description": "Description",
+    "buttonLabel": "Button label",
+    "undoLabel": "Undo button label",
+    "defaultHint": "Leave empty to use the default text in the server language.",
+    "placeholders": "Placeholders",
+    "insertPlaceholder": "Insert {name}",
+    "unknownPlaceholder": "Unknown placeholder: {names}",
+    "color": "Accent color"
+  },
+  "placeholder": {
+    "server": "The server name"
+  },
+  "status": {
+    "noChannel": "Pick a channel for the panel.",
+    "channelMissing": "The selected channel no longer exists. Choose another one.",
+    "missingPermissions": "ShifuBot is missing permissions in this channel: {permissions}.",
+    "noManageNicknames": "ShifuBot is missing the Manage Nicknames permission, so it cannot write the count after names. Counting still works.",
+    "nicknameLimits": "Discord never lets bots rename the server owner or members whose role is above ShifuBot's. Their count is still kept.",
+    "lastError": "Last problem: {error}",
+    "panelLive": "The panel is live in #{channel}.",
+    "panelMissing": "The panel is not posted yet. Save, or post it again below.",
+    "total": "{count} goons on this server so far"
+  },
+  "top": {
+    "title": "Top 10",
+    "empty": "Nobody has gooned yet.",
+    "unknown": "Unknown member"
+  },
+  "preview": {
+    "title": "Live preview",
+    "hint": "The panel exactly as Discord will show it, with the current numbers.",
+    "botTag": "APP",
+    "today": "Today at {time}"
+  },
+  "setup": {
+    "title": "Goon counter",
+    "description": "A button members press every time they gooned, with the count after their name. Fine tune it later on the Goon counter page.",
+    "channelRequired": "Pick a channel, or turn the goon counter off for now.",
+    "summaryOn": "On",
+    "summaryOff": "Off"
+  },
+  "replies": {
+    "disabled": "The goon counter is turned off on this server.",
+    "counted": "Counted! You are at **{count}**. Pressed it by accident? **Undo** works until {time}.",
+    "cooldown": "Easy there. You can count the next one {time}.",
+    "undone": "Taken back. You are at **{count}** now.",
+    "nothingToUndo": "Nothing to undo. Only presses from the last {minutes} minutes can be taken back.",
+    "renameFailed": "I couldn't write the number after your name: {reason}",
+    "renameOwner": "you own the server, and Discord never lets bots rename the owner. Your count is still kept.",
+    "renameTooHigh": "your role is above ShifuBot's. Your count is still kept.",
+    "renameNoPermission": "ShifuBot is missing the Manage Nicknames permission. Your count is still kept.",
+    "renameError": "Discord refused the change. Your count is still kept."
+  },
+  "errors": {
+    "no_channel": "no channel selected",
+    "channel_missing": "channel not found",
+    "missing_permissions": "missing permissions in the panel channel",
+    "send_failed": "Discord rejected the panel message"
+  }
+}

@@ -66,3 +66,4 @@ Used in embed titles and in the dashboard copy, so both feel the same.
 | `warning` | ⚠️ | `log` | 📋 |
 | `error` | ⛔ | `globe` | 🌐 |
 | `info` | 💠 | `overview` | 🧭 |
+| `goon` | 🍆 | | |
