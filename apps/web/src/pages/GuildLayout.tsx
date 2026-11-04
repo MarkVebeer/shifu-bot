@@ -151,7 +151,7 @@ function GuildShell({ guild, reload }: { guild: GuildOverview; reload: () => Pro
           <div className={cx('flex items-center gap-2 border-t border-line/60 p-3', collapsed && 'flex-col')}>
             {me && <Avatar src={me.user.avatarUrl} name={me.user.username} size={36} />}
             {!collapsed && <span className="min-w-0 flex-1 truncate text-sm">{me?.user.globalName ?? me?.user.username}</span>}
-            <Button variant="ghost" size="icon" onClick={logout} aria-label={t('common.logout')} title={t('common.logout')}>
+            <Button variant="ghost" size="icon" onClick={() => void logout()} aria-label={t('common.logout')} title={t('common.logout')}>
               <LogOut className="size-5" aria-hidden />
             </Button>
             <Button
@@ -174,7 +174,7 @@ function GuildShell({ guild, reload }: { guild: GuildOverview; reload: () => Pro
               <Avatar src={guild.iconUrl} name={guild.name} size={34} />
               <span className="truncate font-semibold">{guild.name}</span>
             </Link>
-            <Button variant="ghost" size="icon" className="ml-auto" onClick={logout} aria-label={t('common.logout')}>
+            <Button variant="ghost" size="icon" className="ml-auto" onClick={() => void logout()} aria-label={t('common.logout')}>
               <LogOut className="size-5" aria-hidden />
             </Button>
           </header>

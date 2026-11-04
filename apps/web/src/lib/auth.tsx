@@ -6,7 +6,8 @@ import { api, ApiRequestError, setCsrfToken } from './api';
 interface AuthValue {
   me: MeResponse | null;
   loading: boolean;
-  logout: () => Promise<void>;
+  /** Sign out, then go to `to` (the login page by default). */
+  logout: (to?: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthValue | null>(null);
@@ -28,10 +29,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
-  const logout = useCallback(async () => {
+  const logout = useCallback(async (to = '/login') => {
     await api('/auth/logout', { method: 'POST' }).catch(() => undefined);
     setMe(null);
-    window.location.assign('/login');
+    window.location.assign(to);
   }, []);
 
   return <AuthContext.Provider value={{ me, loading, logout }}>{children}</AuthContext.Provider>;

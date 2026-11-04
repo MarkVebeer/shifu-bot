@@ -36,7 +36,7 @@ export function GuildPickerPage() {
               <LanguageSwitcher value={locale} onChange={setLocale} />
             </div>
             {me && <Avatar src={me.user.avatarUrl} name={me.user.username} size={36} />}
-            <Button variant="ghost" size="icon" onClick={logout} aria-label={t('common.logout')} title={t('common.logout')}>
+            <Button variant="ghost" size="icon" onClick={() => void logout()} aria-label={t('common.logout')} title={t('common.logout')}>
               <LogOut className="size-5" aria-hidden />
             </Button>
           </div>

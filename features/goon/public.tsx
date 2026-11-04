@@ -3,7 +3,7 @@
  * Only the list: server header, the viewer's own place, search and the ranking.
  * The bot checks that the signed in user is a member of the server.
  */
-import { Search } from 'lucide-react';
+import { LogOut, Search } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useParams, useSearchParams } from 'react-router';
 import { api, ApiRequestError } from '../../apps/web/src/lib/api';
@@ -220,6 +220,8 @@ function Row({
 
 function PageFrame({ children }: { children: ReactNode }) {
   const { locale, setLocale } = useCookieLocale();
+  const { t } = useI18n();
+  const { me, logout } = useAuth();
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col px-4 py-6">
       <div className="mb-6 flex items-center justify-between gap-3">
@@ -227,7 +229,22 @@ function PageFrame({ children }: { children: ReactNode }) {
           <Logo size={28} />
           ShifuBot
         </span>
-        <LanguageSwitcher value={locale} onChange={setLocale} />
+        <div className="flex items-center gap-1 sm:gap-2">
+          <LanguageSwitcher value={locale} onChange={setLocale} />
+          {me && (
+            <Button
+              variant="ghost"
+              className="px-3 sm:px-4"
+              // Stay on this page: after signing out it shows the sign-in card.
+              onClick={() => void logout(window.location.pathname + window.location.search)}
+              aria-label={t('common.logout')}
+              title={t('common.logout')}
+              icon={<LogOut className="size-5" aria-hidden />}
+            >
+              <span className="hidden sm:inline">{t('common.logout')}</span>
+            </Button>
+          )}
+        </div>
       </div>
       <div className="flex-1 animate-fade-up">{children}</div>
     </main>
