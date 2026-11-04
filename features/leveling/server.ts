@@ -590,7 +590,8 @@ export default defineServerFeature({
         const settings = store.get(guildId);
         const humans = new Map<string, number>();
         for (const state of states) {
-          if (state.member && !state.member.user.bot) humans.set(state.channelId!, (humans.get(state.channelId!) ?? 0) + 1);
+          // Only people who can hear count as company: a deafened alt sitting next to you does not unlock XP.
+          if (state.member && !state.member.user.bot && !state.deaf) humans.set(state.channelId!, (humans.get(state.channelId!) ?? 0) + 1);
         }
         const eligible = states.flatMap((state) => {
           const member = state.member;
@@ -598,7 +599,7 @@ export default defineServerFeature({
           const ok = isVoiceEligible({
             bot: member.user.bot,
             deaf: Boolean(state.deaf),
-            muted: Boolean(state.mute),
+            muted: Boolean(state.mute) || Boolean(state.suppress),
             channelId: state.channelId,
             afkChannelId: guild.afkChannelId,
             humansInChannel: humans.get(state.channelId!) ?? 0,

@@ -17,11 +17,14 @@ export interface VoiceSnapshot {
   bot: boolean;
   /** Deafened by themselves or by a moderator: they cannot hear anyone, so they are not taking part. */
   deaf: boolean;
-  /** Muted by themselves or by a moderator: they are not talking, and idling muted is the usual way to farm XP. */
+  /**
+   * Muted by themselves or by a moderator, or a Stage listener without the right to speak: they are not
+   * talking, and idling muted is the usual way to farm XP.
+   */
   muted: boolean;
   channelId: string | null;
   afkChannelId: string | null;
-  /** Non-bot members in the same channel, the member included. */
+  /** Non-bot, non-deafened members in the same channel, the member included: people who can hear each other. */
   humansInChannel: number;
   ignored: boolean;
 }
