@@ -1,15 +1,28 @@
 {
   "name": "Leveling",
-  "description": "Members earn XP for chatting and talking in voice. Level ups are announced and a live leaderboard sits in a channel.",
+  "description": "Members get a chat level for chatting and a separate voice level for talking in voice. Both add up to an overall level that ranks the live leaderboard.",
   "defaults": {
-    "title": "Level up!",
-    "description": "{user} just reached **level {level}**. Keep it up!"
+    "title": "{track} level up!",
+    "description": "{user} just reached **{track} level {level}**. Keep it up!"
+  },
+  "tracks": {
+    "text": "Chat",
+    "voice": "Voice",
+    "overall": "Overall"
+  },
+  "levels": {
+    "title": "Three levels",
+    "name": "{label} level",
+    "badge": "{label} level {level}",
+    "textHelp": "Only from messages in text channels.",
+    "voiceHelp": "Only from time spent talking in voice channels.",
+    "overallHelp": "Chat XP + voice XP together. The leaderboard is ranked by it."
   },
   "form": {
     "general": "General",
     "enabled": "Turn on leveling",
     "enabledHelp": "Members start earning XP right away. Bots never earn XP.",
-    "rules": "{min}–{max} XP per message (at most once a minute) and {voice} XP per minute in voice while at least one other person is there. Deafened members and the AFK channel earn nothing.",
+    "rules": "Chat XP: {min}–{max} per message, at most once a minute. Voice XP: {voice} per minute in voice while at least one other person is there; deafened members and the AFK channel earn nothing. Chat and voice level up separately.",
     "ignored": "No XP in these channels",
     "ignoredHelp": "Text or voice channels, or whole categories. Threads follow their channel.",
     "ignoredPlaceholder": "Add a channel",
@@ -51,19 +64,25 @@
   "placeholder": {
     "user": "Mentions the member",
     "username": "The member's name",
-    "level": "The new level",
+    "level": "The new chat or voice level",
+    "track": "Which level went up: Chat or Voice",
     "server": "The server name"
   },
   "leaderboard": {
     "title": "{server} leaderboard",
-    "line": "{rank} {user} · Level {level} · {xp} XP",
+    "line": "{rank} {user} · {overall} · {text} · {voice} · {xp} XP",
+    "legend": "{overall} level = chat XP + voice XP. Ranked by total XP.",
     "empty": "Nobody has XP yet. Start chatting!",
     "updated": "Updated {time}",
     "rankButton": "My rank"
   },
   "rank": {
     "title": "{username}'s rank",
-    "body": "**Rank:** {position}\n**Level:** {level} · **XP:** {xp}\n{bar} {current} / {needed}\n{left} XP to the next level\n\n💬 {messages} messages · 🎙️ {voice} voice minutes",
+    "position": "**Leaderboard place:** {position}",
+    "block": "**{label} level {level}** · {xp} XP · {extra}\n{bar} {current} / {needed}\n{left} XP to the next level",
+    "overallExtra": "chat + voice",
+    "textExtra": "{messages} messages",
+    "voiceExtra": "{minutes} minutes in voice",
     "disabled": "Leveling is turned off on this server."
   },
   "status": {
@@ -83,20 +102,21 @@
   },
   "top": {
     "title": "Top members",
-    "hint": "The top 25 of this server. Members who left are hidden.",
+    "hint": "The top 25 by total XP (chat + voice). Members who left are hidden.",
     "empty": "Nobody has XP yet.",
-    "level": "Level {level}",
-    "xp": "{xp} XP",
-    "stats": "{messages} messages · {voice} voice minutes",
+    "xp": "{xp} XP total",
+    "textDetail": "{xp} chat XP from {messages} messages",
+    "voiceDetail": "{xp} voice XP from {minutes} minutes in voice",
+    "overallDetail": "Level of chat XP + voice XP together",
     "reset": "Reset all XP",
     "resetTitle": "Reset all XP?",
-    "resetBody": "Every member of this server goes back to level 0. This cannot be undone.",
+    "resetBody": "Every member of this server goes back to chat level 0 and voice level 0. This cannot be undone.",
     "resetConfirm": "Reset everything",
     "resetDone": "All XP was reset"
   },
   "preview": {
     "levelUpTitle": "Level up preview",
-    "levelUpHint": "Shown with your name and level 5.",
+    "levelUpHint": "Shown with your name and chat level 5. Voice level ups look the same with 🎙️ Voice.",
     "leaderboardTitle": "Leaderboard preview",
     "leaderboardHint": "With the real top members of this server.",
     "botTag": "APP",

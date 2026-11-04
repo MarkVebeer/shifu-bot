@@ -1,6 +1,8 @@
 /**
- * Leveling feature: bot side. Message and voice XP, level up announcements,
- * the leaderboard panel and its refresh scheduler, database and API routes.
+ * Leveling feature: bot side. Chat XP (messages) and voice XP are separate
+ * tracks with their own levels; `xp` holds their sum for the overall level and
+ * the leaderboard. Level up announcements, the leaderboard panel and its
+ * refresh scheduler, database and API routes.
  */
 import type { Database } from 'bun:sqlite';
 import type { BotPermission, PermissionIssue } from '@shifubot/shared';
@@ -28,10 +30,13 @@ import {
   levelFromXp,
   levelingManifest,
   levelingSettingsSchema,
+  levelsFor,
   RANK_BUTTON_ID,
   XP_RULES,
   type LeaderboardEntry,
   type LevelingSettings,
+  type LevelTrack,
+  type RankStats,
 } from './manifest';
 import { isIgnoredChannel, isVoiceEligible, messageXp } from './xp';
 
@@ -61,8 +66,16 @@ export interface TopMember {
   userId: string;
   displayName: string;
   avatarUrl: string | null;
+  /** Chat XP from messages. */
+  textXp: number;
+  /** Voice XP from time in voice channels. */
+  voiceXp: number;
+  /** Chat XP + voice XP. The leaderboard is sorted by it. */
   xp: number;
-  level: number;
+  textLevel: number;
+  voiceLevel: number;
+  /** Level of the total XP. */
+  overallLevel: number;
   messages: number;
   voiceMinutes: number;
 }
@@ -93,6 +106,8 @@ interface SettingsRow {
 interface MemberRow {
   user_id: string;
   xp: number;
+  text_xp: number;
+  voice_xp: number;
   messages: number;
   voice_minutes: number;
   display_name: string;
@@ -105,14 +120,17 @@ interface MemberSnapshot {
   avatarUrl: string;
 }
 
-/** Old and new total XP after an award, to spot level ups. */
+/** Old and new XP of the awarded track, to spot chat or voice level ups. */
 interface Award {
   member: MemberSnapshot;
+  track: LevelTrack;
   before: number;
   after: number;
 }
 
-class LevelingStore {
+const MEMBER_COLUMNS = 'user_id, xp, text_xp, voice_xp, messages, voice_minutes, display_name, avatar_url';
+
+export class LevelingStore {
   private readonly cache = new LruCache<string, LevelingSettings>(10_000);
 
   constructor(private readonly db: Database) {}
@@ -209,28 +227,38 @@ class LevelingStore {
     return row?.last_error && row.last_error_at ? { code: row.last_error as LevelingErrorCode, at: row.last_error_at } : null;
   }
 
-  /** Adds XP and returns the totals before and after. Also refreshes the name and avatar snapshot. */
-  addXp(guildId: string, member: MemberSnapshot, xp: number, source: 'message' | 'voice'): Award {
-    const after = this.db
-      .query<{ xp: number }, [string, string, number, number, number, string, string, number]>(
-        `INSERT INTO leveling_members (guild_id, user_id, xp, messages, voice_minutes, display_name, avatar_url, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  /**
+   * Adds XP to one track (chat or voice) and to the total, and returns that track's XP before and
+   * after. Also refreshes the name and avatar snapshot.
+   */
+  addXp(guildId: string, member: MemberSnapshot, xp: number, track: LevelTrack): Award {
+    const text = track === 'text' ? xp : 0;
+    const voice = track === 'voice' ? xp : 0;
+    const row = this.db
+      .query<{ text_xp: number; voice_xp: number }, [string, string, number, number, number, number, number, string, string, number]>(
+        `INSERT INTO leveling_members
+           (guild_id, user_id, xp, text_xp, voice_xp, messages, voice_minutes, display_name, avatar_url, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT (guild_id, user_id) DO UPDATE SET
-           xp = xp + excluded.xp, messages = messages + excluded.messages, voice_minutes = voice_minutes + excluded.voice_minutes,
+           xp = xp + excluded.xp, text_xp = text_xp + excluded.text_xp, voice_xp = voice_xp + excluded.voice_xp,
+           messages = messages + excluded.messages, voice_minutes = voice_minutes + excluded.voice_minutes,
            display_name = excluded.display_name, avatar_url = excluded.avatar_url, left_at = NULL, updated_at = excluded.updated_at
-         RETURNING xp`,
+         RETURNING text_xp, voice_xp`,
       )
       .get(
         guildId,
         member.id,
         xp,
-        source === 'message' ? 1 : 0,
-        source === 'voice' ? 1 : 0,
+        text,
+        voice,
+        track === 'text' ? 1 : 0,
+        track === 'voice' ? 1 : 0,
         member.displayName,
         member.avatarUrl,
         Date.now(),
-      )!.xp;
-    return { member, before: after - xp, after };
+      )!;
+    const after = track === 'text' ? row.text_xp : row.voice_xp;
+    return { member, track, before: after - xp, after };
   }
 
   /** Voice XP for many members in one transaction. */
@@ -238,28 +266,33 @@ class LevelingStore {
     return this.db.transaction(() => members.map((member) => this.addXp(guildId, member, XP_RULES.voicePerMinute, 'voice')))();
   }
 
+  /** Top members by total XP (chat + voice). */
   top(guildId: string, limit: number): MemberRow[] {
     return this.db
       .query<MemberRow, [string, number]>(
-        `SELECT user_id, xp, messages, voice_minutes, display_name, avatar_url FROM leveling_members
+        `SELECT ${MEMBER_COLUMNS} FROM leveling_members
          WHERE guild_id = ? AND left_at IS NULL AND xp > 0 ORDER BY xp DESC, user_id LIMIT ?`,
       )
       .all(guildId, limit);
   }
 
-  stats(guildId: string, userId: string) {
+  stats(guildId: string, userId: string): RankStats {
     const row = this.db
-      .query<MemberRow, [string, string]>(
-        'SELECT user_id, xp, messages, voice_minutes, display_name, avatar_url FROM leveling_members WHERE guild_id = ? AND user_id = ?',
-      )
+      .query<MemberRow, [string, string]>(`SELECT ${MEMBER_COLUMNS} FROM leveling_members WHERE guild_id = ? AND user_id = ?`)
       .get(guildId, userId);
-    if (!row || row.xp <= 0) return { position: null, xp: 0, messages: row?.messages ?? 0, voiceMinutes: row?.voice_minutes ?? 0 };
+    const base = {
+      textXp: row?.text_xp ?? 0,
+      voiceXp: row?.voice_xp ?? 0,
+      messages: row?.messages ?? 0,
+      voiceMinutes: row?.voice_minutes ?? 0,
+    };
+    if (!row || row.xp <= 0) return { ...base, position: null };
     const ahead = this.db
       .query<{ count: number }, [string, number]>(
         'SELECT COUNT(*) AS count FROM leveling_members WHERE guild_id = ? AND left_at IS NULL AND xp > ?',
       )
       .get(guildId, row.xp)!.count;
-    return { position: ahead + 1, xp: row.xp, messages: row.messages, voiceMinutes: row.voice_minutes };
+    return { ...base, position: ahead + 1 };
   }
 
   setLeft(guildId: string, userId: string, left: boolean): boolean {
@@ -341,6 +374,16 @@ export default defineServerFeature({
         CREATE INDEX idx_leveling_members_rank ON leveling_members (guild_id, xp DESC) WHERE left_at IS NULL;
       `,
     },
+    {
+      // Chat and voice become separate tracks. xp stays the total and keeps the rank index.
+      // Old XP is reset on purpose: everyone starts both tracks from zero.
+      id: 'leveling_002_split_tracks',
+      sql: `
+        ALTER TABLE leveling_members ADD COLUMN text_xp INTEGER NOT NULL DEFAULT 0;
+        ALTER TABLE leveling_members ADD COLUMN voice_xp INTEGER NOT NULL DEFAULT 0;
+        DELETE FROM leveling_members;
+      `,
+    },
   ],
 
   setup(ctx: AppContext) {
@@ -359,7 +402,7 @@ export default defineServerFeature({
     const texts = (guildId: string) => levelingManifest.messages[guildSettings.locale(guildId)];
 
     const entriesFor = (guildId: string, size: number): LeaderboardEntry[] =>
-      store.top(guildId, size).map((row) => ({ userId: row.user_id, xp: row.xp }));
+      store.top(guildId, size).map((row) => ({ userId: row.user_id, textXp: row.text_xp, voiceXp: row.voice_xp }));
 
     /** Post, update or remove the leaderboard so it matches the settings and the current XP. */
     async function refreshPanel(guild: Guild, options: { forceNew?: boolean; scheduled?: boolean } = {}) {
@@ -433,6 +476,7 @@ export default defineServerFeature({
       const payload = buildLevelUpMessage(settings, {
         locale: guildSettings.locale(guild.id),
         member: award.member,
+        track: award.track,
         level: after,
         server: { name: guild.name },
       });
@@ -460,7 +504,7 @@ export default defineServerFeature({
           ? snapshot(member)
           : { id: message.author.id, displayName: message.author.displayName, avatarUrl: message.author.displayAvatarURL({ size: 128, extension: 'png' }) },
         messageXp(),
-        'message',
+        'text',
       );
       dirty.add(message.guildId);
       void announce(message.guild, award, message.channel);
@@ -507,6 +551,9 @@ export default defineServerFeature({
 
     const timers: ReturnType<typeof setInterval>[] = [];
     client.once(Events.ClientReady, () => {
+      // Redraw posted leaderboards once after start so they match the database (e.g. after the XP reset
+      // of the chat/voice split). It goes through the normal scheduler and send queue.
+      for (const guildId of store.enabledGuildIds()) dirty.add(guildId);
       timers.push(
         setInterval(() => {
           try {
@@ -620,15 +667,22 @@ export default defineServerFeature({
         router.get('/top', (c) => {
           const guild = c.get('guild');
           const body: TopResponse = {
-            members: store.top(guild.id, 25).map((row) => ({
-              userId: row.user_id,
-              displayName: row.display_name,
-              avatarUrl: row.avatar_url,
-              xp: row.xp,
-              level: levelFromXp(row.xp).level,
-              messages: row.messages,
-              voiceMinutes: row.voice_minutes,
-            })),
+            members: store.top(guild.id, 25).map((row) => {
+              const levels = levelsFor({ textXp: row.text_xp, voiceXp: row.voice_xp });
+              return {
+                userId: row.user_id,
+                displayName: row.display_name,
+                avatarUrl: row.avatar_url,
+                textXp: row.text_xp,
+                voiceXp: row.voice_xp,
+                xp: levels.totalXp,
+                textLevel: levels.text.level,
+                voiceLevel: levels.voice.level,
+                overallLevel: levels.overall.level,
+                messages: row.messages,
+                voiceMinutes: row.voice_minutes,
+              };
+            }),
           };
           return c.json(body);
         });

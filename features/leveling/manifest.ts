@@ -1,14 +1,17 @@
 /**
  * Leveling feature: the part shared by the bot and the dashboard.
- * Members earn XP for chatting and for time in voice channels. Level ups are
- * announced, and a leaderboard panel in a channel is kept up to date. The
- * builders below make the real messages and the dashboard previews.
+ * Members earn chat XP for messages and voice XP for time in voice channels.
+ * Each track has its own level; the overall level and the leaderboard use the
+ * sum of both. Level ups are announced per track, and a leaderboard panel in a
+ * channel is kept up to date. The builders below make the real messages and
+ * the dashboard previews.
  */
 import {
   brandFooter,
   buildEmbed,
   ButtonStyle,
   defineFeature,
+  emoji,
   hexColor,
   renderPlaceholders,
   snowflake,
@@ -35,7 +38,14 @@ export const XP_RULES = {
   voicePerMinute: 10,
 } as const;
 
-export const LEVEL_UP_PLACEHOLDERS = ['user', 'username', 'level', 'server'] as const;
+/** The two independent XP tracks. "text" is shown as Chat, "voice" as Voice. */
+export const LEVEL_TRACKS = ['text', 'voice'] as const;
+export type LevelTrack = (typeof LEVEL_TRACKS)[number];
+
+/** Emoji of each level kind, used everywhere so chat, voice and overall are never confused. */
+export const LEVEL_EMOJI = { text: 'chat', voice: 'voice', overall: 'overall' } as const;
+
+export const LEVEL_UP_PLACEHOLDERS = ['user', 'username', 'level', 'track', 'server'] as const;
 export const ANNOUNCE_MODES = ['current', 'channel', 'off'] as const;
 export type AnnounceMode = (typeof ANNOUNCE_MODES)[number];
 export const LEADERBOARD_INTERVALS = [1, 5, 15, 60] as const;
@@ -108,6 +118,25 @@ export function levelFromXp(totalXp: number): LevelProgress {
   return { level, current: rest, needed: xpToNextLevel(level) };
 }
 
+export interface TrackXp {
+  textXp: number;
+  voiceXp: number;
+}
+
+export interface Levels {
+  text: LevelProgress;
+  voice: LevelProgress;
+  /** From the total XP (chat + voice). */
+  overall: LevelProgress;
+  totalXp: number;
+}
+
+/** Chat, voice and overall level of a member. The one place these are computed. */
+export function levelsFor(xp: TrackXp): Levels {
+  const totalXp = xp.textXp + xp.voiceXp;
+  return { text: levelFromXp(xp.textXp), voice: levelFromXp(xp.voiceXp), overall: levelFromXp(totalXp), totalXp };
+}
+
 /** "▰▰▰▱▱▱▱▱▱▱" style bar, safe in embeds on every platform. */
 export function progressBar(fraction: number, width = 12): string {
   const filled = Math.round(Math.min(1, Math.max(0, fraction)) * width);
@@ -116,9 +145,16 @@ export function progressBar(fraction: number, width = 12): string {
 
 const formatNumber = (value: number, locale: Locale) => value.toLocaleString(locale === 'hu' ? 'hu-HU' : 'en-US');
 
+/** "💬 Chat", "🎙️ Voice" or "⭐ Overall" in the server language. */
+export function levelLabel(kind: LevelTrack | 'overall', locale: Locale): string {
+  return `${emoji[LEVEL_EMOJI[kind]]} ${levelingManifest.messages[locale].tracks[kind]}`;
+}
+
 export interface LevelUpContext {
   locale: Locale;
   member: { id: string; displayName: string; avatarUrl: string };
+  /** Which level went up: the chat level or the voice level. */
+  track: LevelTrack;
   level: number;
   server: { name: string };
   now?: Date;
@@ -126,14 +162,21 @@ export interface LevelUpContext {
 
 export function buildLevelUpMessage(settings: LevelingSettings, ctx: LevelUpContext): MessagePayload {
   const texts = levelingManifest.messages[ctx.locale];
-  const values = { user: `<@${ctx.member.id}>`, username: ctx.member.displayName, level: ctx.level, server: ctx.server.name };
+  const values = {
+    user: `<@${ctx.member.id}>`,
+    username: ctx.member.displayName,
+    level: ctx.level,
+    track: texts.tracks[ctx.track],
+    server: ctx.server.name,
+  };
   // Mentions do not render in embed titles, so use the plain name there.
   const plainValues = { ...values, user: ctx.member.displayName };
   return {
     ...(settings.mentionUser ? { content: `<@${ctx.member.id}>` } : {}),
     embeds: [
       buildEmbed({
-        emoji: levelingManifest.emoji,
+        // The title starts with 💬 or 🎙️ so members see at a glance which level went up.
+        emoji: LEVEL_EMOJI[ctx.track],
         title: renderPlaceholders(settings.title || texts.defaults.title, plainValues),
         description: renderPlaceholders(settings.description || texts.defaults.description, values),
         color: settings.color,
@@ -146,28 +189,33 @@ export function buildLevelUpMessage(settings: LevelingSettings, ctx: LevelUpCont
   };
 }
 
-export interface LeaderboardEntry {
+export interface LeaderboardEntry extends TrackXp {
   userId: string;
-  xp: number;
 }
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
+/** Ranked by total XP (chat + voice); each line shows the overall, chat and voice level. */
 export function buildLeaderboardPanel(
   settings: Pick<LevelingSettings, 'color' | 'leaderboardSize'>,
   ctx: { locale: Locale; server: { name: string }; entries: LeaderboardEntry[]; updatedAt: Date },
 ): MessagePayload {
   const texts = levelingManifest.messages[ctx.locale];
-  const lines = ctx.entries.slice(0, settings.leaderboardSize).map((entry, index) => {
-    const rank = MEDALS[index] ?? `\`#${index + 1}\``;
-    const { level } = levelFromXp(entry.xp);
-    return renderPlaceholders(texts.leaderboard.line, {
-      rank,
-      user: `<@${entry.userId}>`,
-      level,
-      xp: formatNumber(entry.xp, ctx.locale),
+  const lines = [...ctx.entries]
+    .sort((a, b) => b.textXp + b.voiceXp - (a.textXp + a.voiceXp))
+    .slice(0, settings.leaderboardSize)
+    .map((entry, index) => {
+      const levels = levelsFor(entry);
+      return renderPlaceholders(texts.leaderboard.line, {
+        rank: MEDALS[index] ?? `\`#${index + 1}\``,
+        user: `<@${entry.userId}>`,
+        overall: `${levelLabel('overall', ctx.locale)} ${levels.overall.level}`,
+        text: `${levelLabel('text', ctx.locale)} ${levels.text.level}`,
+        voice: `${levelLabel('voice', ctx.locale)} ${levels.voice.level}`,
+        xp: formatNumber(levels.totalXp, ctx.locale),
+      });
     });
-  });
+  const legend = renderPlaceholders(texts.leaderboard.legend, { overall: levelLabel('overall', ctx.locale) });
   // <t:…:R> is rendered by Discord as "2 minutes ago" and keeps counting by itself.
   const updated = renderPlaceholders(texts.leaderboard.updated, { time: `<t:${Math.floor(ctx.updatedAt.getTime() / 1000)}:R>` });
   return {
@@ -175,7 +223,7 @@ export function buildLeaderboardPanel(
       buildEmbed({
         emoji: levelingManifest.emoji,
         title: renderPlaceholders(texts.leaderboard.title, { server: ctx.server.name }),
-        description: `${lines.length ? lines.join('\n') : texts.leaderboard.empty}\n\n${updated}`,
+        description: lines.length ? `${lines.join('\n')}\n\n*${legend}*\n${updated}` : `${texts.leaderboard.empty}\n\n${updated}`,
         color: settings.color,
         footer: brandFooter(ctx.locale, texts.name),
       }),
@@ -192,33 +240,38 @@ export function buildLeaderboardPanel(
   };
 }
 
-export interface RankStats {
-  /** 1 based place on the leaderboard, null when the member has no XP yet. */
+export interface RankStats extends TrackXp {
+  /** 1 based place on the leaderboard (by total XP), null when the member has no XP yet. */
   position: number | null;
-  xp: number;
   messages: number;
   voiceMinutes: number;
 }
 
-/** The private "My rank" answer. */
+/** The private "My rank" answer: overall, chat and voice level, each with its progress. */
 export function buildRankMessage(
   settings: Pick<LevelingSettings, 'color'>,
   ctx: { locale: Locale; member: { displayName: string; avatarUrl: string }; stats: RankStats },
 ): MessagePayload {
   const texts = levelingManifest.messages[ctx.locale];
-  const { level, current, needed } = levelFromXp(ctx.stats.xp);
+  const levels = levelsFor(ctx.stats);
   const n = (value: number) => formatNumber(value, ctx.locale);
-  const description = renderPlaceholders(texts.rank.body, {
-    position: ctx.stats.position ? `#${ctx.stats.position}` : '–',
-    level,
-    xp: n(ctx.stats.xp),
-    bar: progressBar(current / needed),
-    current: n(current),
-    needed: n(needed),
-    left: n(needed - current),
-    messages: n(ctx.stats.messages),
-    voice: n(ctx.stats.voiceMinutes),
-  });
+  const block = (kind: LevelTrack | 'overall', progress: LevelProgress, xp: number, extra: string) =>
+    renderPlaceholders(texts.rank.block, {
+      label: levelLabel(kind, ctx.locale),
+      level: progress.level,
+      xp: n(xp),
+      bar: progressBar(progress.current / progress.needed),
+      current: n(progress.current),
+      needed: n(progress.needed),
+      left: n(progress.needed - progress.current),
+      extra,
+    });
+  const description = [
+    renderPlaceholders(texts.rank.position, { position: ctx.stats.position ? `#${ctx.stats.position}` : '–' }),
+    block('overall', levels.overall, levels.totalXp, texts.rank.overallExtra),
+    block('text', levels.text, ctx.stats.textXp, renderPlaceholders(texts.rank.textExtra, { messages: n(ctx.stats.messages) })),
+    block('voice', levels.voice, ctx.stats.voiceXp, renderPlaceholders(texts.rank.voiceExtra, { minutes: n(ctx.stats.voiceMinutes) })),
+  ].join('\n\n');
   return {
     embeds: [
       buildEmbed({
@@ -233,3 +286,4 @@ export function buildRankMessage(
     allowedMentions: { users: [], roles: [], parse: [] },
   };
 }
+

@@ -21,11 +21,13 @@ import {
   buildLevelUpMessage,
   LEADERBOARD_INTERVALS,
   LEADERBOARD_SIZES,
+  LEVEL_EMOJI,
   LEVEL_UP_PLACEHOLDERS,
   levelingSettingsSchema,
   XP_RULES,
   type AnnounceMode,
   type LevelingSettings,
+  type LevelTrack,
 } from './manifest';
 import type { ChannelStatus, LevelingErrorCode, LevelingResponse, TopResponse } from './server';
 
@@ -67,6 +69,7 @@ export default function LevelingPage() {
   const now = useMemo(() => new Date(), []);
   const memberName = me?.user.globalName ?? me?.user.username ?? 'member';
   const topMembers = top.data?.members ?? [];
+  const n = (value: number) => value.toLocaleString(guild.locale);
 
   const levelUpPayload = useMemo(() => {
     if (!draft || !me) return null;
@@ -75,6 +78,7 @@ export default function LevelingPage() {
       {
         locale: guild.locale,
         member: { id: me.user.id, displayName: memberName, avatarUrl: me.user.avatarUrl },
+        track: 'text',
         level: 5,
         server: { name: guild.name },
         now,
@@ -90,7 +94,7 @@ export default function LevelingPage() {
       {
         locale: guild.locale,
         server: { name: guild.name },
-        entries: topMembers.map((member) => ({ userId: member.userId, xp: member.xp })),
+        entries: topMembers.map((member) => ({ userId: member.userId, textXp: member.textXp, voiceXp: member.voiceXp })),
         updatedAt: now,
       },
     );
@@ -264,6 +268,14 @@ export default function LevelingPage() {
               title={t('leveling.form.general')}
               description={t('leveling.form.rules', { min: XP_RULES.messageMin, max: XP_RULES.messageMax, voice: XP_RULES.voicePerMinute })}
             />
+            <ul className="mb-5 grid gap-2 sm:grid-cols-3" aria-label={t('leveling.levels.title')}>
+              {(['text', 'voice', 'overall'] as const).map((kind) => (
+                <li key={kind} className="glass-raised px-3 py-2.5">
+                  <LevelBadge kind={kind} />
+                  <p className="mt-1.5 text-xs text-muted">{t(`leveling.levels.${kind}Help`)}</p>
+                </li>
+              ))}
+            </ul>
             <div className="space-y-5">
               <Switch checked={draft.enabled} onChange={(value) => update('enabled', value)} label={t('leveling.form.enabled')} description={t('leveling.form.enabledHelp')} />
               <ChannelMultiPicker
@@ -408,20 +420,25 @@ export default function LevelingPage() {
         ) : (
           <ol className="divide-y divide-line/60">
             {topMembers.map((member, index) => (
-              <li key={member.userId} className="flex items-center gap-3 py-3">
-                <span className={cx('w-8 shrink-0 text-center font-mono text-sm', index < 3 ? 'text-lg' : 'text-muted')}>
+              <li key={member.userId} className="flex items-start gap-3 py-3">
+                <span className={cx('w-6 shrink-0 pt-1.5 text-center font-mono text-sm sm:w-8', index < 3 ? 'text-lg' : 'text-muted')}>
                   {['🥇', '🥈', '🥉'][index] ?? `#${index + 1}`}
                 </span>
                 <Avatar src={member.avatarUrl} name={member.displayName} size={36} />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">{member.displayName}</p>
-                  <p className="text-xs text-muted">
-                    {t('leveling.top.stats', { messages: member.messages.toLocaleString(guild.locale), voice: member.voiceMinutes.toLocaleString(guild.locale) })}
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="truncate font-medium">{member.displayName}</p>
+                    <p className="shrink-0 font-mono text-xs text-muted">{t('leveling.top.xp', { xp: n(member.xp) })}</p>
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    <LevelBadge kind="overall" level={member.overallLevel} detail={t('leveling.top.overallDetail')} />
+                    <LevelBadge kind="text" level={member.textLevel} />
+                    <LevelBadge kind="voice" level={member.voiceLevel} />
+                  </div>
+                  <p className="mt-1 text-xs text-muted">
+                    {t('leveling.top.textDetail', { xp: n(member.textXp), messages: n(member.messages) })} ·{' '}
+                    {t('leveling.top.voiceDetail', { xp: n(member.voiceXp), minutes: n(member.voiceMinutes) })}
                   </p>
-                </div>
-                <div className="shrink-0 text-right">
-                  <p className="text-sm font-semibold">{t('leveling.top.level', { level: member.level })}</p>
-                  <p className="font-mono text-xs text-muted">{t('leveling.top.xp', { xp: member.xp.toLocaleString(guild.locale) })}</p>
                 </div>
               </li>
             ))}
@@ -454,6 +471,28 @@ const levelingErrorCodes: Record<LevelingErrorCode, true> = {
   send_failed: true,
   panel_deleted: true,
 };
+
+const badgeTones = {
+  text: 'bg-primary/15 text-primary ring-primary/30',
+  voice: 'bg-aqua/15 text-aqua ring-aqua/30',
+  overall: 'bg-lavender/20 text-lavender ring-lavender/40',
+} as const;
+
+/** "💬 Chat level 12" style badge. The same emoji, color and wording for a level kind everywhere. */
+function LevelBadge({ kind, level, detail }: { kind: LevelTrack | 'overall'; level?: number; detail?: string }) {
+  const { t } = useI18n();
+  const label = t(`leveling.tracks.${kind}`);
+  const text = level === undefined ? t('leveling.levels.name', { label }) : t('leveling.levels.badge', { label, level });
+  return (
+    <span
+      title={detail}
+      className={cx('inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ring-1', badgeTones[kind])}
+    >
+      <span aria-hidden>{emoji[LEVEL_EMOJI[kind]]}</span>
+      {text}
+    </span>
+  );
+}
 
 function LevelingSkeleton() {
   return (

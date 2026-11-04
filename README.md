@@ -16,11 +16,14 @@ discord.js, Hono, SQLite and React. Self host it on a Pelican panel, with Docker
   tries are allowed and what happens after (try again, timeout, kick or ban). Optional minimum
   account age, and members who verified before get their role back when they rejoin. The
   captcha images are drawn in plain TypeScript, so there are no native modules to install.
-- 🏆 **Leveling.** Members earn XP for chatting (15–25 XP, at most once a minute) and for time in
-  voice (10 XP a minute, only with company, not deafened, not in the AFK channel). Level ups are
-  announced where the member chatted or in a channel you pick, with your own text. A leaderboard
-  panel in a channel refreshes itself (every 1, 5, 15 or 60 minutes, and only when something
+- 🏆 **Leveling.** Every member has three levels: a 💬 **chat level** from chat XP (15–25 XP per
+  message, at most once a minute), a 🎙️ **voice level** from voice XP (10 XP a minute, only with
+  company, not deafened, not in the AFK channel), and a ⭐ **overall level** from both added
+  together. Chat and voice level ups are announced separately, where the member chatted or in a
+  channel you pick, with your own text. A leaderboard panel in a channel is ranked by total XP,
+  shows all three levels, refreshes itself (every 1, 5, 15 or 60 minutes, and only when something
   changed) and has a **My rank** button. Turn off XP for chosen text, voice channels or categories.
+  Upgrading from a version with a single level resets everyone's XP once.
 - 🌐 **English and Hungarian.** Each server picks its language. It drives the dashboard and every
   message the bot sends there.
 - 🛡️ **Raid safe.** At most 10 welcome and 10 goodbye messages per server per minute (configurable).

@@ -1,15 +1,28 @@
 {
   "name": "Szintek",
-  "description": "A tagok XP-t kapnak a chatelésért és a voice-ban töltött időért. A szintlépéseket a bot bejelenti, és egy élő toplista is van egy csatornában.",
+  "description": "A tagok chat szintet kapnak a chatelésért és külön hang szintet a voice-ban töltött időért. A kettő együtt adja az összesített szintet, ami alapján az élő toplista rangsorol.",
   "defaults": {
-    "title": "Szintlépés!",
-    "description": "{user} elérte a(z) **{level}. szintet**. Csak így tovább!"
+    "title": "{track} szintlépés!",
+    "description": "{user} új szintet ért el: **{track} szint {level}**. Csak így tovább!"
+  },
+  "tracks": {
+    "text": "Chat",
+    "voice": "Hang",
+    "overall": "Összesített"
+  },
+  "levels": {
+    "title": "Három szint",
+    "name": "{label} szint",
+    "badge": "{label} szint {level}",
+    "textHelp": "Csak a szöveges csatornákban írt üzenetekből.",
+    "voiceHelp": "Csak a voice csatornákban beszélgetéssel töltött időből.",
+    "overallHelp": "Chat XP + hang XP együtt. A toplista ez alapján rangsorol."
   },
   "form": {
     "general": "Általános",
     "enabled": "Szintrendszer bekapcsolása",
     "enabledHelp": "A tagok azonnal elkezdenek XP-t gyűjteni. A botok soha nem kapnak XP-t.",
-    "rules": "{min}–{max} XP üzenetenként (legfeljebb percenként egyszer) és {voice} XP percenként voice-ban, ha legalább még egy ember ott van. A süketített tagok és az AFK csatorna nem kapnak semmit.",
+    "rules": "Chat XP: {min}–{max} üzenetenként, legfeljebb percenként egyszer. Hang XP: {voice} percenként voice-ban, ha legalább még egy ember ott van; a süketített tagok és az AFK csatorna nem kapnak semmit. A chat és a hang szint külön lép.",
     "ignored": "Nincs XP ezekben a csatornákban",
     "ignoredHelp": "Szöveges vagy voice csatornák, illetve egész kategóriák. A threadek a csatornájukat követik.",
     "ignoredPlaceholder": "Csatorna hozzáadása",
@@ -51,19 +64,25 @@
   "placeholder": {
     "user": "Megemlíti a tagot",
     "username": "A tag neve",
-    "level": "Az új szint",
+    "level": "Az új chat vagy hang szint",
+    "track": "Melyik szint lépett: Chat vagy Hang",
     "server": "A szerver neve"
   },
   "leaderboard": {
     "title": "{server} toplista",
-    "line": "{rank} {user} · {level}. szint · {xp} XP",
+    "line": "{rank} {user} · {overall} · {text} · {voice} · {xp} XP",
+    "legend": "{overall} szint = chat XP + hang XP. Az összes XP alapján rangsorolva.",
     "empty": "Még senkinek sincs XP-je. Kezdjetek el chatelni!",
     "updated": "Frissítve {time}",
     "rankButton": "Saját rangom"
   },
   "rank": {
     "title": "{username} rangja",
-    "body": "**Helyezés:** {position}\n**Szint:** {level} · **XP:** {xp}\n{bar} {current} / {needed}\nMég {left} XP a következő szintig\n\n💬 {messages} üzenet · 🎙️ {voice} perc voice",
+    "position": "**Helyezés a toplistán:** {position}",
+    "block": "**{label} szint {level}** · {xp} XP · {extra}\n{bar} {current} / {needed}\nMég {left} XP a következő szintig",
+    "overallExtra": "chat + hang",
+    "textExtra": "{messages} üzenet",
+    "voiceExtra": "{minutes} perc voice-ban",
     "disabled": "A szintrendszer ki van kapcsolva ezen a szerveren."
   },
   "status": {
@@ -83,20 +102,21 @@
   },
   "top": {
     "title": "Legjobb tagok",
-    "hint": "A szerver top 25 tagja. A kilépett tagok nem látszanak.",
+    "hint": "A top 25 az összes XP alapján (chat + hang). A kilépett tagok nem látszanak.",
     "empty": "Még senkinek sincs XP-je.",
-    "level": "{level}. szint",
-    "xp": "{xp} XP",
-    "stats": "{messages} üzenet · {voice} perc voice",
+    "xp": "{xp} XP összesen",
+    "textDetail": "{xp} chat XP {messages} üzenetből",
+    "voiceDetail": "{xp} hang XP {minutes} perc voice-ból",
+    "overallDetail": "A chat XP és a hang XP együttes szintje",
     "reset": "Összes XP nullázása",
     "resetTitle": "Nullázod az összes XP-t?",
-    "resetBody": "A szerver minden tagja visszaesik a 0. szintre. Ez nem vonható vissza.",
+    "resetBody": "A szerver minden tagja visszaesik 0-s chat és 0-s hang szintre. Ez nem vonható vissza.",
     "resetConfirm": "Mindent nullázok",
     "resetDone": "Az összes XP nullázva"
   },
   "preview": {
     "levelUpTitle": "Szintlépés előnézet",
-    "levelUpHint": "A te neveddel és az 5. szinttel.",
+    "levelUpHint": "A te neveddel és 5-ös chat szinttel. A hang szintlépés ugyanígy néz ki 🎙️ Hang felirattal.",
     "leaderboardTitle": "Toplista előnézet",
     "leaderboardHint": "A szerver valódi legjobb tagjaival.",
     "botTag": "APP",

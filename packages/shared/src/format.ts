@@ -13,6 +13,10 @@ export const emoji = {
   goodbye: '🚪',
   verification: '🛡️',
   leveling: '🏆',
+  /** Leveling tracks: chat level, voice level, overall level. */
+  chat: '💬',
+  voice: '🎙️',
+  overall: '⭐',
   success: '✅',
   warning: '⚠️',
   error: '⛔',
