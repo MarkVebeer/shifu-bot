@@ -520,7 +520,15 @@ export default defineServerFeature({
       const settings = store.get(guild.id);
       const before = levelFromXp(award.before).level;
       const after = levelFromXp(award.after).level;
-      if (after <= before || settings.announceMode === 'off') return;
+      if (after <= before) return;
+      ctx.audit.record(guild.id, {
+        type: 'shifubot.levelUp',
+        actorId: award.member.id,
+        targetId: award.member.id,
+        targetKind: 'user',
+        data: { track: award.track, level: after },
+      });
+      if (settings.announceMode === 'off') return;
 
       let channel: GuildTextBasedChannel | null = null;
       if (settings.announceMode === 'current') {
@@ -548,6 +556,7 @@ export default defineServerFeature({
       } catch (error) {
         logger.warn('Level up message failed', { guildId: guild.id, channelId: channel.id, error });
         store.setError(guild.id, 'send_failed');
+        ctx.audit.record(guild.id, { type: 'shifubot.messageFailed', channelId: channel.id, data: { feature: 'leveling', error: String((error as Error).message ?? error) } });
       }
     }
 
@@ -767,6 +776,7 @@ export default defineServerFeature({
           const guild = c.get('guild');
           store.reset(guild.id);
           logger.info('Leveling XP reset', { guildId: guild.id, userId: c.get('session').userId });
+          ctx.audit.record(guild.id, { type: 'shifubot.xpReset', actorId: c.get('session').userId, data: { feature: 'leveling' } });
           await refreshPanel(guild);
           return c.json({ members: [] } satisfies TopResponse);
         });

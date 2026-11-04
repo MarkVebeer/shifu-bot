@@ -184,6 +184,7 @@ export default defineServerFeature({
           missing: target.missing,
         });
         store.setError(guild.id, target.error);
+        ctx.audit.record(guild.id, { type: 'shifubot.messageFailed', targetId: member.id, targetKind: 'user', channelId: settings.channelId, data: { feature: 'goodbye', error: target.error } });
         throw new ApiError(409, target.error, `Cannot send: ${target.error.replace('_', ' ')}`);
       }
       const payload = buildGoodbyeMessage(settings, {
@@ -203,6 +204,7 @@ export default defineServerFeature({
               : 'send_failed';
         logger.warn('Goodbye message failed', { guildId: guild.id, channelId: target.channel.id, code, error });
         store.setError(guild.id, code);
+        ctx.audit.record(guild.id, { type: 'shifubot.messageFailed', targetId: member.id, targetKind: 'user', channelId: target.channel.id, data: { feature: 'goodbye', error: code } });
         throw new ApiError(409, code, error instanceof Error ? error.message : 'Discord rejected the message');
       }
     }

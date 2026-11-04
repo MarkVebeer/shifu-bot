@@ -3,6 +3,7 @@
  * so a setting saved in the dashboard applies to the bot instantly.
  */
 import { loadConfig } from './config';
+import { AuditSink } from './core/audit-sink';
 import { startCleanupJob } from './core/cleanup';
 import type { AppContext } from './core/feature';
 import { GuildSettingsStore } from './core/guild-settings';
@@ -30,8 +31,9 @@ async function main() {
   const serverFeatures = await loadServerFeatures();
   migrate(db, [...coreMigrations, ...serverFeatures.flatMap((feature) => feature.migrations)], logger);
 
-  const client = createDiscordClient();
+  const client = createDiscordClient({ messageContent: config.discord.messageContent, presences: config.discord.presences });
   const ctx: AppContext = {
+    audit: new AuditSink(),
     config,
     logger,
     db,
@@ -61,8 +63,13 @@ async function main() {
     logger.warn('BOT_DISABLED is set: the Discord bot will not log in. Only the dashboard runs.');
   } else {
     client.login(config.discord.token).catch((error: Error) => {
+      const privileged = [
+        'SERVER MEMBERS INTENT',
+        ...(config.discord.messageContent ? ['MESSAGE CONTENT INTENT (or set DISCORD_MESSAGE_CONTENT=false)'] : []),
+        ...(config.discord.presences ? ['PRESENCE INTENT (or set DISCORD_PRESENCES=false)'] : []),
+      ];
       const hint = /disallowed intents/i.test(error.message)
-        ? 'Turn on the SERVER MEMBERS INTENT in Developer Portal > Bot > Privileged Gateway Intents.'
+        ? `Turn on ${privileged.join(', ')} in Developer Portal > Bot > Privileged Gateway Intents.`
         : /token/i.test(error.message)
           ? 'Check DISCORD_TOKEN. Reset it in Developer Portal > Bot if needed.'
           : undefined;

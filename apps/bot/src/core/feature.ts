@@ -6,6 +6,7 @@ import type { Config } from '../config';
 import type { Migration } from '../db/database';
 import type { Session } from '../http/session';
 import type { Logger } from '../logger';
+import type { AuditSink } from './audit-sink';
 import type { GuildSettingsStore } from './guild-settings';
 import type { SendQueue } from './send-queue';
 
@@ -17,6 +18,8 @@ export interface AppContext {
   client: Client;
   guildSettings: GuildSettingsStore;
   queue: SendQueue;
+  /** Report ShifuBot's own events to the audit log (a no-op until that feature attaches). */
+  audit: AuditSink;
 }
 
 /** Variables available to routes under /api/guilds/:guildId. Permission checks already ran. */

@@ -35,6 +35,16 @@ export function inviteUrl(clientId: string, guildId?: string, permissions = INVI
   return `https://discord.com/oauth2/authorize?${params}`;
 }
 
+/** Top level keys whose values differ between two settings objects. */
+export function settingsChanges(before: unknown, after: unknown): { key: string; old: unknown; new: unknown }[] {
+  if (!before || !after || typeof before !== 'object' || typeof after !== 'object') return [];
+  const a = before as Record<string, unknown>;
+  const b = after as Record<string, unknown>;
+  return [...new Set([...Object.keys(a), ...Object.keys(b)])]
+    .filter((key) => JSON.stringify(a[key]) !== JSON.stringify(b[key]))
+    .map((key) => ({ key, old: a[key] ?? null, new: b[key] ?? null }));
+}
+
 function canManage(guild: OAuthGuild): boolean {
   const permissions = BigInt(guild.permissions);
   return guild.owner === true || (permissions & MANAGE_GUILD) === MANAGE_GUILD || (permissions & ADMINISTRATOR) === ADMINISTRATOR;
@@ -137,8 +147,10 @@ export function guildRoutes(
   app.put('/:guildId/settings', async (c) => {
     const guild = c.get('guild');
     const input = await parseJsonBody(c.req.raw, guildSettingsSchema);
+    const before = guildSettings.get(guild.id);
     const saved = guildSettings.save(guild.id, input);
     logger.info('Server settings saved', { guildId: guild.id, userId: c.get('session').userId, locale: saved.locale });
+    recordSettingsChange(guild.id, c.get('session').userId, 'core', before, saved);
     return c.json({ settings: saved });
   });
 
@@ -147,6 +159,7 @@ export function guildRoutes(
     const guild = c.get('guild');
     guildSettings.completeSetup(guild.id);
     logger.info('Server setup completed', { guildId: guild.id, userId: c.get('session').userId });
+    ctx.audit.record(guild.id, { type: 'shifubot.setup', actorId: c.get('session').userId, targetKind: 'user' });
     return c.json({ setupCompleted: true });
   });
 
@@ -253,9 +266,41 @@ export function guildRoutes(
     return c.json({ roles });
   });
 
+  /**
+   * Who changed which dashboard setting, for the audit log. The settings a page loaded (GET of the
+   * feature root) are kept briefly, so a save can be compared with them key by key.
+   */
+  const loadedSettings = new LruCache<string, unknown>(5_000, 60 * 60_000);
+  function recordSettingsChange(guildId: string, userId: string, feature: string, before: unknown, after: unknown) {
+    const changes = settingsChanges(before, after);
+    if (before !== undefined && changes.length === 0) return;
+    ctx.audit.record(guildId, {
+      type: 'shifubot.settings',
+      actorId: userId,
+      targetId: feature,
+      targetKind: 'feature',
+      data: { feature, ...(before === undefined ? { after: after as Record<string, unknown> } : { changes }) },
+    });
+  }
+
   for (const { feature, instance } of features) {
     if (!instance.routes) continue;
     const router = new Hono<GuildRouteEnv>();
+    router.use('*', async (c, next) => {
+      await next();
+      const isRoot = /\/features\/[^/]+\/?$/.test(c.req.path);
+      if (!isRoot || c.res.status >= 400 || !c.res.headers.get('content-type')?.includes('application/json')) return;
+      const body = (await c.res
+        .clone()
+        .json()
+        .catch(() => null)) as { settings?: unknown } | null;
+      if (!body?.settings) return;
+      const key = `${c.get('guild').id}:${feature.manifest.id}`;
+      if (c.req.method === 'PUT') {
+        recordSettingsChange(c.get('guild').id, c.get('session').userId, feature.manifest.id, loadedSettings.get(key), body.settings);
+      }
+      loadedSettings.set(key, body.settings);
+    });
     instance.routes(router);
     app.route(`/:guildId/features/${feature.manifest.id}`, router);
   }

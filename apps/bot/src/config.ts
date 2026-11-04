@@ -35,6 +35,10 @@ const envSchema = z.object({
   GOODBYE_MAX_PER_MINUTE: z.coerce.number().int().min(1).max(120).default(10),
   SEND_CONCURRENCY: z.coerce.number().int().min(1).max(50).default(4),
   CLEANUP_AFTER_DAYS: z.coerce.number().int().min(1).max(3650).default(30),
+  DISCORD_MESSAGE_CONTENT: bool.default('false'),
+  DISCORD_PRESENCES: bool.default('false'),
+  AUDIT_MAX_ROWS_PER_GUILD: z.coerce.number().int().min(1_000).max(50_000_000).default(500_000),
+  AUDIT_MAX_EVENTS_PER_MINUTE: z.coerce.number().int().min(10).max(100_000).default(1_200),
 });
 
 export type Config = ReturnType<typeof loadConfig>;
@@ -62,6 +66,13 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
       token: raw.DISCORD_TOKEN,
       clientId: raw.DISCORD_CLIENT_ID,
       clientSecret: raw.DISCORD_CLIENT_SECRET,
+      /** Privileged intents, only requested when turned on here and in the Developer Portal. */
+      messageContent: raw.DISCORD_MESSAGE_CONTENT,
+      presences: raw.DISCORD_PRESENCES,
+    },
+    audit: {
+      maxRowsPerGuild: raw.AUDIT_MAX_ROWS_PER_GUILD,
+      maxEventsPerMinute: raw.AUDIT_MAX_EVENTS_PER_MINUTE,
     },
     publicUrl: raw.PUBLIC_URL,
     publicOrigin: publicUrl.origin,

@@ -10,12 +10,13 @@ import {
   type Locale,
   type MessageKey,
 } from '@shifubot/shared';
+import { auditManifest } from './audit/manifest';
 import { goodbyeManifest } from './goodbye/manifest';
 import { levelingManifest } from './leveling/manifest';
 import { verificationManifest } from './verification/manifest';
 import { welcomeManifest } from './welcome/manifest';
 
-export const features = [welcomeManifest, goodbyeManifest, verificationManifest, levelingManifest] as const;
+export const features = [welcomeManifest, goodbyeManifest, verificationManifest, levelingManifest, auditManifest] as const;
 
 export type FeatureId = (typeof features)[number]['id'];
 

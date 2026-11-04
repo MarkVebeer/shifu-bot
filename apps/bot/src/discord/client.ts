@@ -1,26 +1,41 @@
 import { Client, GatewayIntentBits, Options, Partials } from 'discord.js';
 
+export interface DiscordClientOptions {
+  /** Privileged Message Content intent, for message text in the audit log. Must be on in the Developer Portal. */
+  messageContent?: boolean;
+  /** Privileged Presence intent, for status and activity changes in the audit log. Must be on in the Developer Portal. */
+  presences?: boolean;
+}
+
 /**
  * A discord.js client tuned for low memory on hundreds of servers.
  * Only guilds, channels, roles and voice states are cached: the first three to
  * compute the bot's permissions, voice states (only members currently in a
- * voice channel) for leveling voice XP. Message content is never read, so the
- * privileged Message Content intent is not needed. Members and users are not cached except the bot itself,
- * and full member lists are never fetched. The GuildMember partial lets
- * guildMemberRemove fire for members that are not in the cache (all of them).
+ * voice channel) for leveling voice XP. Members and users are not cached except
+ * the bot itself, and full member lists are never fetched.
+ *
+ * The extra intents and partials feed the audit log: events about messages,
+ * reactions, threads and members arrive even though none of them are cached.
+ * Message Content and Presences are privileged, so they are only requested when
+ * the operator turned them on (DISCORD_MESSAGE_CONTENT, DISCORD_PRESENCES).
  *
  * Sharding later: wrap this file's entry point with a ShardingManager. Nothing
  * here assumes one process sees every guild.
  */
-export function createDiscordClient(): Client {
+export function createDiscordClient(options: DiscordClientOptions = {}): Client {
   return new Client({
-    intents: [
-      GatewayIntentBits.Guilds,
-      GatewayIntentBits.GuildMembers,
-      GatewayIntentBits.GuildMessages,
-      GatewayIntentBits.GuildVoiceStates,
+    intents: discordIntents(options),
+    partials: [
+      Partials.GuildMember,
+      Partials.Message,
+      Partials.Channel,
+      Partials.Reaction,
+      Partials.User,
+      Partials.ThreadMember,
+      Partials.GuildScheduledEvent,
+      Partials.Poll,
+      Partials.PollAnswer,
     ],
-    partials: [Partials.GuildMember],
     makeCache: Options.cacheWithLimits({
       ...Options.DefaultMakeCacheSettings,
       MessageManager: 0,
@@ -63,4 +78,28 @@ export function createDiscordClient(): Client {
     rest: { timeout: 15_000, retries: 3 },
     failIfNotExists: false,
   });
+}
+
+export function discordIntents(options: DiscordClientOptions = {}): GatewayIntentBits[] {
+  return [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.GuildVoiceStates,
+    // Audit log: moderation (bans and the audit log stream), expressions, integrations, webhooks,
+    // invites, reactions, typing, polls, scheduled events and AutoMod.
+    GatewayIntentBits.GuildModeration,
+    GatewayIntentBits.GuildExpressions,
+    GatewayIntentBits.GuildIntegrations,
+    GatewayIntentBits.GuildWebhooks,
+    GatewayIntentBits.GuildInvites,
+    GatewayIntentBits.GuildMessageReactions,
+    GatewayIntentBits.GuildMessageTyping,
+    GatewayIntentBits.GuildMessagePolls,
+    GatewayIntentBits.GuildScheduledEvents,
+    GatewayIntentBits.AutoModerationConfiguration,
+    GatewayIntentBits.AutoModerationExecution,
+    ...(options.messageContent ? [GatewayIntentBits.MessageContent] : []),
+    ...(options.presences ? [GatewayIntentBits.GuildPresences] : []),
+  ];
 }

@@ -115,7 +115,9 @@
       "ManageRoles": "Rangok kezelése",
       "ModerateMembers": "Tagok időkorlátozása",
       "KickMembers": "Tagok kirúgása",
-      "BanMembers": "Tagok kitiltása"
+      "BanMembers": "Tagok kitiltása",
+      "ViewAuditLog": "Audit napló megtekintése",
+      "ManageGuild": "Szerver kezelése"
     }
   },
   "setup": {

@@ -420,12 +420,20 @@ export default defineServerFeature({
       }
       if (settings.minAccountAgeDays > 0 && accountAgeDays(interaction.user.createdAt) < settings.minAccountAgeDays) {
         logger.info('Verification refused: account too new', { guildId: guild.id, userId: member.id });
+        ctx.audit.record(guild.id, {
+          type: 'shifubot.verificationRefused',
+          actorId: member.id,
+          targetId: member.id,
+          targetKind: 'user',
+          data: { reason: `Account younger than ${settings.minAccountAgeDays} days` },
+        });
         return reply(interaction, 'warning', renderPlaceholders(t.tooYoung, { days: settings.minAccountAgeDays }));
       }
 
       if (settings.mode === 'button') {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const ok = await grantRole(member, role.role);
+        if (ok) ctx.audit.record(guild.id, { type: 'shifubot.verified', actorId: member.id, targetId: member.id, targetKind: 'user', data: { mode: 'button' } });
         await interaction.editReply(
           ok ? `${emoji.success} ${renderPlaceholders(t.success, { server: guild.name })}` : `${emoji.error} ${t.roleFailed}`,
         );
@@ -495,6 +503,7 @@ export default defineServerFeature({
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });
       const ok = await grantRole(member, role.role);
       logger.info('Member verified', { guildId: guild.id, userId: member.id, ok });
+      if (ok) ctx.audit.record(guild.id, { type: 'shifubot.verified', actorId: member.id, targetId: member.id, targetKind: 'user', data: { mode: 'captcha' } });
       await interaction.editReply(
         ok ? `${emoji.success} ${renderPlaceholders(t.success, { server: guild.name })}` : `${emoji.error} ${t.roleFailed}`,
       );
@@ -507,6 +516,13 @@ export default defineServerFeature({
       const action = settings.failAction;
       const reason = 'ShifuBot verification: too many wrong captcha answers';
       logger.info('Verification failed, running fail action', { guildId: guild.id, userId: member.id, action });
+      ctx.audit.record(guild.id, {
+        type: 'shifubot.verificationFailed',
+        actorId: member.id,
+        targetId: member.id,
+        targetKind: 'user',
+        data: { action, attempts: settings.maxAttempts },
+      });
       if (action === 'retry') return reply(interaction, 'error', t.tooManyAttempts);
 
       // Owners, admins and members above ShifuBot's role cannot be punished by the bot.
