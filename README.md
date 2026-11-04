@@ -16,6 +16,11 @@ discord.js, Hono, SQLite and React. Self host it on a Pelican panel, with Docker
   tries are allowed and what happens after (try again, timeout, kick or ban). Optional minimum
   account age, and members who verified before get their role back when they rejoin. The
   captcha images are drawn in plain TypeScript, so there are no native modules to install.
+- 🏆 **Leveling.** Members earn XP for chatting (15–25 XP, at most once a minute) and for time in
+  voice (10 XP a minute, only with company, not deafened, not in the AFK channel). Level ups are
+  announced where the member chatted or in a channel you pick, with your own text. A leaderboard
+  panel in a channel refreshes itself (every 1, 5, 15 or 60 minutes, and only when something
+  changed) and has a **My rank** button. Turn off XP for chosen text, voice channels or categories.
 - 🌐 **English and Hungarian.** Each server picks its language. It drives the dashboard and every
   message the bot sends there.
 - 🛡️ **Raid safe.** At most 10 welcome and 10 goodbye messages per server per minute (configurable).
@@ -56,6 +61,8 @@ modules (see [Adding a feature module](#adding-a-feature-module)).
      needs it to see members joining. Without it the bot stops at login with *"Used disallowed
      intents"*. (Bots in 100 or more servers must also be verified by Discord and request this
      intent in the verification form.)
+   - Leave **MESSAGE CONTENT INTENT** off. Leveling only needs to know *that* someone wrote, never
+     what, so ShifuBot uses the non-privileged message and voice state intents only.
    - Optional: turn off **Public Bot** if only you should be able to add it to servers.
 4. **OAuth2** page:
    - Copy the **Client Secret** (click *Reset Secret* if you never saw it). This is
@@ -372,7 +379,7 @@ languages have every key.
 apps/bot          Bun process: discord.js client, Hono API, SQLite, static dashboard hosting
 apps/web          React + Vite + Tailwind dashboard
 packages/shared   Design tokens, i18n layer, embed format, placeholder parser, API types
-features/         Feature modules (welcome, goodbye, verification) and their registry
+features/         Feature modules (welcome, goodbye, verification, leveling) and their registry
 pelican/          Pelican egg
 ```
 

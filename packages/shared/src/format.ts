@@ -12,6 +12,7 @@ export const emoji = {
   welcome: '👋',
   goodbye: '🚪',
   verification: '🛡️',
+  leveling: '🏆',
   success: '✅',
   warning: '⚠️',
   error: '⛔',

@@ -1,0 +1,472 @@
+/**
+ * Leveling feature: dashboard page.
+ */
+import { colors, emoji, findUnknownPlaceholders } from '@shifubot/shared';
+import { ExternalLink, Eye, RotateCcw, Send, Trophy } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { api } from '../../apps/web/src/lib/api';
+import { useAuth } from '../../apps/web/src/lib/auth';
+import { useGuild } from '../../apps/web/src/lib/guild';
+import { errorText, useI18n } from '../../apps/web/src/lib/i18n';
+import { useApi } from '../../apps/web/src/lib/use-api';
+import { ChannelMultiPicker } from '../../apps/web/src/ui/channel-multi-picker';
+import { ChannelPicker } from '../../apps/web/src/ui/channel-picker';
+import { DiscordMessagePreview } from '../../apps/web/src/ui/discord-preview';
+import { Alert, Avatar, Button, Card, CardHeader, Field, Input, Select, Skeleton, Switch, Textarea, cx } from '../../apps/web/src/ui/primitives';
+import { useToast } from '../../apps/web/src/ui/toast';
+import { ColorField, ConfirmDialog, SaveBar } from '../../apps/web/src/ui/widgets';
+import {
+  ANNOUNCE_MODES,
+  buildLeaderboardPanel,
+  buildLevelUpMessage,
+  LEADERBOARD_INTERVALS,
+  LEADERBOARD_SIZES,
+  LEVEL_UP_PLACEHOLDERS,
+  levelingSettingsSchema,
+  XP_RULES,
+  type AnnounceMode,
+  type LevelingSettings,
+} from './manifest';
+import type { ChannelStatus, LevelingErrorCode, LevelingResponse, TopResponse } from './server';
+
+type TextField = 'title' | 'description';
+
+export default function LevelingPage() {
+  const { t, locale: uiLocale } = useI18n();
+  const toast = useToast();
+  const { me } = useAuth();
+  const { guild, setDirty, permissions } = useGuild();
+  const base = `/guilds/${guild.id}/features/leveling`;
+  const leveling = useApi<LevelingResponse>(base);
+  const top = useApi<TopResponse>(`${base}/top`);
+
+  const [draft, setDraft] = useState<LevelingSettings | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [reposting, setReposting] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const saved = leveling.data?.settings;
+
+  useEffect(() => {
+    if (saved && !draft) setDraft(saved);
+  }, [saved, draft]);
+
+  const dirty = Boolean(draft && saved && JSON.stringify(draft) !== JSON.stringify(saved));
+  useEffect(() => setDirty(dirty), [dirty, setDirty]);
+  useEffect(() => () => setDirty(false), [setDirty]);
+
+  const fieldRefs = {
+    title: useRef<HTMLInputElement>(null),
+    description: useRef<HTMLTextAreaElement>(null),
+  };
+  const lastFocused = useRef<TextField>('description');
+
+  const validation = useMemo(() => (draft ? levelingSettingsSchema.safeParse(draft) : null), [draft]);
+  const fieldError = (field: keyof LevelingSettings) =>
+    validation && !validation.success ? validation.error.issues.find((issue) => issue.path[0] === field)?.message : undefined;
+
+  const now = useMemo(() => new Date(), []);
+  const memberName = me?.user.globalName ?? me?.user.username ?? 'member';
+  const topMembers = top.data?.members ?? [];
+
+  const levelUpPayload = useMemo(() => {
+    if (!draft || !me) return null;
+    return buildLevelUpMessage(
+      { ...draft, color: fieldError('color') ? null : draft.color },
+      {
+        locale: guild.locale,
+        member: { id: me.user.id, displayName: memberName, avatarUrl: me.user.avatarUrl },
+        level: 5,
+        server: { name: guild.name },
+        now,
+      },
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft, me, guild, now, memberName, validation]);
+
+  const leaderboardPayload = useMemo(() => {
+    if (!draft) return null;
+    return buildLeaderboardPanel(
+      { color: fieldError('color') ? null : draft.color, leaderboardSize: draft.leaderboardSize },
+      {
+        locale: guild.locale,
+        server: { name: guild.name },
+        entries: topMembers.map((member) => ({ userId: member.userId, xp: member.xp })),
+        updatedAt: now,
+      },
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft, guild, topMembers, now, validation]);
+
+  if (leveling.error) return <Alert tone="danger">{errorText(t, leveling.error)}</Alert>;
+  if (!draft || !leveling.data) return <LevelingSkeleton />;
+
+  const errorLabel = (code: LevelingErrorCode) => t(`leveling.errors.${code}`);
+  const update = <K extends keyof LevelingSettings>(key: K, value: LevelingSettings[K]) =>
+    setDraft((current) => (current ? { ...current, [key]: value } : current));
+
+  const insertPlaceholder = (name: string) => {
+    const field = lastFocused.current;
+    const element = fieldRefs[field].current;
+    const token = `{${name}}`;
+    const value = draft[field];
+    const start = element?.selectionStart ?? value.length;
+    const end = element?.selectionEnd ?? value.length;
+    update(field, value.slice(0, start) + token + value.slice(end));
+    requestAnimationFrame(() => {
+      element?.focus();
+      element?.setSelectionRange(start + token.length, start + token.length);
+    });
+  };
+
+  const save = async () => {
+    if (!validation?.success) {
+      toast.error(t('errors.validation'));
+      return;
+    }
+    setSaving(true);
+    try {
+      const response = await api<LevelingResponse>(base, { method: 'PUT', body: validation.data });
+      leveling.setData(response);
+      setDraft(response.settings);
+      void permissions.reload();
+      if (response.panelError) toast.error(t('leveling.panel.failed', { error: errorLabel(response.panelError) }));
+      else toast.success(t('toast.saved'));
+    } catch (error) {
+      toast.error(`${t('toast.saveFailed')}: ${errorText(t, error)}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const repost = async () => {
+    setReposting(true);
+    try {
+      const result = await api<LevelingResponse & { channel: { name: string } | null }>(`${base}/panel`, { method: 'POST' });
+      leveling.setData(result);
+      if (result.channel) toast.success(t('leveling.panel.reposted', { channel: result.channel.name }));
+    } catch (error) {
+      const code = (error as { code?: string }).code ?? '';
+      toast.error(code in levelingErrorCodes ? errorLabel(code as LevelingErrorCode) : errorText(t, error));
+      void leveling.reload();
+    } finally {
+      setReposting(false);
+    }
+  };
+
+  const resetAll = async () => {
+    setConfirmReset(false);
+    try {
+      top.setData(await api<TopResponse>(`${base}/reset`, { method: 'POST' }));
+      toast.success(t('leveling.top.resetDone'));
+    } catch (error) {
+      toast.error(errorText(t, error));
+    }
+  };
+
+  const { status } = leveling.data;
+  const warnings: { tone: 'warning' | 'danger'; text: string }[] = [];
+  const channelWarning = (state: ChannelStatus | null, selectedId: string | null, savedId: string | null | undefined) => {
+    if (!state || selectedId !== savedId) return;
+    if (!state.exists) warnings.push({ tone: 'danger', text: t('leveling.status.channelMissing') });
+    else if (state.missingPermissions.length)
+      warnings.push({
+        tone: 'danger',
+        text: t('leveling.status.missingPermissions', { channel: state.name ?? '', permissions: state.missingPermissions.join(', ') }),
+      });
+  };
+  if (draft.enabled) {
+    if (draft.announceMode === 'channel' && !draft.announceChannelId) warnings.push({ tone: 'warning', text: t('leveling.status.noAnnounceChannel') });
+    channelWarning(status.announceChannel, draft.announceChannelId, saved?.announceChannelId);
+    channelWarning(status.leaderboardChannel, draft.leaderboardChannelId, saved?.leaderboardChannelId);
+  }
+  if (status.lastError && saved?.enabled) warnings.push({ tone: 'warning', text: t('leveling.status.lastError', { error: errorLabel(status.lastError.code) }) });
+
+  const placeholderHint = (field: TextField) => {
+    const unknown = findUnknownPlaceholders(draft[field], LEVEL_UP_PLACEHOLDERS);
+    return unknown.length ? t('leveling.form.unknownPlaceholder', { names: unknown.map((n) => `{${n}}`).join(', ') }) : undefined;
+  };
+
+  const timeLabel = t('leveling.preview.today', {
+    time: new Intl.DateTimeFormat(uiLocale, { hour: '2-digit', minute: '2-digit' }).format(now),
+  });
+  const intervalLabel = (minutes: number) =>
+    minutes === 1 ? t('leveling.form.interval1') : minutes === 60 ? t('leveling.form.interval60') : t('leveling.form.interval', { count: minutes });
+  const mentions = Object.fromEntries([...topMembers.map((member) => [member.userId, member.displayName]), ...(me ? [[me.user.id, memberName]] : [])]);
+  const showPanelTools = saved?.enabled && saved.leaderboardChannelId;
+
+  const previews = (
+    <div className="space-y-6">
+      {levelUpPayload && draft.announceMode !== 'off' && (
+        <Card className="space-y-4">
+          <CardHeader icon={<Eye className="size-5 text-primary" />} title={t('leveling.preview.levelUpTitle')} description={t('leveling.preview.levelUpHint')} />
+          <DiscordMessagePreview payload={levelUpPayload} bot={guild.bot} mentions={mentions} botTag={t('leveling.preview.botTag')} timestampLabel={timeLabel} />
+        </Card>
+      )}
+      {leaderboardPayload && draft.leaderboardChannelId && (
+        <Card className="space-y-4">
+          <CardHeader icon={<Trophy className="size-5 text-primary" />} title={t('leveling.preview.leaderboardTitle')} description={t('leveling.preview.leaderboardHint')} />
+          <DiscordMessagePreview payload={leaderboardPayload} bot={guild.bot} mentions={mentions} botTag={t('leveling.preview.botTag')} timestampLabel={timeLabel} />
+          {showPanelTools && (
+            <div className="space-y-3">
+              {status.panel ? (
+                <a href={status.panel.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline">
+                  <ExternalLink className="size-4" aria-hidden />
+                  {t('leveling.status.panelLive', { channel: status.panel.channelName })}
+                </a>
+              ) : (
+                <p className="text-sm text-warning">{t('leveling.status.panelMissing')}</p>
+              )}
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <Button variant="secondary" onClick={repost} loading={reposting} disabled={dirty} icon={<Send className="size-4" aria-hidden />}>
+                  {reposting ? t('leveling.panel.reposting') : t('leveling.panel.repost')}
+                </Button>
+                <p className="text-xs text-muted">{t('leveling.panel.help')}</p>
+              </div>
+            </div>
+          )}
+        </Card>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="animate-fade-up space-y-6">
+      <header>
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+          <span aria-hidden>{emoji.leveling} </span>
+          {t('leveling.name')}
+        </h1>
+        <p className="mt-2 max-w-2xl text-muted">{t('leveling.description')}</p>
+      </header>
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)]">
+        <div className="lg:order-last">
+          <div className="lg:sticky lg:top-10">{previews}</div>
+        </div>
+
+        <form
+          className="space-y-6"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void save();
+          }}
+          noValidate
+        >
+          {warnings.map((warning) => (
+            <Alert key={warning.text} tone={warning.tone}>
+              {warning.text}
+            </Alert>
+          ))}
+
+          <Card>
+            <CardHeader
+              icon={emoji.sparkle}
+              title={t('leveling.form.general')}
+              description={t('leveling.form.rules', { min: XP_RULES.messageMin, max: XP_RULES.messageMax, voice: XP_RULES.voicePerMinute })}
+            />
+            <div className="space-y-5">
+              <Switch checked={draft.enabled} onChange={(value) => update('enabled', value)} label={t('leveling.form.enabled')} description={t('leveling.form.enabledHelp')} />
+              <ChannelMultiPicker
+                id="leveling-ignored"
+                value={draft.ignoredChannelIds}
+                onChange={(value) => update('ignoredChannelIds', value)}
+                label={t('leveling.form.ignored')}
+                help={t('leveling.form.ignoredHelp')}
+                placeholder={t('leveling.form.ignoredPlaceholder')}
+                emptyText={t('leveling.form.ignoredEmpty')}
+                removeLabel={(name) => t('leveling.form.remove', { name })}
+                error={fieldError('ignoredChannelIds')}
+              />
+            </div>
+          </Card>
+
+          <Card>
+            <CardHeader icon={emoji.rocket} title={t('leveling.form.levelUp')} description={t('leveling.form.defaultHint')} />
+            <div className="space-y-5">
+              <Field label={t('leveling.form.announceMode')} help={t(`leveling.form.announceModesHelp.${draft.announceMode}`)} htmlFor="leveling-announce-mode">
+                <Select id="leveling-announce-mode" value={draft.announceMode} onChange={(value) => update('announceMode', value as AnnounceMode)} aria-describedby="leveling-announce-mode-help">
+                  {ANNOUNCE_MODES.map((mode) => (
+                    <option key={mode} value={mode}>
+                      {t(`leveling.form.announceModes.${mode}`)}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              {draft.announceMode !== 'off' && (
+                <>
+                  <ChannelPicker
+                    id="leveling-announce-channel"
+                    label={t('leveling.form.announceChannel')}
+                    value={draft.announceChannelId}
+                    onChange={(value) => update('announceChannelId', value)}
+                    error={fieldError('announceChannelId')}
+                  />
+                  <Field label={t('leveling.form.title')} htmlFor="leveling-title" error={fieldError('title')} warning={placeholderHint('title')}>
+                    <Input
+                      id="leveling-title"
+                      ref={fieldRefs.title}
+                      value={draft.title}
+                      maxLength={200}
+                      placeholder={t('leveling.defaults.title')}
+                      onFocus={() => (lastFocused.current = 'title')}
+                      onChange={(event) => update('title', event.target.value)}
+                    />
+                  </Field>
+                  <Field label={t('leveling.form.description')} htmlFor="leveling-description" error={fieldError('description')} warning={placeholderHint('description')}>
+                    <Textarea
+                      id="leveling-description"
+                      ref={fieldRefs.description}
+                      value={draft.description}
+                      maxLength={2000}
+                      rows={3}
+                      placeholder={t('leveling.defaults.description')}
+                      onFocus={() => (lastFocused.current = 'description')}
+                      onChange={(event) => update('description', event.target.value)}
+                    />
+                  </Field>
+                  <div>
+                    <p className="mb-2 text-sm font-medium">{t('leveling.form.placeholders')}</p>
+                    <ul className="flex flex-wrap gap-2">
+                      {LEVEL_UP_PLACEHOLDERS.map((name) => (
+                        <li key={name}>
+                          <button
+                            type="button"
+                            onClick={() => insertPlaceholder(name)}
+                            aria-label={t('leveling.form.insertPlaceholder', { name: `{${name}}` })}
+                            title={t(`leveling.placeholder.${name}`)}
+                            className="glow-hover inline-flex min-h-10 items-center gap-2 rounded-full border border-line bg-raised/60 px-3 text-sm"
+                          >
+                            <code className="font-mono text-aqua">{`{${name}}`}</code>
+                            <span className="hidden text-muted sm:inline">{t(`leveling.placeholder.${name}`)}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <Switch checked={draft.mentionUser} onChange={(value) => update('mentionUser', value)} label={t('leveling.form.mention')} description={t('leveling.form.mentionHelp')} />
+                </>
+              )}
+            </div>
+          </Card>
+
+          <Card>
+            <CardHeader icon={<Trophy className="size-5 text-primary" />} title={t('leveling.form.leaderboard')} description={t('leveling.form.leaderboardHelp')} />
+            <div className="space-y-5">
+              <ChannelPicker
+                id="leveling-leaderboard-channel"
+                label={t('leveling.form.leaderboardChannel')}
+                value={draft.leaderboardChannelId}
+                onChange={(value) => update('leaderboardChannelId', value)}
+              />
+              {draft.leaderboardChannelId && (
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <Field label={t('leveling.form.leaderboardInterval')} help={t('leveling.form.intervalHelp')} htmlFor="leveling-interval">
+                    <Select
+                      id="leveling-interval"
+                      value={String(draft.leaderboardInterval)}
+                      onChange={(value) => update('leaderboardInterval', Number(value) as LevelingSettings['leaderboardInterval'])}
+                      aria-describedby="leveling-interval-help"
+                    >
+                      {LEADERBOARD_INTERVALS.map((minutes) => (
+                        <option key={minutes} value={minutes}>
+                          {intervalLabel(minutes)}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                  <Field label={t('leveling.form.leaderboardSize')} htmlFor="leveling-size">
+                    <Select id="leveling-size" value={String(draft.leaderboardSize)} onChange={(value) => update('leaderboardSize', Number(value) as LevelingSettings['leaderboardSize'])}>
+                      {LEADERBOARD_SIZES.map((size) => (
+                        <option key={size} value={size}>
+                          {t('leveling.form.size', { count: size })}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                </div>
+              )}
+            </div>
+          </Card>
+
+          <Card>
+            <CardHeader icon={emoji.sparkle} title={t('leveling.form.color')} />
+            <Field label={t('leveling.form.color')} htmlFor="leveling-color" error={fieldError('color')}>
+              <ColorField id="leveling-color" value={draft.color} fallback={colors.primary} onChange={(value) => update('color', value)} />
+            </Field>
+          </Card>
+
+          <SaveBar visible={dirty} saving={saving} onSave={() => void save()} onDiscard={() => setDraft(leveling.data!.settings)} />
+        </form>
+      </div>
+
+      <Card className="space-y-4">
+        <CardHeader icon={<Trophy className="size-5 text-primary" />} title={t('leveling.top.title')} description={t('leveling.top.hint')} />
+        {top.loading && !top.data ? (
+          <Skeleton className="h-40 rounded-panel" />
+        ) : topMembers.length === 0 ? (
+          <p className="text-sm text-muted">{t('leveling.top.empty')}</p>
+        ) : (
+          <ol className="divide-y divide-line/60">
+            {topMembers.map((member, index) => (
+              <li key={member.userId} className="flex items-center gap-3 py-3">
+                <span className={cx('w-8 shrink-0 text-center font-mono text-sm', index < 3 ? 'text-lg' : 'text-muted')}>
+                  {['🥇', '🥈', '🥉'][index] ?? `#${index + 1}`}
+                </span>
+                <Avatar src={member.avatarUrl} name={member.displayName} size={36} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium">{member.displayName}</p>
+                  <p className="text-xs text-muted">
+                    {t('leveling.top.stats', { messages: member.messages.toLocaleString(guild.locale), voice: member.voiceMinutes.toLocaleString(guild.locale) })}
+                  </p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="text-sm font-semibold">{t('leveling.top.level', { level: member.level })}</p>
+                  <p className="font-mono text-xs text-muted">{t('leveling.top.xp', { xp: member.xp.toLocaleString(guild.locale) })}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        )}
+        {topMembers.length > 0 && (
+          <Button variant="ghost" onClick={() => setConfirmReset(true)} icon={<RotateCcw className="size-4" aria-hidden />}>
+            {t('leveling.top.reset')}
+          </Button>
+        )}
+      </Card>
+
+      <ConfirmDialog
+        open={confirmReset}
+        title={t('leveling.top.resetTitle')}
+        body={t('leveling.top.resetBody')}
+        confirmLabel={t('leveling.top.resetConfirm')}
+        cancelLabel={t('common.cancel')}
+        onConfirm={() => void resetAll()}
+        onCancel={() => setConfirmReset(false)}
+      />
+    </div>
+  );
+}
+
+const levelingErrorCodes: Record<LevelingErrorCode, true> = {
+  no_channel: true,
+  channel_missing: true,
+  missing_permissions: true,
+  send_failed: true,
+  panel_deleted: true,
+};
+
+function LevelingSkeleton() {
+  return (
+    <div className="space-y-6" aria-busy="true">
+      <Skeleton className="h-9 w-48" />
+      <Skeleton className="h-4 w-96 max-w-full" />
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)]">
+        <div className="space-y-6">
+          <Skeleton className="h-56 rounded-card" />
+          <Skeleton className="h-72 rounded-card" />
+        </div>
+        <Skeleton className="h-80 rounded-card" />
+      </div>
+    </div>
+  );
+}

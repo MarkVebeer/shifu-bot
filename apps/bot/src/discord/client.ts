@@ -2,8 +2,10 @@ import { Client, GatewayIntentBits, Options, Partials } from 'discord.js';
 
 /**
  * A discord.js client tuned for low memory on hundreds of servers.
- * Only guilds, channels and roles are cached: they are needed to compute the
- * bot's permissions. Members and users are not cached except the bot itself,
+ * Only guilds, channels, roles and voice states are cached: the first three to
+ * compute the bot's permissions, voice states (only members currently in a
+ * voice channel) for leveling voice XP. Message content is never read, so the
+ * privileged Message Content intent is not needed. Members and users are not cached except the bot itself,
  * and full member lists are never fetched. The GuildMember partial lets
  * guildMemberRemove fire for members that are not in the cache (all of them).
  *
@@ -12,7 +14,12 @@ import { Client, GatewayIntentBits, Options, Partials } from 'discord.js';
  */
 export function createDiscordClient(): Client {
   return new Client({
-    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
+    intents: [
+      GatewayIntentBits.Guilds,
+      GatewayIntentBits.GuildMembers,
+      GatewayIntentBits.GuildMessages,
+      GatewayIntentBits.GuildVoiceStates,
+    ],
     partials: [Partials.GuildMember],
     makeCache: Options.cacheWithLimits({
       ...Options.DefaultMakeCacheSettings,
@@ -22,7 +29,6 @@ export function createDiscordClient(): Client {
       ReactionManager: 0,
       ReactionUserManager: 0,
       PresenceManager: 0,
-      VoiceStateManager: 0,
       GuildEmojiManager: 0,
       BaseGuildEmojiManager: 0,
       GuildStickerManager: 0,
@@ -38,7 +44,8 @@ export function createDiscordClient(): Client {
       GuildTextThreadManager: 0,
       GuildMemberManager: {
         maxSize: 0,
-        keepOverLimit: (member) => member.id === member.client.user.id,
+        // The bot itself, and members in a voice channel (for leveling voice XP: bot flag and name).
+        keepOverLimit: (member) => member.id === member.client.user.id || Boolean(member.guild.voiceStates.cache.get(member.id)?.channelId),
       },
       UserManager: {
         maxSize: 0,
@@ -48,7 +55,10 @@ export function createDiscordClient(): Client {
     sweepers: {
       ...Options.DefaultSweeperSettings,
       users: { interval: 3_600, filter: () => (user) => user.id !== user.client.user.id },
-      guildMembers: { interval: 3_600, filter: () => (member) => member.id !== member.client.user.id },
+      guildMembers: {
+        interval: 3_600,
+        filter: () => (member) => member.id !== member.client.user.id && !member.guild.voiceStates.cache.get(member.id)?.channelId,
+      },
     },
     rest: { timeout: 15_000, retries: 3 },
     failIfNotExists: false,

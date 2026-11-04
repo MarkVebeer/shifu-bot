@@ -43,11 +43,15 @@ export interface GuildOverview {
   features: { id: string; enabled: boolean }[];
 }
 
+export type ChannelKind = 'text' | 'voice' | 'category';
+
 export interface ChannelOption {
   id: string;
   name: string;
   parentName: string | null;
   canSend: boolean;
+  /** Only in the ?kind=all listing; the default listing has text channels only. */
+  kind?: ChannelKind;
 }
 
 export interface RoleOption {

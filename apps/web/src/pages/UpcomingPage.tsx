@@ -4,7 +4,7 @@ import { Badge, Card } from '../ui/primitives';
 
 export function UpcomingPage() {
   const t = useT();
-  const ideas = [t('upcoming.ideaRoles'), t('upcoming.ideaLogs'), t('upcoming.ideaLeveling')];
+  const ideas = [t('upcoming.ideaRoles'), t('upcoming.ideaLogs')];
   return (
     <div className="animate-fade-up space-y-6">
       <header>

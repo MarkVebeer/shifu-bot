@@ -1,0 +1,118 @@
+{
+  "name": "Leveling",
+  "description": "Members earn XP for chatting and talking in voice. Level ups are announced and a live leaderboard sits in a channel.",
+  "defaults": {
+    "title": "Level up!",
+    "description": "{user} just reached **level {level}**. Keep it up!"
+  },
+  "form": {
+    "general": "General",
+    "enabled": "Turn on leveling",
+    "enabledHelp": "Members start earning XP right away. Bots never earn XP.",
+    "rules": "{min}–{max} XP per message (at most once a minute) and {voice} XP per minute in voice while at least one other person is there. Deafened members and the AFK channel earn nothing.",
+    "ignored": "No XP in these channels",
+    "ignoredHelp": "Text or voice channels, or whole categories. Threads follow their channel.",
+    "ignoredPlaceholder": "Add a channel",
+    "ignoredEmpty": "XP counts everywhere.",
+    "remove": "Remove {name}",
+    "levelUp": "Level up message",
+    "announceMode": "Where to announce",
+    "announceModes": {
+      "current": "Where the member chatted",
+      "channel": "In a chosen channel",
+      "off": "Do not announce"
+    },
+    "announceModesHelp": {
+      "current": "Level ups from voice go to the channel below. Without one they stay quiet.",
+      "channel": "Every level up goes to the channel below.",
+      "off": "Members still level up, there is just no message."
+    },
+    "announceChannel": "Announcement channel",
+    "title": "Title",
+    "description": "Description",
+    "defaultHint": "Leave empty to use the default text in the server language.",
+    "placeholders": "Placeholders",
+    "insertPlaceholder": "Insert {name}",
+    "unknownPlaceholder": "Unknown placeholder: {names}",
+    "color": "Accent color",
+    "mention": "Mention the member",
+    "mentionHelp": "Pings the member above the embed so they get a notification.",
+    "leaderboard": "Leaderboard panel",
+    "leaderboardHelp": "A message with the top members that ShifuBot keeps up to date. Leave the channel empty for no panel.",
+    "leaderboardChannel": "Leaderboard channel",
+    "leaderboardInterval": "Refresh",
+    "interval": "Every {count} minutes",
+    "interval1": "Every minute",
+    "interval60": "Every hour",
+    "intervalHelp": "The panel is only edited when something changed, so a short interval is fine.",
+    "leaderboardSize": "Size",
+    "size": "Top {count}"
+  },
+  "placeholder": {
+    "user": "Mentions the member",
+    "username": "The member's name",
+    "level": "The new level",
+    "server": "The server name"
+  },
+  "leaderboard": {
+    "title": "{server} leaderboard",
+    "line": "{rank} {user} · Level {level} · {xp} XP",
+    "empty": "Nobody has XP yet. Start chatting!",
+    "updated": "Updated {time}",
+    "rankButton": "My rank"
+  },
+  "rank": {
+    "title": "{username}'s rank",
+    "body": "**Rank:** {position}\n**Level:** {level} · **XP:** {xp}\n{bar} {current} / {needed}\n{left} XP to the next level\n\n💬 {messages} messages · 🎙️ {voice} voice minutes",
+    "disabled": "Leveling is turned off on this server."
+  },
+  "status": {
+    "noAnnounceChannel": "Pick a channel for level up messages.",
+    "channelMissing": "A selected channel no longer exists. Choose another one.",
+    "missingPermissions": "ShifuBot is missing permissions in #{channel}: {permissions}.",
+    "lastError": "Last problem: {error}",
+    "panelLive": "The leaderboard is live in #{channel}.",
+    "panelMissing": "The leaderboard is not posted. Save, or post it again below."
+  },
+  "panel": {
+    "repost": "Post leaderboard again",
+    "reposting": "Posting…",
+    "reposted": "Leaderboard posted to #{channel}",
+    "failed": "Settings saved, but the leaderboard could not be updated: {error}",
+    "help": "Use this if someone deleted the leaderboard message."
+  },
+  "top": {
+    "title": "Top members",
+    "hint": "The top 25 of this server. Members who left are hidden.",
+    "empty": "Nobody has XP yet.",
+    "level": "Level {level}",
+    "xp": "{xp} XP",
+    "stats": "{messages} messages · {voice} voice minutes",
+    "reset": "Reset all XP",
+    "resetTitle": "Reset all XP?",
+    "resetBody": "Every member of this server goes back to level 0. This cannot be undone.",
+    "resetConfirm": "Reset everything",
+    "resetDone": "All XP was reset"
+  },
+  "preview": {
+    "levelUpTitle": "Level up preview",
+    "levelUpHint": "Shown with your name and level 5.",
+    "leaderboardTitle": "Leaderboard preview",
+    "leaderboardHint": "With the real top members of this server.",
+    "botTag": "APP",
+    "today": "Today at {time}"
+  },
+  "setup": {
+    "title": "Leveling",
+    "description": "Reward active members with XP and levels. Fine tune messages and the leaderboard later on the Leveling page.",
+    "summaryOn": "On",
+    "summaryOff": "Off"
+  },
+  "errors": {
+    "no_channel": "no channel selected",
+    "channel_missing": "channel not found",
+    "missing_permissions": "missing permissions",
+    "send_failed": "Discord rejected the message",
+    "panel_deleted": "the leaderboard message was deleted"
+  }
+}

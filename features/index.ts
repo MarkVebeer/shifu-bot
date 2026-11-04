@@ -11,10 +11,11 @@ import {
   type MessageKey,
 } from '@shifubot/shared';
 import { goodbyeManifest } from './goodbye/manifest';
+import { levelingManifest } from './leveling/manifest';
 import { verificationManifest } from './verification/manifest';
 import { welcomeManifest } from './welcome/manifest';
 
-export const features = [welcomeManifest, goodbyeManifest, verificationManifest] as const;
+export const features = [welcomeManifest, goodbyeManifest, verificationManifest, levelingManifest] as const;
 
 export type FeatureId = (typeof features)[number]['id'];
 

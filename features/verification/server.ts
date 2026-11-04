@@ -13,7 +13,6 @@ import {
   type PermissionIssue,
 } from '@shifubot/shared';
 import {
-  DiscordAPIError,
   Events,
   MessageFlags,
   type ButtonInteraction,
@@ -27,6 +26,7 @@ import {
 } from 'discord.js';
 import { defineServerFeature, type AppContext } from '../../apps/bot/src/core/feature';
 import { LruCache } from '../../apps/bot/src/core/lru-cache';
+import { syncPanelMessage, type PanelRef } from '../../apps/bot/src/core/panel';
 import { isPostableChannel, missingSendPermissions, roleProblem, type RoleProblem } from '../../apps/bot/src/core/permissions';
 import { WindowLimiter } from '../../apps/bot/src/core/send-queue';
 import { ApiError, parseJsonBody } from '../../apps/bot/src/http/errors';
@@ -90,11 +90,6 @@ interface SettingsRow {
   panel_message_id: string | null;
   last_error: string | null;
   last_error_at: number | null;
-}
-
-interface PanelRef {
-  channelId: string;
-  messageId: string;
 }
 
 class VerificationStore {
@@ -304,14 +299,6 @@ export default defineServerFeature({
 
     const texts = (locale: Locale) => verificationManifest.messages[locale];
 
-    function resolveChannel(guild: Guild, channelId: string | null) {
-      if (!channelId) return { ok: false as const, error: 'no_channel' as const };
-      const channel = guild.channels.cache.get(channelId);
-      if (!isPostableChannel(channel)) return { ok: false as const, error: 'channel_missing' as const };
-      if (missingSendPermissions(guild, channel).length) return { ok: false as const, error: 'missing_permissions' as const };
-      return { ok: true as const, channel };
-    }
-
     function resolveRole(guild: Guild, settings: VerificationSettings): { role: Role } | { error: 'no_role' | RoleProblem } {
       if (!settings.roleId) return { error: 'no_role' };
       const role = guild.roles.cache.get(settings.roleId);
@@ -319,50 +306,28 @@ export default defineServerFeature({
       return problem ? { error: problem } : { role: role! };
     }
 
-    async function deletePanel(guild: Guild, panel: PanelRef) {
-      const channel = guild.channels.cache.get(panel.channelId);
-      if (!isPostableChannel(channel)) return;
-      await channel.messages.delete(panel.messageId).catch(() => {
-        // Already gone or no access: nothing to clean up.
-      });
-    }
-
     /** Post, update or remove the panel message so it matches the settings. */
     async function syncPanel(guild: Guild, settings: VerificationSettings, forceNew = false): Promise<PanelResult> {
-      const existing = store.panel(guild.id);
-      if (!settings.enabled) {
-        if (existing) {
-          await deletePanel(guild, existing);
-          store.setPanel(guild.id, null);
-        }
-        return { ok: true, channel: null };
+      const result = await syncPanelMessage({
+        guild,
+        queue,
+        queueKey: `verification:${guild.id}`,
+        existing: store.panel(guild.id),
+        target: settings.enabled
+          ? {
+              channelId: settings.channelId,
+              payload: buildVerificationPanel(settings, { locale: guildSettings.locale(guild.id), server: { name: guild.name } }),
+            }
+          : null,
+        forceNew,
+      });
+      if (!result.ok) {
+        logger.warn('Verification panel update failed', { guildId: guild.id, code: result.error });
+        // The panel is reposted when deleted, so "panel_deleted" cannot happen here.
+        return { ok: false, error: result.error === 'panel_deleted' ? 'send_failed' : result.error };
       }
-
-      const target = resolveChannel(guild, settings.channelId);
-      if (!target.ok) return { ok: false, error: target.error };
-      const payload = buildVerificationPanel(settings, { locale: guildSettings.locale(guild.id), server: { name: guild.name } });
-
-      try {
-        if (existing && existing.channelId === target.channel.id && !forceNew) {
-          try {
-            await queue.run(`verification:${guild.id}`, () => target.channel.messages.edit(existing.messageId, payload));
-            return { ok: true, channel: target.channel };
-          } catch (error) {
-            // 10008: the panel was deleted by hand. Post a new one below.
-            if (!(error instanceof DiscordAPIError && error.code === 10008)) throw error;
-          }
-        } else if (existing) {
-          await deletePanel(guild, existing);
-        }
-        const message = await queue.run(`verification:${guild.id}`, () => target.channel.send(payload));
-        store.setPanel(guild.id, { channelId: target.channel.id, messageId: message.id });
-        return { ok: true, channel: target.channel };
-      } catch (error) {
-        const code: VerificationErrorCode =
-          error instanceof DiscordAPIError && (error.code === 50013 || error.code === 50001) ? 'missing_permissions' : 'send_failed';
-        logger.warn('Verification panel update failed', { guildId: guild.id, code, error });
-        return { ok: false, error: code };
-      }
+      store.setPanel(guild.id, result.panel);
+      return { ok: true, channel: result.channel };
     }
 
     function status(guild: Guild, settings: VerificationSettings): VerificationStatus {

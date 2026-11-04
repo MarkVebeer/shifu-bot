@@ -2,13 +2,14 @@ import {
   guildSettingsSchema,
   type BotPermission,
   snowflake,
+  type ChannelKind,
   type ChannelOption,
   type GuildListItem,
   type GuildOverview,
   type PermissionReport,
   type RoleOption,
 } from '@shifubot/shared';
-import { DiscordAPIError, PermissionFlagsBits, type GuildMember } from 'discord.js';
+import { ChannelType, DiscordAPIError, PermissionFlagsBits, type GuildMember, type NonThreadGuildBasedChannel } from 'discord.js';
 import { Hono } from 'hono';
 import type { AppContext, FeatureInstance, GuildRouteEnv, ServerFeature } from '../core/feature';
 import { LruCache } from '../core/lru-cache';
@@ -151,6 +152,37 @@ export function guildRoutes(
 
   app.get('/:guildId/channels', (c) => {
     const guild = c.get('guild');
+    if (c.req.query('kind') === 'all') {
+      // Text, voice and categories, e.g. for "no XP in these channels" lists.
+      const kindOf = (type: ChannelType): ChannelKind | null =>
+        type === ChannelType.GuildText || type === ChannelType.GuildAnnouncement || type === ChannelType.GuildForum
+          ? 'text'
+          : type === ChannelType.GuildVoice || type === ChannelType.GuildStageVoice
+            ? 'voice'
+            : type === ChannelType.GuildCategory
+              ? 'category'
+              : null;
+      // Discord order: category by category, the category itself first.
+      const order = (channel: NonThreadGuildBasedChannel): [number, number] => {
+        const category = channel.type === ChannelType.GuildCategory ? channel : channel.parent;
+        return [category ? category.rawPosition : -1, channel === category ? -1 : channel.rawPosition];
+      };
+      const all: ChannelOption[] = [...guild.channels.cache.values()]
+        .filter((channel): channel is NonThreadGuildBasedChannel => !channel.isThread() && kindOf(channel.type) !== null)
+        .sort((a, b) => {
+          const [ca, pa] = order(a);
+          const [cb, pb] = order(b);
+          return ca - cb || pa - pb;
+        })
+        .map((channel) => ({
+          id: channel.id,
+          name: channel.name,
+          parentName: channel.parent?.name ?? null,
+          canSend: isPostableChannel(channel) && missingSendPermissions(guild, channel).length === 0,
+          kind: kindOf(channel.type)!,
+        }));
+      return c.json({ channels: all });
+    }
     const channels: ChannelOption[] = guild.channels.cache
       .filter(isPostableChannel)
       .sort((a, b) => a.rawPosition - b.rawPosition)

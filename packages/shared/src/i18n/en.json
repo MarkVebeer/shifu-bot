@@ -156,8 +156,7 @@
     "title": "More features are on the way",
     "body": "ShifuBot is built from feature modules. New ones will appear here as they ship.",
     "ideaRoles": "Reaction roles",
-    "ideaLogs": "Moderation log",
-    "ideaLeveling": "Leveling"
+    "ideaLogs": "Moderation log"
   },
   "errors": {
     "title": "Something went wrong",
