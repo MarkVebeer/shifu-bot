@@ -13,6 +13,7 @@
     "top": "Top 20",
     "empty": "Nobody has gooned yet. Be the first!",
     "fullList": "Full list",
+    "updated": "Updated {time}",
     "repost": "Post panel again",
     "reposting": "Posting…",
     "reposted": "Panel posted to #{channel}",

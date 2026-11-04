@@ -13,6 +13,7 @@
     "top": "Top 20",
     "empty": "Még senki nem goonolt. Légy te az első!",
     "fullList": "Teljes lista",
+    "updated": "Frissítve {time}",
     "repost": "Panel újraküldése",
     "reposting": "Küldés…",
     "reposted": "Panel elküldve ide: #{channel}",

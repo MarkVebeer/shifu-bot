@@ -67,6 +67,7 @@ export default function GoonPage() {
         entries: goon.data.status.top,
         total: goon.data.status.total,
         listUrl: `${window.location.origin}${listPath(guild.id)}`,
+        updatedAt: now,
       },
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -91,6 +91,8 @@ export function buildGoonPanel(
     total: number;
     /** Absolute URL of the full list page. */
     listUrl: string;
+    /** When the panel was drawn, shown as "Updated 2 minutes ago". */
+    updatedAt: Date;
   },
 ): MessagePayload {
   const texts = goonManifest.messages[ctx.locale];
@@ -111,6 +113,8 @@ export function buildGoonPanel(
     const total = renderPlaceholders(texts.panel.total, { count: formatNumber(ctx.total, ctx.locale) });
     description += `\n\n${total}\n\n**${texts.panel.top}**\n${lines.length ? lines.join('\n') : texts.panel.empty}`;
   }
+  // <t:…:R> is rendered by Discord as "2 minutes ago" and keeps counting by itself.
+  description += `\n\n${renderPlaceholders(texts.panel.updated, { time: `<t:${Math.floor(ctx.updatedAt.getTime() / 1000)}:R>` })}`;
 
   return {
     embeds: [

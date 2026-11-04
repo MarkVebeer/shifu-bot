@@ -74,6 +74,7 @@ export default defineServerFeature({
         entries: store.top(guild.id, LEADERBOARD_SIZE),
         total: store.total(guild.id),
         listUrl: listUrl(guild.id),
+        updatedAt: new Date(),
       });
     }
 

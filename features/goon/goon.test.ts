@@ -169,12 +169,14 @@ describe('migrations', () => {
 
 describe('panel', () => {
   const listUrl = `https://shifu.example.com${listPath('123')}`;
+  const updatedAt = new Date('2026-01-01T00:00:00Z');
 
   test('shows the total, the top 20, a linked title and a Full list button', () => {
     const entries = Array.from({ length: 25 }, (_, i) => ({ userId: String(1000 + i), count: 30 - i }));
-    const payload = buildGoonPanel(defaultGoonSettings, { locale: 'en', server: { name: 'Test' }, entries, total: 99, listUrl });
+    const payload = buildGoonPanel(defaultGoonSettings, { locale: 'en', server: { name: 'Test' }, entries, total: 99, listUrl, updatedAt });
     const embed = payload.embeds[0]!;
     expect(embed.url).toBe(listUrl);
+    expect(embed.description!.split('\n').at(-1)).toBe('Updated <t:1767225600:R>');
     expect(embed.description).toContain('**99**');
     expect(embed.description).toContain(`<@${1000 + LEADERBOARD_SIZE - 1}>`);
     expect(embed.description).not.toContain(`<@${1000 + LEADERBOARD_SIZE}>`);
@@ -183,10 +185,11 @@ describe('panel', () => {
     expect(LEADERBOARD_SIZE).toBe(20);
   });
 
-  test('without the leaderboard only the description and the buttons stay', () => {
-    const ctx = { locale: 'hu' as const, server: { name: 'Test' }, entries: [{ userId: '1', count: 5 }], total: 9, listUrl };
+  test('without the leaderboard the description, the update time and the buttons stay', () => {
+    const ctx = { locale: 'hu' as const, server: { name: 'Test' }, entries: [{ userId: '1', count: 5 }], total: 9, listUrl, updatedAt };
     const payload = buildGoonPanel({ ...defaultGoonSettings, showLeaderboard: false }, ctx);
     expect(payload.embeds[0]!.description).not.toContain('<@1>');
+    expect(payload.embeds[0]!.description).toEndWith('Frissítve <t:1767225600:R>');
     expect(payload.components![0]!.components).toHaveLength(3);
   });
 });

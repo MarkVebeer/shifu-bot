@@ -15,7 +15,36 @@ interface PreviewProps {
   timestampLabel: string;
 }
 
-const INLINE = /(<@!?\d+>|\*\*[^*]+\*\*|__[^_]+__|\*[^*\n]+\*|_[^_\n]+_|`[^`\n]+`|~~[^~]+~~|https?:\/\/[^\s<]+)/g;
+const INLINE = /(<@!?\d+>|<t:-?\d+(?::[tTdDfFR])?>|\*\*[^*]+\*\*|__[^_]+__|\*[^*\n]+\*|_[^_\n]+_|`[^`\n]+`|~~[^~]+~~|https?:\/\/[^\s<]+)/g;
+
+/**
+ * Discord timestamp markup (<t:1700000000:R>) as the client shows it, in the page language.
+ * R is relative ("2 minutes ago"); the others are date and time styles.
+ */
+export function formatDiscordTime(ms: number, style: string, now = Date.now(), lang = document.documentElement.lang || 'en'): string {
+  if (style === 'R') {
+    const seconds = Math.round((ms - now) / 1000);
+    const units: [Intl.RelativeTimeFormatUnit, number][] = [
+      ['year', 31_536_000],
+      ['month', 2_592_000],
+      ['day', 86_400],
+      ['hour', 3_600],
+      ['minute', 60],
+    ];
+    const format = new Intl.RelativeTimeFormat(lang, { numeric: 'auto' });
+    for (const [unit, size] of units) if (Math.abs(seconds) >= size) return format.format(Math.trunc(seconds / size), unit);
+    return format.format(seconds, 'second');
+  }
+  const options: Record<string, Intl.DateTimeFormatOptions> = {
+    t: { timeStyle: 'short' },
+    T: { timeStyle: 'medium' },
+    d: { dateStyle: 'short' },
+    D: { dateStyle: 'long' },
+    f: { dateStyle: 'long', timeStyle: 'short' },
+    F: { dateStyle: 'full', timeStyle: 'short' },
+  };
+  return new Intl.DateTimeFormat(lang, options[style] ?? options.f).format(ms);
+}
 
 function Mention({ name }: { name: string }) {
   return <span className="rounded-[3px] bg-discord-mention-bg px-0.5 font-medium text-discord-mention">@{name}</span>;
@@ -28,6 +57,13 @@ export function renderDiscordMarkdown(text: string, mentions: Record<string, str
         if (!part) return null;
         const mention = part.match(/^<@!?(\d+)>$/);
         if (mention) return <Mention key={index} name={mentions[mention[1] ?? ''] ?? 'unknown-user'} />;
+        const time = part.match(/^<t:(-?\d+)(?::([tTdDfFR]))?>$/);
+        if (time)
+          return (
+            <span key={index} className="rounded-[3px] bg-discord-code px-0.5">
+              {formatDiscordTime(Number(time[1]) * 1000, time[2] ?? 'f')}
+            </span>
+          );
         if (/^\*\*.+\*\*$/.test(part)) return <strong key={index}>{part.slice(2, -2)}</strong>;
         if (/^__.+__$/.test(part)) return <u key={index}>{part.slice(2, -2)}</u>;
         if (/^~~.+~~$/.test(part)) return <s key={index}>{part.slice(2, -2)}</s>;
