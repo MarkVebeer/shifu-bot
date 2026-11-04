@@ -17,8 +17,10 @@ discord.js, Hono, SQLite and React. Self host it on a Pelican panel, with Docker
   account age, and members who verified before get their role back when they rejoin. The
   captcha images are drawn in plain TypeScript, so there are no native modules to install.
 - 🏆 **Leveling.** Every member has three levels: a 💬 **chat level** from chat XP (15–25 XP per
-  message, at most once a minute), a 🎙️ **voice level** from voice XP (10 XP a minute, only with
-  company, not deafened, not in the AFK channel), and a ⭐ **overall level** from both added
+  message, at most once a minute), a 🎙️ **voice level** from voice XP (at most 600 a day, spread over
+  8 hours of talking, about 1.25 XP a minute; only while talking with company: not muted, not
+  deafened, not in the AFK channel; so voice is worth a little less than chatting), and a ⭐
+  **overall level** from both added
   together. Each server picks what earns XP: messages and voice, messages only, or voice only (then
   only that level is shown and ranked). Level ups are announced where they happened (chat level ups
   in the channel the member wrote in, voice level ups in their voice channel's text chat) or in a

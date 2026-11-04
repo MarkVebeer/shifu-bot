@@ -34,7 +34,7 @@
       "voice": "Only the voice level. Messages earn nothing."
     },
     "rulesText": "Chat XP: {min}–{max} per message, at most once a minute.",
-    "rulesVoice": "Voice XP: {voice} per minute in voice while at least one other person is there; deafened members and the AFK channel earn nothing.",
+    "rulesVoice": "Voice XP: at most {cap} a day, spread over {hours} hours of talking with at least one other person (about {voice} a minute). Muted or deafened members and the AFK channel earn nothing.",
     "rulesBoth": "Chat and voice level up separately.",
     "ignored": "No XP in these channels",
     "ignoredHelp": "Text or voice channels, or whole categories. Threads follow their channel.",

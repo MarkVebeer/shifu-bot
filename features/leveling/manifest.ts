@@ -34,8 +34,15 @@ export const XP_RULES = {
   messageMax: 25,
   /** A member earns message XP at most once per this many seconds. */
   messageCooldownSeconds: 60,
-  /** XP per full minute in a voice channel with at least one other person. */
-  voicePerMinute: 10,
+  /** Most voice XP one member can earn per UTC day: about one active chat day (~500 XP). */
+  voiceDailyCap: 600,
+  /**
+   * Minutes of talking it takes to reach the daily cap (8 hours). Voice XP is spread evenly over them,
+   * 1.25 XP a minute (5 XP every 4 minutes), so voice is worth a little less than chatting.
+   */
+  voiceCapMinutes: 480,
+  /** Average voice XP per minute, for display. */
+  voicePerMinute: 600 / 480,
 } as const;
 
 /** The two independent XP tracks. "text" is shown as Chat, "voice" as Voice. */

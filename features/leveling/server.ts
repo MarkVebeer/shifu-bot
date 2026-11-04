@@ -40,7 +40,7 @@ import {
   type RankStats,
   type XpSources,
 } from './manifest';
-import { isIgnoredChannel, isVoiceEligible, messageXp } from './xp';
+import { isIgnoredChannel, isVoiceEligible, messageXp, voiceDay, voiceXpGrant } from './xp';
 
 export type LevelingErrorCode = PanelErrorCode;
 
@@ -270,8 +270,31 @@ export class LevelingStore {
   }
 
   /** Voice XP for many members in one transaction. */
-  addVoiceXp(guildId: string, members: MemberSnapshot[]): Award[] {
-    return this.db.transaction(() => members.map((member) => this.addXp(guildId, member, XP_RULES.voicePerMinute, 'voice')))();
+  /**
+   * One minute of voice XP for many members in one transaction, spread so the daily cap is reached
+   * after XP_RULES.voiceCapMinutes. Returns an award per member in the same order, or null for members
+   * who already hit today's cap.
+   */
+  addVoiceXp(guildId: string, members: MemberSnapshot[], now = new Date()): (Award | null)[] {
+    const day = voiceDay(now);
+    return this.db.transaction(() =>
+      members.map((member) => {
+        const minutes =
+          this.db
+            .query<{ minutes: number }, [string, string, string]>(
+              `SELECT CASE WHEN voice_day = ? THEN voice_day_minutes ELSE 0 END AS minutes
+               FROM leveling_members WHERE guild_id = ? AND user_id = ?`,
+            )
+            .get(day, guildId, member.id)?.minutes ?? 0;
+        const grant = voiceXpGrant(minutes);
+        if (grant <= 0) return null;
+        const award = this.addXp(guildId, member, grant, 'voice');
+        this.db
+          .query('UPDATE leveling_members SET voice_day = ?, voice_day_minutes = ? WHERE guild_id = ? AND user_id = ?')
+          .run(day, minutes + 1, guildId, member.id);
+        return award;
+      }),
+    )();
   }
 
   /** Top members by the XP that counts: total (chat + voice), or only chat or voice XP. */
@@ -402,6 +425,14 @@ export default defineServerFeature({
         ALTER TABLE leveling_settings ADD COLUMN xp_sources TEXT NOT NULL DEFAULT 'both';
         CREATE INDEX idx_leveling_members_rank_text ON leveling_members (guild_id, text_xp DESC) WHERE left_at IS NULL;
         CREATE INDEX idx_leveling_members_rank_voice ON leveling_members (guild_id, voice_xp DESC) WHERE left_at IS NULL;
+      `,
+    },
+    {
+      // Daily voice XP cap: how many XP earning voice minutes a member had on which UTC day.
+      id: 'leveling_004_voice_daily_cap',
+      sql: `
+        ALTER TABLE leveling_members ADD COLUMN voice_day TEXT;
+        ALTER TABLE leveling_members ADD COLUMN voice_day_minutes INTEGER NOT NULL DEFAULT 0;
       `,
     },
   ],
@@ -567,6 +598,7 @@ export default defineServerFeature({
           const ok = isVoiceEligible({
             bot: member.user.bot,
             deaf: Boolean(state.deaf),
+            muted: Boolean(state.mute),
             channelId: state.channelId,
             afkChannelId: guild.afkChannelId,
             humansInChannel: humans.get(state.channelId!) ?? 0,
@@ -581,10 +613,11 @@ export default defineServerFeature({
           eligible.map((entry) => entry.member),
         );
         awards.forEach((award, index) => {
+          if (!award) return;
           const channel = eligible[index]!.channel;
           void announce(guild, award, channel?.isTextBased() ? channel : null);
         });
-        dirty.add(guildId);
+        if (awards.some(Boolean)) dirty.add(guildId);
       }
     }
 

@@ -16,7 +16,7 @@ import {
   XP_RULES,
 } from './manifest';
 import levelingFeature, { LevelingStore } from './server';
-import { isIgnoredChannel, isVoiceEligible, messageXp, type VoiceSnapshot } from './xp';
+import { isIgnoredChannel, isVoiceEligible, messageXp, voiceDay, voiceXpAfter, voiceXpGrant, type VoiceSnapshot } from './xp';
 
 describe('level curve', () => {
   test('uses 5·L² + 50·L + 100 per level', () => {
@@ -63,15 +63,35 @@ describe('XP rules', () => {
     expect(isIgnoredChannel(['general', 'other-category', undefined], ignored)).toBe(false);
   });
 
-  test('voice XP needs company, hearing, and a normal channel', () => {
-    const base: VoiceSnapshot = { bot: false, deaf: false, channelId: 'vc', afkChannelId: 'afk', humansInChannel: 2, ignored: false };
+  test('voice XP needs company, talking, hearing, and a normal channel', () => {
+    const base: VoiceSnapshot = { bot: false, deaf: false, muted: false, channelId: 'vc', afkChannelId: 'afk', humansInChannel: 2, ignored: false };
     expect(isVoiceEligible(base)).toBe(true);
     expect(isVoiceEligible({ ...base, humansInChannel: 1 })).toBe(false);
     expect(isVoiceEligible({ ...base, deaf: true })).toBe(false);
+    expect(isVoiceEligible({ ...base, muted: true })).toBe(false);
     expect(isVoiceEligible({ ...base, channelId: 'afk' })).toBe(false);
     expect(isVoiceEligible({ ...base, bot: true })).toBe(false);
     expect(isVoiceEligible({ ...base, ignored: true })).toBe(false);
     expect(isVoiceEligible({ ...base, channelId: null })).toBe(false);
+  });
+
+  test('the daily voice cap takes 8 hours of talking and is about one chat day', () => {
+    // An active chat day is ~25 minutes with a message: about 500 XP.
+    const chatDay = 25 * ((XP_RULES.messageMin + XP_RULES.messageMax) / 2);
+    expect(XP_RULES.voiceCapMinutes / 60).toBe(8);
+    expect(voiceXpAfter(XP_RULES.voiceCapMinutes)).toBe(XP_RULES.voiceDailyCap);
+    expect(voiceXpAfter(XP_RULES.voiceCapMinutes - 60)).toBeLessThan(XP_RULES.voiceDailyCap);
+    expect(XP_RULES.voiceDailyCap).toBeLessThanOrEqual(chatDay * 1.25);
+    // Two hours of voice is worth well under an active chat day.
+    expect(voiceXpAfter(120)).toBe(150);
+  });
+
+  test('voice XP is whole numbers that add up to exactly 1.25 a minute, then stops', () => {
+    expect([0, 1, 2, 3, 4, 5, 6, 7].map(voiceXpGrant)).toEqual([1, 1, 1, 2, 1, 1, 1, 2]);
+    const total = Array.from({ length: XP_RULES.voiceCapMinutes }, (_, minute) => voiceXpGrant(minute)).reduce((a, b) => a + b, 0);
+    expect(total).toBe(XP_RULES.voiceDailyCap);
+    expect(voiceXpGrant(XP_RULES.voiceCapMinutes)).toBe(0);
+    expect(voiceDay(new Date('2026-11-04T23:59:59Z'))).toBe('2026-11-04');
   });
 });
 
@@ -254,18 +274,31 @@ describe('LevelingStore', () => {
     const chat = store.addXp(guildId, mei, 120, 'text');
     expect(chat).toMatchObject({ track: 'text', before: 0, after: 120 });
     const [voice] = store.addVoiceXp(guildId, [mei]);
-    expect(voice).toMatchObject({ track: 'voice', before: 0, after: XP_RULES.voicePerMinute });
+    expect(voice).toMatchObject({ track: 'voice', before: 0, after: voiceXpGrant(0) });
     store.addXp(guildId, mei, 30, 'text');
 
     expect(store.stats(guildId, mei.id)).toEqual({
       position: 1,
       textXp: 150,
-      voiceXp: XP_RULES.voicePerMinute,
+      voiceXp: voiceXpGrant(0),
       messages: 2,
       voiceMinutes: 1,
     });
     const [row] = store.top(guildId, 10);
-    expect(row).toMatchObject({ xp: 150 + XP_RULES.voicePerMinute, text_xp: 150, voice_xp: XP_RULES.voicePerMinute });
+    expect(row).toMatchObject({ xp: 150 + voiceXpGrant(0), text_xp: 150, voice_xp: voiceXpGrant(0) });
+  });
+
+  test('voice XP stops at the daily cap and starts again the next UTC day', () => {
+    const store = createStore();
+    const day1 = new Date('2026-11-04T10:00:00Z');
+    const minutes = XP_RULES.voiceCapMinutes;
+    for (let i = 0; i < minutes; i++) expect(store.addVoiceXp(guildId, [mei], day1)[0]).not.toBeNull();
+    expect(store.addVoiceXp(guildId, [mei], day1)).toEqual([null]);
+    expect(store.stats(guildId, mei.id).voiceXp).toBe(XP_RULES.voiceDailyCap);
+
+    const day2 = new Date('2026-11-05T00:00:01Z');
+    expect(store.addVoiceXp(guildId, [mei], day2)[0]).toMatchObject({ before: XP_RULES.voiceDailyCap });
+    expect(store.stats(guildId, mei.id).voiceXp).toBe(XP_RULES.voiceDailyCap + voiceXpGrant(0));
   });
 
   test('single source servers rank by that track only', () => {

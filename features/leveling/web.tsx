@@ -275,7 +275,11 @@ export default function LevelingPage() {
               title={t('leveling.form.general')}
               description={[
                 draft.xpSources !== 'voice' && t('leveling.form.rulesText', { min: XP_RULES.messageMin, max: XP_RULES.messageMax }),
-                draft.xpSources !== 'text' && t('leveling.form.rulesVoice', { voice: XP_RULES.voicePerMinute }),
+                draft.xpSources !== 'text' && t('leveling.form.rulesVoice', {
+                    voice: XP_RULES.voicePerMinute.toLocaleString(guild.locale),
+                    cap: XP_RULES.voiceDailyCap,
+                    hours: XP_RULES.voiceCapMinutes / 60,
+                  }),
                 draft.xpSources === 'both' && t('leveling.form.rulesBoth'),
               ]
                 .filter(Boolean)

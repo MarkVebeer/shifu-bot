@@ -34,7 +34,7 @@
       "voice": "Csak hang szint. Az üzenetek nem adnak XP-t."
     },
     "rulesText": "Chat XP: {min}–{max} üzenetenként, legfeljebb percenként egyszer.",
-    "rulesVoice": "Hang XP: {voice} percenként voice-ban, ha legalább még egy ember ott van; a süketített tagok és az AFK csatorna nem kapnak semmit.",
+    "rulesVoice": "Hang XP: naponta legfeljebb {cap}, {hours} óra beszélgetésre elosztva, ha a tag legalább még egy emberrel beszélget (kb. {voice} percenként). A némított vagy süketített tagok és az AFK csatorna nem kapnak semmit.",
     "rulesBoth": "A chat és a hang szint külön lép.",
     "ignored": "Nincs XP ezekben a csatornákban",
     "ignoredHelp": "Szöveges vagy voice csatornák, illetve egész kategóriák. A threadek a csatornájukat követik.",
