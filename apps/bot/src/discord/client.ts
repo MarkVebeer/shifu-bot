@@ -3,8 +3,6 @@ import { Client, GatewayIntentBits, Options, Partials } from 'discord.js';
 export interface DiscordClientOptions {
   /** Privileged Message Content intent, for message text in the audit log. Must be on in the Developer Portal. */
   messageContent?: boolean;
-  /** Privileged Presence intent, for status and activity changes in the audit log. Must be on in the Developer Portal. */
-  presences?: boolean;
 }
 
 /**
@@ -14,10 +12,10 @@ export interface DiscordClientOptions {
  * voice channel) for leveling voice XP. Members and users are not cached except
  * the bot itself, and full member lists are never fetched.
  *
- * The extra intents and partials feed the audit log: events about messages,
- * reactions, threads and members arrive even though none of them are cached.
- * Message Content and Presences are privileged, so they are only requested when
- * the operator turned them on (DISCORD_MESSAGE_CONTENT, DISCORD_PRESENCES).
+ * The extra intents and partials feed the audit log: Discord's audit log stream,
+ * edited and deleted messages, cleared reactions, invites and AutoMod actions
+ * arrive even though none of them are cached. Message Content is privileged, so
+ * it is only requested when the operator turned it on (DISCORD_MESSAGE_CONTENT).
  *
  * Sharding later: wrap this file's entry point with a ShardingManager. Nothing
  * here assumes one process sees every guild.
@@ -25,17 +23,8 @@ export interface DiscordClientOptions {
 export function createDiscordClient(options: DiscordClientOptions = {}): Client {
   return new Client({
     intents: discordIntents(options),
-    partials: [
-      Partials.GuildMember,
-      Partials.Message,
-      Partials.Channel,
-      Partials.Reaction,
-      Partials.User,
-      Partials.ThreadMember,
-      Partials.GuildScheduledEvent,
-      Partials.Poll,
-      Partials.PollAnswer,
-    ],
+    // Messages, channels (threads) and reactions are not cached: partials let their events still fire.
+    partials: [Partials.GuildMember, Partials.Message, Partials.Channel, Partials.Reaction],
     makeCache: Options.cacheWithLimits({
       ...Options.DefaultMakeCacheSettings,
       MessageManager: 0,
@@ -86,20 +75,12 @@ export function discordIntents(options: DiscordClientOptions = {}): GatewayInten
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.GuildVoiceStates,
-    // Audit log: moderation (bans and the audit log stream), expressions, integrations, webhooks,
-    // invites, reactions, typing, polls, scheduled events and AutoMod.
+    // Audit log: Discord's audit log stream (moderation), invite tracking, cleared reactions and
+    // AutoMod actions. Nothing else: typing, polls, presences and the like are not logged.
     GatewayIntentBits.GuildModeration,
-    GatewayIntentBits.GuildExpressions,
-    GatewayIntentBits.GuildIntegrations,
-    GatewayIntentBits.GuildWebhooks,
     GatewayIntentBits.GuildInvites,
     GatewayIntentBits.GuildMessageReactions,
-    GatewayIntentBits.GuildMessageTyping,
-    GatewayIntentBits.GuildMessagePolls,
-    GatewayIntentBits.GuildScheduledEvents,
-    GatewayIntentBits.AutoModerationConfiguration,
     GatewayIntentBits.AutoModerationExecution,
     ...(options.messageContent ? [GatewayIntentBits.MessageContent] : []),
-    ...(options.presences ? [GatewayIntentBits.GuildPresences] : []),
   ];
 }

@@ -106,14 +106,14 @@ export function auditEntryRecord(entry: AuditEntryLike): AuditRecord {
 /** The voice state fields the log compares. */
 export interface VoiceLike {
   channelId: string | null;
-  selfMute: boolean | null;
-  selfDeaf: boolean | null;
   streaming: boolean | null;
   selfVideo: boolean | null;
-  requestToSpeakTimestamp: number | null;
 }
 
-/** Records for one voice state change: joins, leaves, moves and the self toggles. */
+/**
+ * Records for one voice state change: joins, leaves, moves, streaming and camera. Muting and
+ * deafening yourself is left out: it happens all the time and says nothing.
+ */
 export function voiceRecords(userId: string, before: VoiceLike, after: VoiceLike): AuditRecord[] {
   const base = { actorId: userId, targetId: userId, targetKind: 'user' as const };
   if (!before.channelId && after.channelId) return [{ ...base, type: 'voice.joined', channelId: after.channelId }];
@@ -127,13 +127,8 @@ export function voiceRecords(userId: string, before: VoiceLike, after: VoiceLike
     if (Boolean(was) === Boolean(now)) return;
     records.push({ ...base, type: now ? on : off, channelId: after.channelId });
   };
-  toggle(before.selfMute, after.selfMute, 'voice.selfMute', 'voice.selfUnmute');
-  toggle(before.selfDeaf, after.selfDeaf, 'voice.selfDeaf', 'voice.selfUndeaf');
   toggle(before.streaming, after.streaming, 'voice.streamStart', 'voice.streamStop');
   toggle(before.selfVideo, after.selfVideo, 'voice.videoStart', 'voice.videoStop');
-  if (after.requestToSpeakTimestamp && after.requestToSpeakTimestamp !== before.requestToSpeakTimestamp) {
-    records.push({ ...base, type: 'voice.requestToSpeak', channelId: after.channelId });
-  }
   return records;
 }
 

@@ -13,6 +13,7 @@ import {
   categoryOf,
   defaultAuditSettings,
   isTypeEnabled,
+  REMOVED_TYPES,
   typesByCategory,
 } from './manifest';
 import { auditMigrations, AuditStore, AuditWriter, searchTextOf, usedInvite, type UserSnapshot } from './store';
@@ -58,9 +59,15 @@ describe('event types', () => {
     const on = { ...defaultAuditSettings, enabled: true };
     expect(isTypeEnabled(defaultAuditSettings, 'member.join')).toBe(false);
     expect(isTypeEnabled(on, 'member.join')).toBe(true);
-    expect(isTypeEnabled(on, 'message.typing')).toBe(false);
-    expect(isTypeEnabled(on, 'presence.status')).toBe(false);
+    expect(isTypeEnabled({ ...on, disabledTypes: ['voice.joined'] }, 'voice.joined')).toBe(false);
     expect(isTypeEnabled({ ...on, disabledCategories: ['members'] }, 'member.join')).toBe(false);
+  });
+
+  test('noise is not a type any more', () => {
+    const all = Object.values(typesByCategory()).flat();
+    for (const type of REMOVED_TYPES) expect(all).not.toContain(type);
+    // Settings saved with a removed category still load.
+    expect(auditSettingsSchema.parse({ ...defaultAuditSettings, disabledCategories: ['presence', 'voice'] }).disabledCategories).toEqual(['voice']);
   });
 
   test('settings and filters validate their input', () => {
@@ -116,7 +123,7 @@ describe('Discord audit log entries', () => {
 });
 
 describe('voice', () => {
-  const idle: VoiceLike = { channelId: null, selfMute: false, selfDeaf: false, streaming: false, selfVideo: false, requestToSpeakTimestamp: null };
+  const idle: VoiceLike = { channelId: null, streaming: false, selfVideo: false };
   const inA: VoiceLike = { ...idle, channelId: 'a' };
 
   test('joins, leaves and moves', () => {
@@ -125,8 +132,8 @@ describe('voice', () => {
     expect(voiceRecords('u', inA, { ...inA, channelId: 'b' })).toMatchObject([{ type: 'voice.moved', channelId: 'b', data: { fromChannelId: 'a' } }]);
   });
 
-  test('self toggles in the same channel', () => {
-    expect(voiceRecords('u', inA, { ...inA, selfMute: true, streaming: true }).map((record) => record.type)).toEqual(['voice.selfMute', 'voice.streamStart']);
+  test('streaming and camera in the same channel', () => {
+    expect(voiceRecords('u', inA, { ...inA, streaming: true, selfVideo: true }).map((record) => record.type)).toEqual(['voice.streamStart', 'voice.videoStart']);
     expect(voiceRecords('u', { ...inA, selfVideo: true }, inA).map((record) => record.type)).toEqual(['voice.videoStop']);
     expect(voiceRecords('u', inA, inA)).toEqual([]);
   });
@@ -194,22 +201,22 @@ describe('AuditStore', () => {
     store.insert([
       { guildId: g, type: 'member.join', actorId: 'a', targetId: 'a', targetKind: 'user', at: 100 },
       { guildId: g, type: 'audit.MemberBanAdd', actorId: 'mod', targetId: 'a', targetKind: 'user', data: { reason: 'Spam links' }, at: 200 },
-      { guildId: g, type: 'message.sent', actorId: 'b', targetId: 'm1', channelId: 'c1', data: { content: 'Hello World' }, at: 300 },
+      { guildId: g, type: 'message.deleted', actorId: 'b', targetId: 'm1', channelId: 'c1', data: { content: 'Hello World' }, at: 300 },
       { guildId: g, type: 'voice.joined', actorId: 'b', targetId: 'b', channelId: 'c2', at: 400 },
       { guildId: 'other', type: 'member.join', actorId: 'a', at: 500 },
     ]);
     const all = store.query(g, { limit: 10 });
-    expect(all.map((event) => event.type)).toEqual(['voice.joined', 'message.sent', 'audit.MemberBanAdd', 'member.join']);
+    expect(all.map((event) => event.type)).toEqual(['voice.joined', 'message.deleted', 'audit.MemberBanAdd', 'member.join']);
     expect(all[2]!.category).toBe('moderation');
 
     expect(store.query(g, { limit: 10, user: 'a', userRole: 'target' }).map((event) => event.type)).toEqual(['audit.MemberBanAdd', 'member.join']);
     expect(store.query(g, { limit: 10, user: 'a', userRole: 'actor' }).map((event) => event.type)).toEqual(['member.join']);
     expect(store.query(g, { limit: 10, user: 'mod' }).length).toBe(1);
     expect(store.query(g, { limit: 10, categories: ['moderation', 'voice'] }).length).toBe(2);
-    expect(store.query(g, { limit: 10, types: ['message.sent'] }).length).toBe(1);
+    expect(store.query(g, { limit: 10, types: ['message.deleted'] }).length).toBe(1);
     expect(store.query(g, { limit: 10, channel: 'c2' }).map((event) => event.type)).toEqual(['voice.joined']);
     expect(store.query(g, { limit: 10, from: 150, to: 350 }).length).toBe(2);
-    expect(store.query(g, { limit: 10, q: 'hello' }).map((event) => event.type)).toEqual(['message.sent']);
+    expect(store.query(g, { limit: 10, q: 'hello' }).map((event) => event.type)).toEqual(['message.deleted']);
     expect(store.query(g, { limit: 10, q: 'SPAM' }).length).toBe(1);
     expect(store.query(g, { limit: 10, q: '100%' }).length).toBe(0);
 
@@ -222,21 +229,24 @@ describe('AuditStore', () => {
   test('viewers only see events in channels they can see', () => {
     const { store } = createStore();
     store.insert([
-      { guildId: g, type: 'message.sent', channelId: 'public', at: 1 },
-      { guildId: g, type: 'message.sent', channelId: 'staff', at: 2 },
+      { guildId: g, type: 'message.deleted', channelId: 'public', at: 1 },
+      { guildId: g, type: 'message.deleted', channelId: 'staff', at: 2 },
       { guildId: g, type: 'member.join', at: 3 },
     ]);
     expect(store.query(g, { limit: 10 }, ['public']).map((event) => event.channelId)).toEqual([null, 'public']);
     expect(store.query(g, { limit: 10 }, null).length).toBe(3);
   });
 
-  test('remembers the last text of a message for edits and deletes', () => {
-    const { store } = createStore();
-    store.insert([{ guildId: g, type: 'message.sent', actorId: 'a', targetId: 'm', data: { content: 'one' }, at: 1 }]);
-    expect(store.lastMessage(g, 'm')).toMatchObject({ authorId: 'a', content: 'one' });
-    store.insert([{ guildId: g, type: 'message.edited', actorId: 'a', targetId: 'm', data: { before: 'one', after: 'two' }, at: 2 }]);
-    expect(store.lastMessage(g, 'm')?.content).toBe('two');
-    expect(store.lastMessage(g, 'missing')).toBeNull();
+  test('upgrading drops the rows and defaults of removed noise types', () => {
+    const db = new Database(':memory:');
+    migrate(db, [auditMigrations[0]!], silent);
+    db.query("INSERT INTO audit_settings (guild_id, disabled_categories, disabled_types, updated_at) VALUES ('g', '[\"presence\"]', '[\"message.typing\"]', 0)").run();
+    for (const type of ['message.sent', 'presence.status', 'member.join']) {
+      db.query("INSERT INTO audit_events (guild_id, created_at, category, type) VALUES ('g', 0, 'x', ?)").run(type);
+    }
+    migrate(db, auditMigrations, silent);
+    expect(db.query('SELECT type FROM audit_events').all()).toEqual([{ type: 'member.join' }]);
+    expect(new AuditStore(db).get('g')).toMatchObject({ disabledCategories: [], disabledTypes: [] });
   });
 
   test('retention, row cap and purge', () => {
@@ -278,7 +288,7 @@ describe('AuditStore', () => {
 
   test('long message text is shortened to fit', () => {
     const { store } = createStore();
-    store.insert([{ guildId: g, type: 'message.sent', data: { content: 'x'.repeat(40_000) } }]);
+    store.insert([{ guildId: g, type: 'message.deleted', data: { content: 'x'.repeat(40_000) } }]);
     const [event] = store.query(g, { limit: 1 });
     expect((event!.data.content as string).length).toBe(2_000);
     expect(event!.data.truncated).toBe(true);

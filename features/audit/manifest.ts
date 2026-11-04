@@ -29,7 +29,6 @@ export const AUDIT_CATEGORIES = [
   'automod',
   'integrations',
   'server',
-  'presence',
   'shifubot',
 ] as const;
 export type AuditCategory = (typeof AUDIT_CATEGORIES)[number];
@@ -49,7 +48,6 @@ export const CATEGORY_EMOJI: Record<AuditCategory, string> = {
   automod: '🛡️',
   integrations: '🔌',
   server: '🏠',
-  presence: '🟢',
   shifubot: '🤖',
 };
 
@@ -167,7 +165,12 @@ export function auditActionCategory(name: string): AuditCategory {
   return 'server';
 }
 
-/** Event types from gateway events and ShifuBot itself, by category. Order is the display order. */
+/**
+ * Event types from gateway events and ShifuBot itself, by category. Order is the display order.
+ * Only what a moderator would look for is recorded. Sent messages, typing, single reactions, poll
+ * votes, self mute/deafen, thread and event sign-ups, status and activity changes and level ups were
+ * removed on purpose: they are high volume and nobody investigates them.
+ */
 export const GATEWAY_TYPES = {
   members: [
     'member.join',
@@ -180,51 +183,45 @@ export const GATEWAY_TYPES = {
     'user.globalName',
     'user.avatar',
   ],
-  messages: [
-    'message.sent',
-    'message.edited',
-    'message.deleted',
-    'message.bulkDeleted',
-    'message.typing',
-    'reaction.added',
-    'reaction.removed',
-    'reaction.cleared',
-    'poll.voteAdded',
-    'poll.voteRemoved',
-  ],
-  voice: [
-    'voice.joined',
-    'voice.left',
-    'voice.moved',
-    'voice.selfMute',
-    'voice.selfUnmute',
-    'voice.selfDeaf',
-    'voice.selfUndeaf',
-    'voice.streamStart',
-    'voice.streamStop',
-    'voice.videoStart',
-    'voice.videoStop',
-    'voice.requestToSpeak',
-    'voice.effect',
-  ],
-  threads: ['thread.memberJoined', 'thread.memberLeft'],
-  events: ['event.interested', 'event.uninterested'],
+  messages: ['message.edited', 'message.deleted', 'message.bulkDeleted', 'reaction.cleared'],
+  voice: ['voice.joined', 'voice.left', 'voice.moved', 'voice.streamStart', 'voice.streamStop', 'voice.videoStart', 'voice.videoStop', 'voice.effect'],
   invites: ['invite.used'],
   automod: ['automod.action'],
-  presence: ['presence.status', 'presence.activityStart', 'presence.activityStop'],
   shifubot: [
     'shifubot.settings',
     'shifubot.setup',
     'shifubot.verified',
     'shifubot.verificationRefused',
     'shifubot.verificationFailed',
-    'shifubot.levelUp',
     'shifubot.xpReset',
     'shifubot.messageFailed',
     'shifubot.logsPurged',
     'shifubot.eventsSkipped',
   ],
 } as const satisfies Partial<Record<AuditCategory, readonly string[]>>;
+
+/** Types earlier versions recorded and that are now dropped as noise. Their old rows are deleted. */
+export const REMOVED_TYPES = [
+  'message.sent',
+  'message.typing',
+  'reaction.added',
+  'reaction.removed',
+  'poll.voteAdded',
+  'poll.voteRemoved',
+  'voice.selfMute',
+  'voice.selfUnmute',
+  'voice.selfDeaf',
+  'voice.selfUndeaf',
+  'voice.requestToSpeak',
+  'thread.memberJoined',
+  'thread.memberLeft',
+  'event.interested',
+  'event.uninterested',
+  'presence.status',
+  'presence.activityStart',
+  'presence.activityStop',
+  'shifubot.levelUp',
+] as const;
 
 export type GatewayType = (typeof GATEWAY_TYPES)[keyof typeof GATEWAY_TYPES][number];
 export type AuditType = GatewayType | `audit.${AuditActionName}`;
@@ -247,9 +244,6 @@ export function typesByCategory(): Record<AuditCategory, string[]> {
   return result;
 }
 
-/** Types that need a privileged intent, so the dashboard can explain why they stay empty. */
-export const PRESENCE_TYPES: readonly string[] = GATEWAY_TYPES.presence;
-
 export const RETENTION_DAYS = [7, 14, 30, 90, 180] as const;
 
 const oneOf = <T extends readonly number[]>(values: T, message: string) =>
@@ -257,8 +251,11 @@ const oneOf = <T extends readonly number[]>(values: T, message: string) =>
 
 export const auditSettingsSchema = z.object({
   enabled: z.boolean(),
-  /** Categories that are not recorded at all. */
-  disabledCategories: z.array(z.enum(AUDIT_CATEGORIES)).transform((items) => [...new Set(items)]),
+  /** Categories that are not recorded at all. Names of removed categories are dropped. */
+  disabledCategories: z
+    .array(z.string())
+    .max(50)
+    .transform((items) => [...new Set(items.filter((item): item is AuditCategory => (AUDIT_CATEGORIES as readonly string[]).includes(item)))]),
   /** Single event types that are not recorded. */
   disabledTypes: z
     .array(z.string().regex(/^[a-z]+\.[A-Za-z]+$/, 'Unknown event type').max(80))
@@ -277,8 +274,8 @@ export type AuditSettings = z.infer<typeof auditSettingsSchema>;
 
 export const defaultAuditSettings: AuditSettings = {
   enabled: false,
-  disabledCategories: ['presence'],
-  disabledTypes: ['message.typing'],
+  disabledCategories: [],
+  disabledTypes: [],
   retentionDays: 30,
   ignoredChannelIds: [],
   ignoreBots: true,
@@ -322,7 +319,6 @@ export interface AuditEventsResponse {
 
 export interface AuditCapabilities {
   messageContent: boolean;
-  presences: boolean;
   viewAuditLog: boolean;
   manageGuild: boolean;
 }

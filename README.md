@@ -28,14 +28,16 @@ discord.js, Hono, SQLite and React. Self host it on a Pelican panel, with Docker
   shows all three levels, refreshes itself (every 1, 5, 15 or 60 minutes, and only when something
   changed) and has a **My rank** button. Turn off XP for chosen text, voice channels or categories.
   Upgrading from a version with a single level resets everyone's XP once.
-- 📋 **Audit log** (off by default). Records everything Discord lets the bot see and shows it on the
+- 📋 **Audit log** (off by default). Records what a moderator would look for and shows it on the
   dashboard, searchable and filterable by time, category, event type, member (who did it or who it
   happened to), channel and text, with CSV/JSON export. It covers Discord's own audit log (bans,
   kicks, timeouts, roles, channels, server settings… with the moderator and reason) plus what that
-  log misses: joins with account age and the invite used, leaves, voice activity, sent, edited and
-  deleted messages, reactions, polls, profile changes, AutoMod actions, status changes, ShifuBot's
-  own events and who changed which dashboard setting. Each category and event type can be turned
-  off, events are kept 7–180 days, and viewers only see events from channels they can see.
+  log misses: joins with account age and the invite used, leaves, voice joins, moves, streams and
+  camera, edited and deleted messages (with the earlier text), cleared reactions, profile changes,
+  boosts, AutoMod actions, ShifuBot's own events and who changed which dashboard setting. Noise is
+  left out on purpose: sent messages, typing, single reactions, poll votes, muting yourself, status
+  and activity changes. Each category and event type can be turned off, events are kept 7–180
+  days, and viewers only see events from channels they can see.
 - 🌐 **English and Hungarian.** Each server picks its language. It drives the dashboard and every
   message the bot sends there.
 - 🛡️ **Raid safe.** At most 10 welcome and 10 goodbye messages per server per minute (configurable).
@@ -76,10 +78,10 @@ modules (see [Adding a feature module](#adding-a-feature-module)).
      needs it to see members joining. Without it the bot stops at login with *"Used disallowed
      intents"*. (Bots in 100 or more servers must also be verified by Discord and request this
      intent in the verification form.)
-   - **MESSAGE CONTENT INTENT** and **PRESENCE INTENT** are optional. Leveling only needs to know
-     *that* someone wrote, never what. Turn them on only if you want the audit log to keep message
-     text (also set `DISCORD_MESSAGE_CONTENT=true`) or status and activity changes (also set
-     `DISCORD_PRESENCES=true`). Turning on a flag without the matching intent stops the bot at login.
+   - **MESSAGE CONTENT INTENT** is optional. Leveling only needs to know *that* someone wrote,
+     never what. Turn it on only if you want the audit log to show the text of edited and deleted
+     messages, and also set `DISCORD_MESSAGE_CONTENT=true`. Setting the flag without the intent
+     stops the bot at login.
    - For the audit log, give ShifuBot's role **View Audit Log** (and **Manage Server** if you want
      invite tracking). The dashboard's permission check asks for them once the audit log is on.
    - Optional: turn off **Public Bot** if only you should be able to add it to servers.
@@ -157,8 +159,7 @@ Copy `.env.example` to `.env` and fill it in. Every variable is documented there
 | `GOODBYE_MAX_PER_MINUTE` | | `10` | Goodbye messages per server per minute |
 | `SEND_CONCURRENCY` | | `4` | Discord messages sent in parallel across all servers |
 | `CLEANUP_AFTER_DAYS` | | `30` | Keep data of servers that removed the bot this long |
-| `DISCORD_MESSAGE_CONTENT` | | `false` | Audit log: record message text. Turn on Message Content Intent in the Developer Portal first |
-| `DISCORD_PRESENCES` | | `false` | Audit log: record status and activity changes. Turn on Presence Intent in the Developer Portal first |
+| `DISCORD_MESSAGE_CONTENT` | | `false` | Audit log: show the text of edited and deleted messages. Turn on Message Content Intent in the Developer Portal first |
 | `AUDIT_MAX_ROWS_PER_GUILD` | | `500000` | Audit log rows kept per server; the oldest are deleted first |
 | `AUDIT_MAX_EVENTS_PER_MINUTE` | | `1200` | Audit log events recorded per server per minute; the rest are counted as skipped |
 | `BOT_DISABLED` | | `false` | Run only the dashboard (UI development) |

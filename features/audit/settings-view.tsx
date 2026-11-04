@@ -109,10 +109,6 @@ export function SettingsView({ audit }: { audit: ApiState<AuditResponse> }) {
             {capabilities.messageContent ? '✓ ' : '• '}
             {capabilities.messageContent ? t('audit.capabilities.messageContentOn') : t('audit.capabilities.messageContentOff')}
           </li>
-          <li className={capabilities.presences ? 'text-success' : 'text-muted'}>
-            {capabilities.presences ? '✓ ' : '• '}
-            {capabilities.presences ? t('audit.capabilities.presencesOn') : t('audit.capabilities.presencesOff')}
-          </li>
         </ul>
       </Card>
 
@@ -124,7 +120,6 @@ export function SettingsView({ audit }: { audit: ApiState<AuditResponse> }) {
             const types = grouped[category];
             const enabledTypes = types.filter((type) => !draft.disabledTypes.includes(type)).length;
             const expanded = openCategory === category;
-            const needsIntent = category === 'presence' && !capabilities.presences;
             return (
               <li key={category} className="py-2">
                 <div className="flex items-center gap-2">
@@ -147,11 +142,7 @@ export function SettingsView({ audit }: { audit: ApiState<AuditResponse> }) {
                           {categoryLabel(t, category)}
                         </span>
                       }
-                      description={
-                        needsIntent
-                          ? t('audit.form.privileged')
-                          : t('audit.form.typeCount', { on: String(on ? enabledTypes : 0), total: String(types.length) })
-                      }
+                      description={t('audit.form.typeCount', { on: String(on ? enabledTypes : 0), total: String(types.length) })}
                     />
                   </div>
                 </div>

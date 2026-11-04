@@ -6,7 +6,7 @@ import type { Database, SQLQueryBindings } from 'bun:sqlite';
 import { LruCache } from '../../apps/bot/src/core/lru-cache';
 import type { AuditRecord } from '../../apps/bot/src/core/audit-sink';
 import type { Migration } from '../../apps/bot/src/db/database';
-import { auditSettingsSchema, categoryOf, defaultAuditSettings, type AuditEvent, type AuditFilter, type AuditSettings, type AuditUser } from './manifest';
+import { auditSettingsSchema, categoryOf, defaultAuditSettings, REMOVED_TYPES, type AuditEvent, type AuditFilter, type AuditSettings, type AuditUser } from './manifest';
 
 export const AUDIT_TABLES = ['audit_settings', 'audit_events', 'audit_users', 'audit_invites'];
 
@@ -17,8 +17,8 @@ export const auditMigrations: Migration[] = [
       CREATE TABLE audit_settings (
         guild_id TEXT PRIMARY KEY,
         enabled INTEGER NOT NULL DEFAULT 0,
-        disabled_categories TEXT NOT NULL DEFAULT '["presence"]',
-        disabled_types TEXT NOT NULL DEFAULT '["message.typing"]',
+        disabled_categories TEXT NOT NULL DEFAULT '[]',
+        disabled_types TEXT NOT NULL DEFAULT '[]',
         retention_days INTEGER NOT NULL DEFAULT 30,
         ignored_channel_ids TEXT NOT NULL DEFAULT '[]',
         ignore_bots INTEGER NOT NULL DEFAULT 1,
@@ -70,6 +70,17 @@ export const auditMigrations: Migration[] = [
         updated_at INTEGER NOT NULL,
         PRIMARY KEY (guild_id, code)
       );
+    `,
+  },
+  {
+    // Noise is no longer logged (sent messages, typing, reactions, poll votes, self mute, presence…).
+    // Old rows of those types go, including stored message text; the old defaults that switched
+    // some of them off are cleared.
+    id: 'audit_002_drop_noise',
+    sql: `
+      DELETE FROM audit_events WHERE type IN (${REMOVED_TYPES.map((type) => `'${type}'`).join(', ')});
+      UPDATE audit_settings SET disabled_categories = '[]' WHERE disabled_categories = '["presence"]';
+      UPDATE audit_settings SET disabled_types = '[]' WHERE disabled_types = '["message.typing"]';
     `,
   },
 ];
@@ -378,28 +389,6 @@ export class AuditStore {
         channelId: row.channel_id,
         data: JSON.parse(row.data) as Record<string, unknown>,
       }));
-  }
-
-  /**
-   * Latest known text and author of a message, from the "sent" or "edited" events we stored.
-   * The bot keeps no message cache, so this is the only way to show what was edited or deleted.
-   */
-  lastMessage(guildId: string, messageId: string): { authorId: string | null; content: string | null; attachments: unknown; createdAt: number } | null {
-    const row = this.db
-      .query<{ actor_id: string | null; type: string; data: string; created_at: number }, [string, string]>(
-        `SELECT actor_id, type, data, created_at FROM audit_events
-         WHERE guild_id = ? AND target_id = ? AND type IN ('message.sent', 'message.edited')
-         ORDER BY id DESC LIMIT 1`,
-      )
-      .get(guildId, messageId);
-    if (!row) return null;
-    const data = JSON.parse(row.data) as { content?: string; after?: string; attachments?: unknown };
-    return {
-      authorId: row.actor_id,
-      content: (row.type === 'message.edited' ? data.after : data.content) ?? null,
-      attachments: data.attachments ?? null,
-      createdAt: row.created_at,
-    };
   }
 
   stats(guildId: string): { events: number; oldest: number | null } {

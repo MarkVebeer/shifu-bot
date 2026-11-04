@@ -19,7 +19,6 @@
     "automod": "AutoMod",
     "integrations": "Apps & webhooks",
     "server": "Server",
-    "presence": "Status & activity",
     "shifubot": "ShifuBot"
   },
   "types": {
@@ -37,43 +36,22 @@
       "avatar": "Avatar changed"
     },
     "message": {
-      "sent": "Message sent",
       "edited": "Message edited",
       "deleted": "Message deleted",
-      "bulkDeleted": "Messages bulk deleted",
-      "typing": "Started typing"
+      "bulkDeleted": "Messages bulk deleted"
     },
     "reaction": {
-      "added": "Reaction added",
-      "removed": "Reaction removed",
       "cleared": "Reactions cleared"
-    },
-    "poll": {
-      "voteAdded": "Poll vote",
-      "voteRemoved": "Poll vote removed"
     },
     "voice": {
       "joined": "Joined voice",
       "left": "Left voice",
       "moved": "Switched voice channel",
-      "selfMute": "Muted",
-      "selfUnmute": "Unmuted",
-      "selfDeaf": "Deafened",
-      "selfUndeaf": "Undeafened",
       "streamStart": "Started streaming",
       "streamStop": "Stopped streaming",
       "videoStart": "Camera on",
       "videoStop": "Camera off",
-      "requestToSpeak": "Asked to speak",
       "effect": "Voice effect"
-    },
-    "thread": {
-      "memberJoined": "Joined thread",
-      "memberLeft": "Left thread"
-    },
-    "event": {
-      "interested": "Interested in event",
-      "uninterested": "No longer interested in event"
     },
     "invite": {
       "used": "Joined with invite"
@@ -81,18 +59,12 @@
     "automod": {
       "action": "AutoMod action"
     },
-    "presence": {
-      "status": "Status changed",
-      "activityStart": "Activity started",
-      "activityStop": "Activity ended"
-    },
     "shifubot": {
       "settings": "Dashboard settings changed",
       "setup": "Setup completed",
       "verified": "Passed verification",
       "verificationRefused": "Verification refused",
       "verificationFailed": "Failed verification",
-      "levelUp": "Level up",
       "xpReset": "XP reset",
       "messageFailed": "ShifuBot message failed",
       "logsPurged": "Audit log cleared",
@@ -186,7 +158,7 @@
     "after": "After",
     "unknownUser": "Unknown user",
     "unknownChannel": "Deleted channel",
-    "noContent": "Text not recorded. Turn on DISCORD_MESSAGE_CONTENT to keep message text.",
+    "noContent": "Text not available. It is only known for messages sent while the bot was running, with DISCORD_MESSAGE_CONTENT on.",
     "newAccount": "New account",
     "accountAge": "Account {days} days old",
     "daysOnServer": "{days} days on the server",
@@ -198,12 +170,8 @@
   "fields": {
     "content": "Text",
     "attachments": "Attachments",
-    "stickers": "Stickers",
-    "embeds": "Embeds",
-    "replyTo": "Reply to",
     "count": "Count",
     "emoji": "Emoji",
-    "answer": "Answer",
     "code": "Invite code",
     "inviterId": "Invited by",
     "uses": "Uses",
@@ -211,17 +179,12 @@
     "maxAge": "Expires after (seconds)",
     "fromChannelId": "From",
     "toChannelId": "To",
-    "eventName": "Event",
     "ruleName": "Rule",
     "action": "Action",
     "keyword": "Matched keyword",
     "matchedContent": "Matched text",
-    "status": "Status",
-    "activity": "Activity",
     "feature": "Feature",
     "changes": "Changes",
-    "level": "Level",
-    "track": "Track",
     "error": "Error",
     "threadName": "Thread",
     "joinedAt": "Joined",
@@ -280,7 +243,6 @@
     "what": "What to record",
     "whatHelp": "Turn whole categories off, or open one to pick single events.",
     "typeCount": "{on} of {total} events",
-    "privileged": "Needs a privileged intent",
     "retention": "Keep events for",
     "retentionDays": "{days} days",
     "retentionHelp": "Older events are deleted automatically.",
@@ -305,10 +267,8 @@
   },
   "capabilities": {
     "title": "What Discord lets ShifuBot see",
-    "messageContentOn": "Message text is recorded.",
-    "messageContentOff": "Message text is not recorded. The bot's host can turn on Message Content Intent in the Discord Developer Portal and set DISCORD_MESSAGE_CONTENT=true.",
-    "presencesOn": "Status and activity changes can be recorded.",
-    "presencesOff": "Status and activity changes are not available. The bot's host can turn on Presence Intent in the Discord Developer Portal and set DISCORD_PRESENCES=true.",
+    "messageContentOn": "The text of edited and deleted messages is shown.",
+    "messageContentOff": "Edited and deleted messages are recorded without their text. The bot's host can turn on Message Content Intent in the Discord Developer Portal and set DISCORD_MESSAGE_CONTENT=true.",
     "viewAuditLogOff": "ShifuBot lacks the View Audit Log permission, so moderation actions, channel, role and server changes are not recorded.",
     "manageGuildOff": "Invite tracking needs the Manage Server permission."
   },

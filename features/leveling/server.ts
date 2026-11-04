@@ -520,15 +520,7 @@ export default defineServerFeature({
       const settings = store.get(guild.id);
       const before = levelFromXp(award.before).level;
       const after = levelFromXp(award.after).level;
-      if (after <= before) return;
-      ctx.audit.record(guild.id, {
-        type: 'shifubot.levelUp',
-        actorId: award.member.id,
-        targetId: award.member.id,
-        targetKind: 'user',
-        data: { track: award.track, level: after },
-      });
-      if (settings.announceMode === 'off') return;
+      if (after <= before || settings.announceMode === 'off') return;
 
       let channel: GuildTextBasedChannel | null = null;
       if (settings.announceMode === 'current') {

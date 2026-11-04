@@ -19,7 +19,6 @@
     "automod": "AutoMod",
     "integrations": "Alkalmazások és webhookok",
     "server": "Szerver",
-    "presence": "Állapot és tevékenység",
     "shifubot": "ShifuBot"
   },
   "types": {
@@ -37,43 +36,22 @@
       "avatar": "Profilkép megváltozott"
     },
     "message": {
-      "sent": "Üzenet elküldve",
       "edited": "Üzenet szerkesztve",
       "deleted": "Üzenet törölve",
-      "bulkDeleted": "Üzenetek tömeges törlése",
-      "typing": "Gépelni kezdett"
+      "bulkDeleted": "Üzenetek tömeges törlése"
     },
     "reaction": {
-      "added": "Reakció hozzáadva",
-      "removed": "Reakció eltávolítva",
       "cleared": "Reakciók törölve"
-    },
-    "poll": {
-      "voteAdded": "Szavazat",
-      "voteRemoved": "Szavazat visszavonva"
     },
     "voice": {
       "joined": "Belépett voice-ba",
       "left": "Kilépett a voice-ból",
       "moved": "Voice csatornát váltott",
-      "selfMute": "Némította magát",
-      "selfUnmute": "Feloldotta a némítást",
-      "selfDeaf": "Süketítette magát",
-      "selfUndeaf": "Feloldotta a süketítést",
       "streamStart": "Elkezdett streamelni",
       "streamStop": "Befejezte a streamelést",
       "videoStart": "Kamera be",
       "videoStop": "Kamera ki",
-      "requestToSpeak": "Szót kért",
       "effect": "Voice effekt"
-    },
-    "thread": {
-      "memberJoined": "Csatlakozott a threadhez",
-      "memberLeft": "Kilépett a threadből"
-    },
-    "event": {
-      "interested": "Érdekli az esemény",
-      "uninterested": "Már nem érdekli az esemény"
     },
     "invite": {
       "used": "Meghívóval csatlakozott"
@@ -81,18 +59,12 @@
     "automod": {
       "action": "AutoMod beavatkozás"
     },
-    "presence": {
-      "status": "Állapot megváltozott",
-      "activityStart": "Tevékenység kezdete",
-      "activityStop": "Tevékenység vége"
-    },
     "shifubot": {
       "settings": "Vezérlőpult beállítás módosítva",
       "setup": "Beállítás befejezve",
       "verified": "Sikeres ellenőrzés",
       "verificationRefused": "Ellenőrzés elutasítva",
       "verificationFailed": "Sikertelen ellenőrzés",
-      "levelUp": "Szintlépés",
       "xpReset": "XP nullázva",
       "messageFailed": "A ShifuBot üzenete nem ment el",
       "logsPurged": "Napló törölve",
@@ -186,7 +158,7 @@
     "after": "Utána",
     "unknownUser": "Ismeretlen felhasználó",
     "unknownChannel": "Törölt csatorna",
-    "noContent": "A szöveg nincs rögzítve. Kapcsold be a DISCORD_MESSAGE_CONTENT beállítást az üzenetszövegekhez.",
+    "noContent": "A szöveg nem ismert. Csak olyan üzeneteknél látszik, amelyeket a bot futása közben küldtek, bekapcsolt DISCORD_MESSAGE_CONTENT mellett.",
     "newAccount": "Új fiók",
     "accountAge": "{days} napos fiók",
     "daysOnServer": "{days} napot volt a szerveren",
@@ -198,12 +170,8 @@
   "fields": {
     "content": "Szöveg",
     "attachments": "Csatolmányok",
-    "stickers": "Matricák",
-    "embeds": "Beágyazások",
-    "replyTo": "Válasz erre",
     "count": "Darab",
     "emoji": "Emoji",
-    "answer": "Válasz",
     "code": "Meghívókód",
     "inviterId": "Meghívó",
     "uses": "Használatok",
@@ -211,17 +179,12 @@
     "maxAge": "Lejárat (másodperc)",
     "fromChannelId": "Innen",
     "toChannelId": "Ide",
-    "eventName": "Esemény",
     "ruleName": "Szabály",
     "action": "Művelet",
     "keyword": "Talált kulcsszó",
     "matchedContent": "Talált szöveg",
-    "status": "Állapot",
-    "activity": "Tevékenység",
     "feature": "Funkció",
     "changes": "Változások",
-    "level": "Szint",
-    "track": "Szint típusa",
     "error": "Hiba",
     "threadName": "Thread",
     "joinedAt": "Csatlakozott",
@@ -280,7 +243,6 @@
     "what": "Mit rögzítsen",
     "whatHelp": "Kapcsolj ki egész kategóriákat, vagy nyiss le egyet az egyes eseményekhez.",
     "typeCount": "{on} / {total} esemény",
-    "privileged": "Kiemelt Discord jog kell hozzá",
     "retention": "Események megőrzése",
     "retentionDays": "{days} nap",
     "retentionHelp": "A régebbi események automatikusan törlődnek.",
@@ -305,10 +267,8 @@
   },
   "capabilities": {
     "title": "Mit láthat a ShifuBot",
-    "messageContentOn": "Az üzenetek szövege rögzítésre kerül.",
-    "messageContentOff": "Az üzenetek szövege nem kerül rögzítésre. A bot üzemeltetője bekapcsolhatja a Message Content Intentet a Discord Developer Portalon, és beállíthatja: DISCORD_MESSAGE_CONTENT=true.",
-    "presencesOn": "Az állapot- és tevékenységváltozások rögzíthetők.",
-    "presencesOff": "Az állapot- és tevékenységváltozások nem érhetők el. A bot üzemeltetője bekapcsolhatja a Presence Intentet a Discord Developer Portalon, és beállíthatja: DISCORD_PRESENCES=true.",
+    "messageContentOn": "A szerkesztett és törölt üzenetek szövege látszik.",
+    "messageContentOff": "A szerkesztett és törölt üzenetek szöveg nélkül kerülnek be. A bot üzemeltetője bekapcsolhatja a Message Content Intentet a Discord Developer Portalon, és beállíthatja: DISCORD_MESSAGE_CONTENT=true.",
     "viewAuditLogOff": "A ShifuBotnak nincs Audit napló megtekintése joga, így a moderációs műveletek, a csatorna-, rang- és szerverváltozások nem kerülnek be.",
     "manageGuildOff": "A meghívók követéséhez Szerver kezelése jog kell."
   },

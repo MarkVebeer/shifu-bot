@@ -37,6 +37,13 @@ import {
 } from './manifest';
 import { AUDIT_TABLES, auditMigrations, AuditStore, AuditWriter, displayName, usedInvite, type InviteRow, type UserSnapshot } from './store';
 
+interface RecentMessage {
+  authorId: string;
+  content: string | null;
+  attachments: ReturnType<typeof attachmentsOf> | null;
+  createdAt: number;
+}
+
 const MAX_ATTACHMENTS = 10;
 const MAX_CONTENT = 4_000;
 
@@ -133,8 +140,11 @@ export default defineServerFeature({
     const { db, logger, client, config } = ctx;
     const store = new AuditStore(db);
     const writer = new AuditWriter(store, config.audit.maxEventsPerMinute, (error) => logger.error('Could not write audit events', { error }));
-    /** Last seen status and activities per member, to log only real presence changes. */
-    const presences = new LruCache<string, { status: string; activities: string[] }>(50_000, 6 * 3_600_000);
+    /**
+     * Recent messages of servers that log edits or deletes, kept only in memory (never written to
+     * the log), so an edit or delete can show the earlier text. Lost on restart.
+     */
+    const recentMessages = new LruCache<string, RecentMessage>(50_000, 24 * 3_600_000);
     /** Invite lookups run one at a time per server, so two quick joins compare the right snapshots. */
     const inviteChains = new Map<string, Promise<unknown>>();
 
@@ -251,7 +261,6 @@ export default defineServerFeature({
       const me = guild.members.me;
       return {
         messageContent: config.discord.messageContent,
-        presences: config.discord.presences,
         viewAuditLog: Boolean(me?.permissions.has(PermissionFlagsBits.ViewAuditLog)),
         manageGuild: Boolean(me?.permissions.has(PermissionFlagsBits.ManageGuild)),
       };
@@ -386,43 +395,30 @@ export default defineServerFeature({
         },
 
         // ── Messages ──
+        // Sent messages are not logged, only remembered for a while so edits and deletes can show
+        // what the message said before.
         [Events.MessageCreate]: (message: Message) => {
-          if (!message.inGuild() || !wants(message.guildId, 'message.sent')) return;
-          const place = placeOf(message.guild, message.channelId, message.channel);
+          if (!message.inGuild()) return;
+          const settings = store.get(message.guildId);
+          if (!isTypeEnabled(settings, 'message.edited') && !isTypeEnabled(settings, 'message.deleted')) return;
           remember(message.guildId, message.author);
-          emit(
-            message.guildId,
-            {
-              type: 'message.sent',
-              actorId: message.author.id,
-              targetId: message.id,
-              targetKind: 'message',
-              channelId: place.channelId,
-              at: message.createdTimestamp,
-              data: {
-                ...(message.content ? { content: message.content.slice(0, MAX_CONTENT) } : {}),
-                ...(message.attachments.size ? { attachments: attachmentsOf(message) } : {}),
-                ...(message.stickers.size ? { stickers: message.stickers.map((sticker) => sticker.name) } : {}),
-                ...(message.embeds.length ? { embeds: message.embeds.length } : {}),
-                ...(message.reference?.messageId ? { replyTo: message.reference.messageId } : {}),
-                ...(message.poll ? { poll: message.poll.question.text } : {}),
-                ...(message.webhookId ? { webhook: true } : {}),
-                ...(place.threadId ? { threadId: place.threadId, threadName: place.threadName } : {}),
-                url: message.url,
-              },
-            },
-            { activity: { bot: message.author.bot || Boolean(message.webhookId), chain: place.chain }, searchText: nameOf(message.guildId, message.author.id) },
-          );
+          recentMessages.set(message.id, {
+            authorId: message.author.id,
+            content: message.content ? message.content.slice(0, MAX_CONTENT) : null,
+            attachments: message.attachments.size ? attachmentsOf(message) : null,
+            createdAt: message.createdTimestamp,
+          });
         },
 
         [Events.MessageUpdate]: (old, message) => {
           if (!message.guildId || !message.guild || !wants(message.guildId, 'message.edited')) return;
           // Link previews and embeds also update messages; only real edits have an edit time.
           if (!message.editedTimestamp || (old.editedTimestamp && old.editedTimestamp === message.editedTimestamp)) return;
-          const stored = store.lastMessage(message.guildId, message.id);
+          const stored = recentMessages.get(message.id);
           const before = (!old.partial ? old.content : null) ?? stored?.content ?? null;
           const after = message.partial ? null : message.content;
           if (before !== null && after !== null && before === after) return;
+          if (stored && after !== null) recentMessages.set(message.id, { ...stored, content: after.slice(0, MAX_CONTENT) });
           const authorId = message.author?.id ?? stored?.authorId ?? null;
           const place = placeOf(message.guild, message.channelId, message.channel);
           emit(
@@ -446,7 +442,8 @@ export default defineServerFeature({
 
         [Events.MessageDelete]: (message) => {
           if (!message.guildId || !message.guild || !wants(message.guildId, 'message.deleted')) return;
-          const stored = store.lastMessage(message.guildId, message.id);
+          const stored = recentMessages.get(message.id);
+          recentMessages.delete(message.id);
           const authorId = message.author?.id ?? stored?.authorId ?? null;
           const content = (!message.partial ? message.content : null) || stored?.content || null;
           const place = placeOf(message.guild, message.channelId, message.channel);
@@ -487,55 +484,7 @@ export default defineServerFeature({
           );
         },
 
-        [Events.TypingStart]: (typing) => {
-          const guild = typing.guild;
-          if (!guild || !wants(guild.id, 'message.typing')) return;
-          const place = placeOf(guild, typing.channel.id, typing.channel);
-          emit(
-            guild.id,
-            { type: 'message.typing', actorId: typing.user.id, targetId: typing.user.id, targetKind: 'user', channelId: place.channelId },
-            { activity: { bot: Boolean(typing.user.bot), chain: place.chain } },
-          );
-        },
-
-        // ── Reactions and polls ──
-        [Events.MessageReactionAdd]: (reaction, user) => {
-          const message = reaction.message;
-          if (!message.guildId || !message.guild || !wants(message.guildId, 'reaction.added')) return;
-          const place = placeOf(message.guild, message.channelId, message.channel);
-          remember(message.guildId, user);
-          emit(
-            message.guildId,
-            {
-              type: 'reaction.added',
-              actorId: user.id,
-              targetId: message.author?.id ?? null,
-              targetKind: message.author ? 'user' : null,
-              channelId: place.channelId,
-              data: { emoji: reaction.emoji.toString(), messageId: message.id, url: message.url },
-            },
-            { activity: { bot: Boolean(user.bot), chain: place.chain }, searchText: `${nameOf(message.guildId, user.id)} ${reaction.emoji.name ?? ''}` },
-          );
-        },
-
-        [Events.MessageReactionRemove]: (reaction, user) => {
-          const message = reaction.message;
-          if (!message.guildId || !message.guild || !wants(message.guildId, 'reaction.removed')) return;
-          const place = placeOf(message.guild, message.channelId, message.channel);
-          emit(
-            message.guildId,
-            {
-              type: 'reaction.removed',
-              actorId: user.id,
-              targetId: message.author?.id ?? null,
-              targetKind: message.author ? 'user' : null,
-              channelId: place.channelId,
-              data: { emoji: reaction.emoji.toString(), messageId: message.id, url: message.url },
-            },
-            { activity: { bot: Boolean(user.bot), chain: place.chain }, searchText: `${nameOf(message.guildId, user.id)} ${reaction.emoji.name ?? ''}` },
-          );
-        },
-
+        // ── Reactions cleared (by a moderator or a bot; single reactions are not logged) ──
         [Events.MessageReactionRemoveAll]: (message) => {
           if (!message.guildId || !message.guild || !wants(message.guildId, 'reaction.cleared')) return;
           const place = placeOf(message.guild, message.channelId, message.channel);
@@ -553,53 +502,14 @@ export default defineServerFeature({
           );
         },
 
-        [Events.MessagePollVoteAdd]: (answer, userId) => {
-          const message = answer.poll.message;
-          if (!message.guildId || !message.guild || !wants(message.guildId, 'poll.voteAdded')) return;
-          const place = placeOf(message.guild, message.channelId, message.channel);
-          emit(
-            message.guildId,
-            {
-              type: 'poll.voteAdded',
-              actorId: userId,
-              targetId: userId,
-              targetKind: 'user',
-              channelId: place.channelId,
-              data: { answer: answer.text ?? `#${answer.id}`, messageId: message.id, url: message.url },
-            },
-            { activity: { chain: place.chain }, searchText: nameOf(message.guildId, userId) },
-          );
-        },
-
-        [Events.MessagePollVoteRemove]: (answer, userId) => {
-          const message = answer.poll.message;
-          if (!message.guildId || !message.guild || !wants(message.guildId, 'poll.voteRemoved')) return;
-          const place = placeOf(message.guild, message.channelId, message.channel);
-          emit(
-            message.guildId,
-            {
-              type: 'poll.voteRemoved',
-              actorId: userId,
-              targetId: userId,
-              targetKind: 'user',
-              channelId: place.channelId,
-              data: { answer: answer.text ?? `#${answer.id}`, messageId: message.id, url: message.url },
-            },
-            { activity: { chain: place.chain }, searchText: nameOf(message.guildId, userId) },
-          );
-        },
-
         // ── Voice ──
         [Events.VoiceStateUpdate]: (old, state) => {
           const guild = state.guild;
           if (!store.get(guild.id).enabled) return;
           const snapshot = (voice: typeof state): VoiceLike => ({
             channelId: voice.channelId,
-            selfMute: voice.selfMute,
-            selfDeaf: voice.selfDeaf,
             streaming: voice.streaming,
             selfVideo: voice.selfVideo,
-            requestToSpeakTimestamp: voice.requestToSpeakTimestamp,
           });
           const bot = Boolean(state.member?.user.bot);
           if (state.member) store.rememberUser(guild.id, memberSnapshot(state.member));
@@ -627,41 +537,6 @@ export default defineServerFeature({
               },
             },
             { activity: { chain: [effect.channelId, channel?.parentId] }, searchText: nameOf(guild.id, effect.userId) },
-          );
-        },
-
-        // ── Threads and scheduled events ──
-        [Events.ThreadMembersUpdate]: (added, removed, thread) => {
-          const guild = thread.guild;
-          if (!store.get(guild.id).enabled) return;
-          const place = placeOf(guild, thread.id, thread);
-          const data = { threadId: thread.id, threadName: thread.name };
-          for (const id of added.keys()) {
-            emit(guild.id, { type: 'thread.memberJoined', actorId: id, targetId: id, targetKind: 'user', channelId: place.channelId, data }, { activity: { chain: place.chain } });
-          }
-          for (const id of removed.keys()) {
-            emit(guild.id, { type: 'thread.memberLeft', actorId: id, targetId: id, targetKind: 'user', channelId: place.channelId, data }, { activity: { chain: place.chain } });
-          }
-        },
-
-        [Events.GuildScheduledEventUserAdd]: (event, user) => {
-          const guild = event.guild;
-          if (!guild || !wants(guild.id, 'event.interested')) return;
-          remember(guild.id, user);
-          emit(
-            guild.id,
-            { type: 'event.interested', actorId: user.id, targetId: event.id, targetKind: 'event', data: { eventName: event.name ?? null } },
-            { searchText: nameOf(guild.id, user.id) },
-          );
-        },
-
-        [Events.GuildScheduledEventUserRemove]: (event, user) => {
-          const guild = event.guild;
-          if (!guild || !wants(guild.id, 'event.uninterested')) return;
-          emit(
-            guild.id,
-            { type: 'event.uninterested', actorId: user.id, targetId: event.id, targetKind: 'event', data: { eventName: event.name ?? null } },
-            { searchText: nameOf(guild.id, user.id) },
           );
         },
 
@@ -697,35 +572,6 @@ export default defineServerFeature({
             },
             { searchText: nameOf(guild.id, execution.userId) },
           );
-        },
-
-        // ── Presence (needs DISCORD_PRESENCES) ──
-        [Events.PresenceUpdate]: (_old, presence) => {
-          const guild = presence.guild;
-          if (!guild) return;
-          const settings = store.get(guild.id);
-          if (!isTypeEnabled(settings, 'presence.status') && !isTypeEnabled(settings, 'presence.activityStart') && !isTypeEnabled(settings, 'presence.activityStop')) return;
-          if (settings.ignoreBots && presence.user?.bot) return;
-          const key = `${guild.id}:${presence.userId}`;
-          const now = { status: presence.status, activities: presence.activities.map((activity) => activity.name) };
-          const before = presences.get(key);
-          presences.set(key, now);
-          // The first update after a start has nothing to compare with.
-          if (!before) return;
-          const base = { actorId: presence.userId, targetId: presence.userId, targetKind: 'user' as const };
-          const search = nameOf(guild.id, presence.userId);
-          if (before.status !== now.status) emit(guild.id, { ...base, type: 'presence.status', data: { before: before.status, after: now.status } }, { searchText: search });
-          for (const activity of presence.activities) {
-            if (before.activities.includes(activity.name)) continue;
-            emit(
-              guild.id,
-              { ...base, type: 'presence.activityStart', data: { activity: activity.name, ...(activity.details ? { details: activity.details } : {}), ...(activity.state ? { state: activity.state } : {}) } },
-              { searchText: `${search} ${activity.name}` },
-            );
-          }
-          for (const name of before.activities) {
-            if (!now.activities.includes(name)) emit(guild.id, { ...base, type: 'presence.activityStop', data: { activity: name } }, { searchText: `${search} ${name}` });
-          }
         },
       },
 

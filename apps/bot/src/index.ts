@@ -31,7 +31,7 @@ async function main() {
   const serverFeatures = await loadServerFeatures();
   migrate(db, [...coreMigrations, ...serverFeatures.flatMap((feature) => feature.migrations)], logger);
 
-  const client = createDiscordClient({ messageContent: config.discord.messageContent, presences: config.discord.presences });
+  const client = createDiscordClient({ messageContent: config.discord.messageContent });
   const ctx: AppContext = {
     audit: new AuditSink(),
     config,
@@ -66,7 +66,6 @@ async function main() {
       const privileged = [
         'SERVER MEMBERS INTENT',
         ...(config.discord.messageContent ? ['MESSAGE CONTENT INTENT (or set DISCORD_MESSAGE_CONTENT=false)'] : []),
-        ...(config.discord.presences ? ['PRESENCE INTENT (or set DISCORD_PRESENCES=false)'] : []),
       ];
       const hint = /disallowed intents/i.test(error.message)
         ? `Turn on ${privileged.join(', ')} in Developer Portal > Bot > Privileged Gateway Intents.`

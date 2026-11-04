@@ -181,7 +181,7 @@ export function EventRow({ event, names, actions }: { event: AuditEvent; names: 
               <p className="whitespace-pre-wrap break-words rounded-token bg-raised/50 p-3">{data.content}</p>
             </section>
           )}
-          {(event.type.startsWith('message.') && event.type !== 'message.typing' && data.content === undefined && !hasBeforeAfter) && (
+          {(event.type === 'message.deleted' || event.type === 'message.edited') && data.content === undefined && !hasBeforeAfter && (
             <p className="text-xs text-muted">{t('audit.row.noContent')}</p>
           )}
           {hasBeforeAfter && (
