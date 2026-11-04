@@ -30,7 +30,6 @@
     "leaveBody": "Your changes on this page will be lost.",
     "leave": "Leave",
     "stay": "Stay",
-    "comingSoon": "Coming soon",
     "skipToContent": "Skip to content"
   },
   "channelPicker": {
@@ -78,7 +77,6 @@
   },
   "nav": {
     "overview": "Overview",
-    "upcoming": "Upcoming",
     "servers": "Servers",
     "features": "Features",
     "settings": "Settings",
@@ -151,12 +149,6 @@
     "description": "Everything you chose during setup. Changes apply to the bot instantly.",
     "rerun": "Run setup again",
     "rerunHelp": "Walk through the setup wizard again, starting from your current settings."
-  },
-  "upcoming": {
-    "title": "More features are on the way",
-    "body": "ShifuBot is built from feature modules. New ones will appear here as they ship.",
-    "ideaRoles": "Reaction roles",
-    "ideaLogs": "Moderation log"
   },
   "errors": {
     "title": "Something went wrong",

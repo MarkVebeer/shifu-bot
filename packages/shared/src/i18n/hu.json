@@ -30,7 +30,6 @@
     "leaveBody": "Az ezen az oldalon végzett módosítások elvesznek.",
     "leave": "Kilépés",
     "stay": "Maradok",
-    "comingSoon": "Hamarosan",
     "skipToContent": "Ugrás a tartalomhoz"
   },
   "channelPicker": {
@@ -78,7 +77,6 @@
   },
   "nav": {
     "overview": "Áttekintés",
-    "upcoming": "Hamarosan",
     "servers": "Szerverek",
     "features": "Funkciók",
     "settings": "Beállítások",
@@ -151,12 +149,6 @@
     "description": "Minden, amit a beállításkor választottál. A módosítások azonnal érvényesek a botra.",
     "rerun": "Beállítás varázsló újra",
     "rerunHelp": "Menj végig újra a beállítás varázslón a jelenlegi beállításaidból indulva."
-  },
-  "upcoming": {
-    "title": "Újabb funkciók érkeznek",
-    "body": "A ShifuBot funkciómodulokból épül fel. Az újak itt jelennek meg, amint elkészülnek.",
-    "ideaRoles": "Reakció rangok",
-    "ideaLogs": "Moderációs napló"
   },
   "errors": {
     "title": "Hiba történt",

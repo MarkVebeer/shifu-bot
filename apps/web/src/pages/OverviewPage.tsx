@@ -76,17 +76,6 @@ export function OverviewPage() {
               </li>
             );
           })}
-          <li>
-            <Link
-              to={`/guilds/${guild.id}/upcoming`}
-              className="flex h-full items-center gap-4 rounded-card border border-dashed border-line p-5 text-muted transition hover:border-primary/50 hover:text-ink"
-            >
-              <span className="text-2xl" aria-hidden>
-                {emoji.soon}
-              </span>
-              <span className="font-medium">{t('upcoming.title')}</span>
-            </Link>
-          </li>
         </ul>
       </section>
     </div>

@@ -87,9 +87,7 @@ function GuildShell({ guild, reload }: { guild: GuildOverview; reload: () => Pro
       label: t(`${feature.id}.name` as 'welcome.name'),
       icon: <span aria-hidden>{feature.emoji}</span>,
     })),
-    { to: `${base}/settings`, label: t('nav.settings'), icon: <span aria-hidden>{emoji.settings}</span> },
-    { to: `${base}/upcoming`, label: t('nav.upcoming'), icon: <span aria-hidden>{emoji.soon}</span> },
-  ];
+    { to: `${base}/settings`, label: t('nav.settings'), icon: <span aria-hidden>{emoji.settings}</span> },  ];
 
   const stableSetDirty = useCallback((value: boolean) => setDirty(value), []);
   const context = useMemo<GuildContextValue>(

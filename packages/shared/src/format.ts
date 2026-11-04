@@ -23,7 +23,6 @@ export const emoji = {
   info: '💠',
   sparkle: '✨',
   test: '🧪',
-  soon: '🌱',
   globe: '🌐',
   overview: '🧭',
   settings: '⚙️',

@@ -63,6 +63,6 @@ Used in embed titles and in the dashboard copy, so both feel the same.
 | --- | --- | --- | --- |
 | `welcome` | 👋 | `sparkle` | ✨ |
 | `success` | ✅ | `test` | 🧪 |
-| `warning` | ⚠️ | `soon` | 🌱 |
+| `warning` | ⚠️ | | |
 | `error` | ⛔ | `globe` | 🌐 |
 | `info` | 💠 | `overview` | 🧭 |

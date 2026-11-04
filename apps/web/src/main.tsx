@@ -15,7 +15,6 @@ import { LoginPage } from './pages/LoginPage';
 import { FeatureNotFound, NotFoundPage } from './pages/NotFoundPage';
 import { OverviewPage } from './pages/OverviewPage';
 import { SettingsPage } from './pages/SettingsPage';
-import { UpcomingPage } from './pages/UpcomingPage';
 import { Skeleton } from './ui/primitives';
 import { ToastProvider } from './ui/toast';
 
@@ -76,7 +75,6 @@ const router = createBrowserRouter([
         children: [
           { index: true, element: <OverviewPage /> },
           { path: 'features/:featureId', element: <FeatureRoute /> },
-          { path: 'upcoming', element: <UpcomingPage /> },
           { path: 'settings', element: <SettingsPage /> },
           // Rendered by GuildLayout as the setup wizard.
           { path: 'setup', element: null },
