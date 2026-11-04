@@ -116,7 +116,9 @@ export function LogView({ enabled }: { enabled: boolean }) {
     } finally {
       if (controller.current === current) setLoading(false);
     }
-  }, [base, query]);
+    // refreshTick: Refresh must reload even when the query string stays the same (e.g. "All time").
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [base, query, refreshTick]);
 
   useEffect(() => {
     void loadFirst();
