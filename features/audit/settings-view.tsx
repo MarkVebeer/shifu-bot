@@ -112,7 +112,9 @@ export function SettingsView({ audit }: { audit: ApiState<AuditResponse> }) {
         <ul className="space-y-2 text-sm">
           <li className={cx('flex items-start gap-2', capabilities.messageContent ? 'text-foreground' : 'text-muted-foreground')}>
             {capabilities.messageContent ? <Check className="mt-0.5 size-4 shrink-0" aria-hidden /> : <Minus className="mt-0.5 size-4 shrink-0" aria-hidden />}
-            {capabilities.messageContent ? t('audit.capabilities.messageContentOn') : t('audit.capabilities.messageContentOff')}
+            <span className="min-w-0 [overflow-wrap:anywhere]">
+              {capabilities.messageContent ? t('audit.capabilities.messageContentOn') : t('audit.capabilities.messageContentOff')}
+            </span>
           </li>
         </ul>
       </Card>

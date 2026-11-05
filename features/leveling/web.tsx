@@ -253,13 +253,13 @@ export default function LevelingPage() {
         badge={<Badge tone={leveling.data.settings.enabled ? 'success' : 'muted'}>{leveling.data.settings.enabled ? t('overview.active') : t('overview.inactive')}</Badge>}
       />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)]">
-        <div className="lg:order-last">
-          <div className="lg:sticky lg:top-10">{previews}</div>
+      <div className="grid gap-6 @4xl:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
+        <div className="min-w-0 @4xl:order-last">
+          <div className="@4xl:sticky @4xl:top-16">{previews}</div>
         </div>
 
         <form
-          className="space-y-6"
+          className="@container min-w-0 space-y-6"
           onSubmit={(event) => {
             event.preventDefault();
             void save();
@@ -288,7 +288,7 @@ export default function LevelingPage() {
                 .filter(Boolean)
                 .join(' ')}
             />
-            <ul className="mb-5 grid gap-2 sm:grid-cols-3" aria-label={t('leveling.levels.title')}>
+            <ul className="mb-5 grid gap-2 @xl:grid-cols-3" aria-label={t('leveling.levels.title')}>
               {shownLevels(draft.xpSources).map((kind) => (
                 <li key={kind} className="rounded-lg border bg-muted/50 px-3 py-2.5">
                   <LevelBadge kind={kind} />
@@ -396,7 +396,7 @@ export default function LevelingPage() {
                 onChange={(value) => update('leaderboardChannelId', value)}
               />
               {draft.leaderboardChannelId && (
-                <div className="grid gap-5 sm:grid-cols-2">
+                <div className="grid gap-5 @md:grid-cols-2">
                   <Field label={t('leveling.form.leaderboardInterval')} help={t('leveling.form.intervalHelp')} htmlFor="leveling-interval">
                     <Select
                       id="leveling-interval"
@@ -546,7 +546,7 @@ function LevelingSkeleton() {
     <div className="space-y-6" aria-busy="true">
       <Skeleton className="h-9 w-48" />
       <Skeleton className="h-4 w-96 max-w-full" />
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)]">
+      <div className="grid gap-6 @4xl:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
         <div className="space-y-6">
           <Skeleton className="h-56 rounded-lg" />
           <Skeleton className="h-72 rounded-lg" />

@@ -243,13 +243,13 @@ export default function GoonPage() {
         actions={status.total > 0 ? <p className="text-sm tabular-nums text-muted-foreground">{t('goon.status.total', { count: status.total.toLocaleString(guild.locale) })}</p> : undefined}
       />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)]">
-        <div className="lg:order-last">
-          <div className="lg:sticky lg:top-10">{preview}</div>
+      <div className="grid gap-6 @4xl:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
+        <div className="min-w-0 @4xl:order-last">
+          <div className="@4xl:sticky @4xl:top-16">{preview}</div>
         </div>
 
         <form
-          className="space-y-6"
+          className="@container min-w-0 space-y-6"
           onSubmit={(event) => {
             event.preventDefault();
             void save();
@@ -336,7 +336,7 @@ export default function GoonPage() {
                   ))}
                 </ul>
               </div>
-              <div className="grid gap-5 sm:grid-cols-2">
+              <div className="grid gap-5 @md:grid-cols-2">
                 <Field label={t('goon.form.buttonLabel')} htmlFor="goon-button" error={fieldError('buttonLabel')}>
                   <Input id="goon-button" value={draft.buttonLabel} maxLength={80} placeholder={t('goon.defaults.button')} onChange={(event) => update('buttonLabel', event.target.value)} />
                 </Field>
@@ -366,7 +366,7 @@ function GoonSkeleton() {
     <div className="space-y-6" aria-busy="true">
       <Skeleton className="h-9 w-48" />
       <Skeleton className="h-4 w-96 max-w-full" />
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)]">
+      <div className="grid gap-6 @4xl:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
         <div className="space-y-6">
           <Skeleton className="h-72 rounded-lg" />
           <Skeleton className="h-56 rounded-lg" />

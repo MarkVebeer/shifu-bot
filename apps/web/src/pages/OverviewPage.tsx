@@ -19,22 +19,22 @@ export function OverviewPage() {
       <PageHeader eyebrow={t('overview.title')} title={guild.name} leading={<Avatar src={guild.iconUrl} name={guild.name} size={52} />} />
 
       {/* Key facts in one strip instead of a card per number. */}
-      <dl className="grid overflow-hidden rounded-lg border bg-card sm:grid-cols-3 sm:divide-x">
+      <dl className="grid overflow-hidden rounded-lg border bg-card @lg:grid-cols-3 @lg:divide-x">
         <div className="p-5">
           <dt className="text-xs font-medium uppercase tracking-[0.08em] text-subtle">{t('overview.members')}</dt>
           <dd className="mt-2 text-3xl font-semibold tabular-nums tracking-tight">{guild.memberCount.toLocaleString(guild.locale)}</dd>
         </div>
-        <div className="border-t p-5 sm:border-t-0">
+        <div className="min-w-0 border-t p-5 @lg:border-t-0">
           <dt className="text-xs font-medium uppercase tracking-[0.08em] text-subtle">{t('overview.features')}</dt>
           <dd className="mt-2 text-3xl font-semibold tabular-nums tracking-tight">
             {active}
             <span className="text-lg font-normal text-subtle"> / {featurePages.length}</span>
           </dd>
         </div>
-        <div className="border-t p-5 sm:border-t-0">
+        <div className="min-w-0 border-t p-5 @lg:border-t-0">
           <dt className="text-xs font-medium uppercase tracking-[0.08em] text-subtle">{t('overview.language')}</dt>
-          <dd className="mt-2 flex items-center justify-between gap-3">
-            <span className="flex items-center gap-2.5 text-lg font-semibold">
+          <dd className="mt-2 flex min-w-0 items-center justify-between gap-2">
+            <span className="flex min-w-0 items-center gap-2.5 text-lg font-semibold">
               <LocaleBadge locale={guild.locale} size="sm" active />
               {t(`lang.${guild.locale}`)}
             </span>

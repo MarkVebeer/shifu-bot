@@ -11,14 +11,14 @@ export function XpSourcePicker({ value, onChange }: { value: XpSources; onChange
       <legend className="mb-2 text-sm font-medium">{t('leveling.form.sources')}</legend>
       <ChoiceCards
         aria-label={t('leveling.form.sources')}
-        className="sm:grid-cols-3"
+        columns={3}
         value={value}
         onChange={onChange}
         choices={XP_SOURCES.map((source) => ({
           value: source,
           title: (
-            <span className="flex items-center gap-2">
-              <span aria-hidden className="flex items-center gap-1 text-muted-foreground">
+            <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span aria-hidden className="flex shrink-0 items-center gap-1 text-muted-foreground">
                 {activeTracks(source).map((track) => (
                   <Icon key={track} name={LEVEL_EMOJI[track]} size={14} />
                 ))}

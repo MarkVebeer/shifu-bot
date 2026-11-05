@@ -113,9 +113,10 @@ function Embed({ embed, mentions, timestampLabel }: { embed: EmbedData; mentions
           <img src={embed.image.url} alt="" className="col-span-2 mt-4 max-h-[300px] w-full rounded-[4px] object-cover" loading="lazy" />
         )}
         {(embed.footer || embed.timestamp) && (
-          <div className="col-span-2 mt-2 flex items-center gap-1 text-xs font-medium text-discord-muted">
-            {embed.footer && <span className="break-words">{embed.footer.text}</span>}
-            {embed.footer && embed.timestamp && <span aria-hidden>•</span>}
+          // Inline text like Discord: on a narrow screen it wraps as one line of text, not as two columns.
+          <div className="col-span-2 mt-2 text-xs font-medium break-words text-discord-muted">
+            {embed.footer && <span>{embed.footer.text}</span>}
+            {embed.footer && embed.timestamp && <span aria-hidden> • </span>}
             {embed.timestamp && <span>{timestampLabel}</span>}
           </div>
         )}

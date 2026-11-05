@@ -52,37 +52,47 @@ export function ChoiceCards<V extends string>({
   value,
   onChange,
   choices,
+  columns = 2,
   className,
   ...aria
 }: {
   value: V;
   onChange: (value: V) => void;
   choices: Choice<V>[];
+  /** Columns once there is room. Based on the width of the form, not the window, so cards never get squeezed. */
+  columns?: 2 | 3;
   className?: string;
   'aria-label'?: string;
   'aria-labelledby'?: string;
 }) {
   const groupId = useId();
   return (
-    <RadioGroup value={value} onValueChange={(next) => onChange(next as V)} className={cx('grid gap-3 sm:grid-cols-2', className)} {...aria}>
+    <div className="@container">
+    <RadioGroup
+      value={value}
+      onValueChange={(next) => onChange(next as V)}
+      className={cx('grid gap-3 @md:grid-cols-2', columns === 3 && '@2xl:grid-cols-3', className)}
+      {...aria}
+    >
       {choices.map((choice) => {
         const id = `${groupId}-${choice.value}`;
         return (
           <Label
             key={choice.value}
             htmlFor={id}
-            className="flex min-h-16 cursor-pointer items-start gap-3 rounded-lg border bg-card p-4 font-normal transition-colors hover:bg-accent/50 has-[[data-state=checked]]:border-brand/60 has-[[data-state=checked]]:bg-brand/[0.06]"
+            className="flex min-h-16 min-w-0 cursor-pointer items-start gap-3 rounded-lg border bg-card p-4 leading-normal font-normal transition-colors hover:bg-accent/50 has-[[data-state=checked]]:border-brand/60 has-[[data-state=checked]]:bg-brand/[0.06]"
           >
             <RadioGroupItem id={id} value={choice.value} className="mt-0.5" />
             {choice.leading}
             <span className="min-w-0 flex-1 space-y-1">
-              <span className="block font-semibold">{choice.title}</span>
+              <span className="block font-semibold leading-snug break-words">{choice.title}</span>
               {choice.hint && <span className="block text-sm text-muted-foreground">{choice.hint}</span>}
             </span>
           </Label>
         );
       })}
     </RadioGroup>
+    </div>
   );
 }
 

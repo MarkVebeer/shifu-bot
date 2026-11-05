@@ -123,10 +123,10 @@ export function RankRow({
   const podium = rank <= 3;
   return (
     <li
-      className={cx('flex items-center gap-3 rounded-lg border bg-card px-4 shadow-sm sm:gap-4', podium ? 'py-4' : 'py-2.5', mine && 'border-primary')}
+      className={cx('flex items-center gap-2.5 rounded-lg border bg-card px-3 shadow-sm sm:gap-4 sm:px-4', podium ? 'py-4' : 'py-2.5', mine && 'border-primary')}
       aria-current={mine || undefined}
     >
-      <RankMark rank={rank} label={formatNumber(rank, locale)} className="w-10" />
+      <RankMark rank={rank} label={formatNumber(rank, locale)} className="w-8 sm:w-10" />
       <Avatar src={avatarUrl} name={name} size={podium ? 44 : 36} />
       <span className="min-w-0 flex-1">
         <span className="flex min-w-0 items-center gap-2">
@@ -135,7 +135,7 @@ export function RankRow({
         </span>
         {detail && <span className="mt-0.5 block truncate text-xs text-muted-foreground">{detail}</span>}
       </span>
-      <span className={cx('shrink-0 text-right font-mono font-bold', podium ? 'text-xl' : 'text-base')}>{value}</span>
+      <span className={cx('shrink-0 text-right font-mono font-bold', podium ? 'text-lg sm:text-xl' : 'text-base')}>{value}</span>
     </li>
   );
 }
@@ -144,7 +144,7 @@ export function RankRow({
 export function YourPlace({ rank, name, value, unit, detail }: { rank: number; name: string; value: ReactNode; unit: string; detail?: ReactNode }) {
   const { t, locale } = useI18n();
   return (
-    <section className="flex items-center gap-4 rounded-lg border border-primary/60 bg-card px-5 py-4 shadow-sm" aria-label={t('memberPages.yourPlace')}>
+    <section className="flex items-center gap-3 rounded-lg border border-primary/60 bg-card px-4 py-4 shadow-sm sm:gap-4 sm:px-5" aria-label={t('memberPages.yourPlace')}>
       <span className="grid min-w-14 place-items-center rounded-md bg-muted px-2 py-1 font-mono text-xl font-bold text-primary ring-1 ring-primary/30">
         #{formatNumber(rank, locale)}
       </span>
@@ -153,8 +153,8 @@ export function YourPlace({ rank, name, value, unit, detail }: { rank: number; n
         <p className="truncate font-semibold">{name}</p>
         {detail && <p className="truncate text-xs text-muted-foreground">{detail}</p>}
       </div>
-      <span className="text-right">
-        <span className="block font-mono text-2xl font-bold">{value}</span>
+      <span className="shrink-0 text-right">
+        <span className="block font-mono text-xl font-bold sm:text-2xl">{value}</span>
         <span className="text-xs text-muted-foreground">{unit}</span>
       </span>
     </section>

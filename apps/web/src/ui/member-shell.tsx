@@ -135,11 +135,12 @@ function PageFrame({ children }: { children: ReactNode }) {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col px-4 py-6">
       <div className="mb-6 flex items-center justify-between gap-3">
-        <span className="inline-flex items-center gap-2 font-semibold">
+        <span className="inline-flex min-w-0 items-center gap-2 font-semibold">
           <Logo size={28} />
-          ShifuBot
+          {/* On the narrowest phones the logo alone leaves room for the language switch. */}
+          <span className="max-[399px]:sr-only">ShifuBot</span>
         </span>
-        <div className="flex items-center gap-1 sm:gap-2">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
           <LanguageSwitcher value={locale} onChange={setLocale} />
           {me && (
             <Button

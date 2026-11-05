@@ -1,7 +1,7 @@
 import type { GuildOverview } from '@shifubot/shared';
 import { CaretUpDown, SignOut, SquaresFour } from '@phosphor-icons/react';
-import { Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Link, NavLink, Outlet, useBlocker, useMatch, useParams } from 'react-router';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Link, NavLink, Outlet, useBlocker, useLocation, useMatch, useParams } from 'react-router';
 import { featurePages } from '../features';
 import { useAuth } from '../lib/auth';
 import { usePermissionReport } from '../lib/use-permissions';
@@ -75,6 +75,31 @@ function GuildShell({ guild, reload }: { guild: GuildOverview; reload: () => Pro
   const [dirty, setDirty] = useState(false);
   const permissions = usePermissionReport(guild.id);
   const onOverview = useMatch('/guilds/:guildId');
+  const { pathname } = useLocation();
+  const bottomNav = useRef<HTMLUListElement>(null);
+  const [navEdges, setNavEdges] = useState({ start: false, end: false });
+
+  // Mobile bottom bar: more items than fit, so keep the current page in view and fade the edges that scroll.
+  const updateNavEdges = useCallback(() => {
+    const list = bottomNav.current;
+    if (!list) return;
+    const start = list.scrollLeft > 4;
+    const end = list.scrollLeft + list.clientWidth < list.scrollWidth - 4;
+    setNavEdges((prev) => (prev.start === start && prev.end === end ? prev : { start, end }));
+  }, []);
+  useEffect(() => {
+    const list = bottomNav.current;
+    const active = list?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (list && active) {
+      const left = active.offsetLeft - (list.clientWidth - active.offsetWidth) / 2;
+      list.scrollTo({ left: Math.max(0, left), behavior: 'instant' as ScrollBehavior });
+    }
+    updateNavEdges();
+  }, [pathname, updateNavEdges]);
+  useEffect(() => {
+    window.addEventListener('resize', updateNavEdges);
+    return () => window.removeEventListener('resize', updateNavEdges);
+  }, [updateNavEdges]);
 
   const blocker = useBlocker(({ currentLocation, nextLocation }) => dirty && currentLocation.pathname !== nextLocation.pathname);
 
@@ -208,7 +233,7 @@ function GuildShell({ guild, reload }: { guild: GuildOverview; reload: () => Pro
             </Button>
           </header>
 
-          <div id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 pb-32 pt-6 sm:px-6 md:pb-12 lg:px-10 lg:pt-8">
+          <div id="main" className="@container mx-auto w-full min-w-0 max-w-6xl flex-1 px-4 pb-32 pt-6 sm:px-6 md:pb-12 lg:px-10 lg:pt-8">
             {/* The overview shows the full permission card instead. */}
             {!onOverview && (
               <div className="mb-6 empty:hidden">
@@ -227,7 +252,18 @@ function GuildShell({ guild, reload }: { guild: GuildOverview; reload: () => Pro
         aria-label={t('nav.main')}
         className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/90 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
       >
-        <ul className="mx-auto flex max-w-2xl overflow-x-auto [scrollbar-width:none]">
+        <ul
+          ref={bottomNav}
+          onScroll={updateNavEdges}
+          className={cx(
+            'mx-auto flex max-w-2xl overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+            navEdges.start && navEdges.end
+              ? '[mask-image:linear-gradient(to_right,transparent,black_2.5rem,black_calc(100%-2.5rem),transparent)]'
+              : navEdges.end
+                ? '[mask-image:linear-gradient(to_right,black_calc(100%-2.5rem),transparent)]'
+                : navEdges.start && '[mask-image:linear-gradient(to_right,transparent,black_2.5rem)]',
+          )}
+        >
           {items.map((item) => (
             <li key={item.to} className="min-w-[4.75rem] flex-1 shrink-0">
               <NavLink
@@ -295,7 +331,7 @@ function LayoutSkeleton() {
           <Skeleton className="h-11 w-full" />
         </div>
       </div>
-      <div className="flex-1 p-6 lg:p-10">
+      <div className="min-w-0 flex-1 p-4 sm:p-6 lg:p-10">
         <PageSkeleton />
       </div>
     </div>

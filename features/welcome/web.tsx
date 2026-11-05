@@ -200,13 +200,13 @@ export default function WelcomePage() {
         badge={<Badge tone={welcome.data.settings.enabled ? 'success' : 'muted'}>{welcome.data.settings.enabled ? t('overview.active') : t('overview.inactive')}</Badge>}
       />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)]">
-        <div className="lg:order-last">
-          <div className="lg:sticky lg:top-10">{preview}</div>
+      <div className="grid gap-6 @4xl:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
+        <div className="min-w-0 @4xl:order-last">
+          <div className="@4xl:sticky @4xl:top-16">{preview}</div>
         </div>
 
         <form
-          className="space-y-6"
+          className="@container min-w-0 space-y-6"
           onSubmit={(event) => {
             event.preventDefault();
             void save();
@@ -351,7 +351,7 @@ function WelcomeSkeleton() {
     <div className="space-y-6" aria-busy="true">
       <Skeleton className="h-9 w-48" />
       <Skeleton className="h-4 w-96 max-w-full" />
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)]">
+      <div className="grid gap-6 @4xl:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
         <div className={cx('space-y-6')}>
           <Skeleton className="h-56 rounded-lg" />
           <Skeleton className="h-72 rounded-lg" />
