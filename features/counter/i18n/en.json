@@ -1,0 +1,128 @@
+{
+  "name": "Counters",
+  "description": "Count anything on your server. Name each counter, and members add to it with a button. ShifuBot shows the top 20 on Discord and the full list on a page for members.",
+  "defaults": {
+    "name": "New counter",
+    "unit": "times",
+    "title": "{name}",
+    "description": "Press the button and your count goes up by one. Pressed it by accident? **Undo** takes it back for a few minutes.",
+    "button": "+1",
+    "undo": "Undo"
+  },
+  "panel": {
+    "line": "{rank} {user} — **{count}**",
+    "total": "{emoji} Server total: **{count}** {unit}",
+    "top": "Top 20",
+    "empty": "Nothing counted yet. Be the first!",
+    "fullList": "Full list",
+    "updated": "Updated {time}",
+    "repost": "Post panel again",
+    "reposting": "Posting…",
+    "reposted": "Panel posted to #{channel}",
+    "failed": "Settings saved, but the panel could not be updated: {error}",
+    "help": "Use this if someone deleted the panel message."
+  },
+  "overview": {
+    "new": "New counter",
+    "used": "{count} of {limit} counters",
+    "limitReached": "This server has reached its limit of {limit} counters. Delete one to make a new one.",
+    "emptyTitle": "No counters yet",
+    "emptyBody": "Make your first counter, for example for push-ups, coffee or anything else your server wants to count.",
+    "noChannel": "No channel selected",
+    "channel": "#{channel}",
+    "total": "{count} {unit}",
+    "createFailed": "Could not create the counter",
+    "back": "All counters",
+    "notFound": "This counter no longer exists."
+  },
+  "form": {
+    "identity": "Counter",
+    "identityHelp": "What this counter counts. Members see these on Discord and on the full list.",
+    "name": "Name",
+    "namePlaceholder": "Push-ups",
+    "unit": "Unit",
+    "unitHelp": "The word after the number, for example \"push-ups\". Leave empty for the default.",
+    "emoji": "Emoji",
+    "emojiHelp": "One emoji. It appears in the title, on the button and next to the total.",
+    "general": "General",
+    "panel": "Panel message",
+    "rules": "Rules",
+    "style": "Style",
+    "enabled": "Turn on this counter",
+    "enabledHelp": "ShifuBot posts a panel with the buttons in the channel below.",
+    "channel": "Panel channel",
+    "cooldown": "Cooldown",
+    "cooldownHelp": "Minutes a member must wait between two presses. 0 turns it off.",
+    "undoWindow": "Undo window",
+    "undoWindowHelp": "For this many minutes a member can take back a press. Only their own presses, and only as many as they made.",
+    "minutes": "minutes",
+    "showLeaderboard": "Show the top 20 and the total",
+    "showLeaderboardHelp": "The panel is updated at most every 15 seconds. The Full list button is always there.",
+    "title": "Title",
+    "description": "Description",
+    "buttonLabel": "Button label",
+    "undoLabel": "Undo button label",
+    "defaultHint": "Leave empty to use the default text in the server language.",
+    "placeholders": "Placeholders",
+    "insertPlaceholder": "Insert {name}",
+    "unknownPlaceholder": "Unknown placeholder: {names}",
+    "color": "Accent color"
+  },
+  "placeholder": {
+    "server": "The server name",
+    "name": "The counter name",
+    "unit": "The unit"
+  },
+  "status": {
+    "noChannel": "Pick a channel for the panel.",
+    "channelMissing": "The selected channel no longer exists. Choose another one.",
+    "missingPermissions": "ShifuBot is missing permissions in this channel: {permissions}.",
+    "lastError": "Last problem: {error}",
+    "panelLive": "The panel is live in #{channel}.",
+    "panelMissing": "The panel is not posted yet. Save, or post it again below.",
+    "total": "{count} {unit} so far"
+  },
+  "top": {
+    "title": "Top 20",
+    "empty": "Nothing counted yet.",
+    "unknown": "Unknown member",
+    "openList": "Open the full list",
+    "openListHelp": "Every member of the server can open it after signing in with Discord."
+  },
+  "preview": {
+    "title": "Live preview",
+    "hint": "The panel exactly as Discord will show it, with the current numbers.",
+    "botTag": "APP",
+    "today": "Today at {time}"
+  },
+  "list": {
+    "pick": "Choose a counter",
+    "total": "{count} {unit} in total",
+    "members": "{count} members on the list",
+    "notOnList": "You are not on this list yet. Press the button on the panel in Discord to get on it.",
+    "empty": "Nothing counted yet. Be the first!"
+  },
+  "delete": {
+    "button": "Delete this counter",
+    "help": "Removes the panel from Discord and every count of this counter. This cannot be undone.",
+    "title": "Delete {name}?",
+    "body": "The panel message and all counts of this counter will be gone for good.",
+    "confirm": "Delete counter",
+    "done": "Counter deleted",
+    "failed": "Could not delete the counter"
+  },
+  "replies": {
+    "disabled": "This counter is turned off.",
+    "counted": "Counted! You are at **{count}** {unit}. Pressed it by accident? **Undo** works until {time}.",
+    "cooldown": "Easy there. You can count the next one {time}.",
+    "undone": "Taken back. You are at **{count}** {unit} now.",
+    "nothingToUndo": "Nothing to undo. Only presses from the last {minutes} minutes can be taken back."
+  },
+  "errors": {
+    "no_channel": "no channel selected",
+    "channel_missing": "channel not found",
+    "missing_permissions": "missing permissions in the panel channel",
+    "send_failed": "Discord rejected the panel message",
+    "limit_reached": "this server has reached its counter limit"
+  }
+}

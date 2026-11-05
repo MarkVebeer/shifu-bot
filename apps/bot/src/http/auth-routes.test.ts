@@ -3,8 +3,8 @@ import { safeNextPath } from './auth-routes';
 
 describe('safeNextPath', () => {
   test('keeps paths on this site', () => {
-    expect(safeNextPath('/servers/123/goon')).toBe('/servers/123/goon');
-    expect(safeNextPath('/servers/123/goon?q=mark')).toBe('/servers/123/goon?q=mark');
+    expect(safeNextPath('/servers/123/counter')).toBe('/servers/123/counter');
+    expect(safeNextPath('/servers/123/counter?q=mark')).toBe('/servers/123/counter?q=mark');
   });
 
   test('falls back to /guilds for anything that could leave the site', () => {

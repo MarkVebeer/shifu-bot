@@ -101,7 +101,7 @@ function GuildShell({ guild, reload }: { guild: GuildOverview; reload: () => Pro
     return () => window.removeEventListener('resize', updateNavEdges);
   }, [updateNavEdges]);
 
-  const blocker = useBlocker(({ currentLocation, nextLocation }) => dirty && currentLocation.pathname !== nextLocation.pathname);
+  const blocker = useBlocker(({ currentLocation, nextLocation }) => dirty && currentLocation.pathname + currentLocation.search !== nextLocation.pathname + nextLocation.search);
 
   useEffect(() => {
     if (!dirty) return;

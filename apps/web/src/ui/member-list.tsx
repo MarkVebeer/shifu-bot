@@ -1,5 +1,5 @@
 /**
- * Building blocks of the ranked lists on member pages (goon counter, leveling):
+ * Building blocks of the ranked lists on member pages (counters, leveling):
  * a hook that loads a list with search and paging, the search box, and rows.
  */
 import { MagnifyingGlass } from '@phosphor-icons/react';

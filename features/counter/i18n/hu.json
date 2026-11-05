@@ -1,0 +1,128 @@
+{
+  "name": "Számlálók",
+  "description": "Számolj bármit a szervereden. Nevezd el a számlálókat, a tagok pedig egy gombbal növelik őket. A ShifuBot a top 20-at Discordon mutatja, a teljes listát pedig egy oldalon a tagoknak.",
+  "defaults": {
+    "name": "Új számláló",
+    "unit": "alkalom",
+    "title": "{name}",
+    "description": "Nyomd meg a gombot, és eggyel nő a számod. Véletlen nyomtad meg? A **Visszavonás** pár percig visszaveszi.",
+    "button": "+1",
+    "undo": "Visszavonás"
+  },
+  "panel": {
+    "line": "{rank} {user} — **{count}**",
+    "total": "{emoji} Szerver összesen: **{count}** {unit}",
+    "top": "Top 20",
+    "empty": "Még nincs mit számolni. Légy te az első!",
+    "fullList": "Teljes lista",
+    "updated": "Frissítve {time}",
+    "repost": "Panel újraküldése",
+    "reposting": "Küldés…",
+    "reposted": "Panel elküldve ide: #{channel}",
+    "failed": "A beállítások mentve, de a panelt nem sikerült frissíteni: {error}",
+    "help": "Akkor használd, ha valaki törölte a panel üzenetet."
+  },
+  "overview": {
+    "new": "Új számláló",
+    "used": "{count} / {limit} számláló",
+    "limitReached": "Ez a szerver elérte a {limit} számlálós korlátot. Törölj egyet, ha újat szeretnél.",
+    "emptyTitle": "Még nincs számláló",
+    "emptyBody": "Hozd létre az első számlálót, például fekvőtámaszhoz, kávéhoz vagy bármihez, amit a szervered számolni szeretne.",
+    "noChannel": "Nincs kiválasztott csatorna",
+    "channel": "#{channel}",
+    "total": "{count} {unit}",
+    "createFailed": "Nem sikerült létrehozni a számlálót",
+    "back": "Összes számláló",
+    "notFound": "Ez a számláló már nem létezik."
+  },
+  "form": {
+    "identity": "Számláló",
+    "identityHelp": "Mit számol ez a számláló. A tagok ezeket látják Discordon és a teljes listán.",
+    "name": "Név",
+    "namePlaceholder": "Fekvőtámasz",
+    "unit": "Mértékegység",
+    "unitHelp": "A szám utáni szó, például „fekvőtámasz”. Hagyd üresen az alapértelmezetthez.",
+    "emoji": "Emoji",
+    "emojiHelp": "Egy emoji. A címben, a gombon és az összesítő mellett jelenik meg.",
+    "general": "Általános",
+    "panel": "Panel üzenet",
+    "rules": "Szabályok",
+    "style": "Megjelenés",
+    "enabled": "Számláló bekapcsolása",
+    "enabledHelp": "A ShifuBot egy panelt küld a gombokkal az alábbi csatornába.",
+    "channel": "Panel csatorna",
+    "cooldown": "Várakozási idő",
+    "cooldownHelp": "Ennyi percet kell várni két nyomás között. 0 kikapcsolja.",
+    "undoWindow": "Visszavonási idő",
+    "undoWindowHelp": "Ennyi percig vonhatja vissza a tag a nyomását. Csak a sajátját, és csak annyiszor, ahányszor nyomott.",
+    "minutes": "perc",
+    "showLeaderboard": "Top 20 és összesítő",
+    "showLeaderboardHelp": "A panel legfeljebb 15 másodpercenként frissül. A Teljes lista gomb mindig ott van.",
+    "title": "Cím",
+    "description": "Leírás",
+    "buttonLabel": "Gomb felirata",
+    "undoLabel": "Visszavonás gomb felirata",
+    "defaultHint": "Hagyd üresen a szerver nyelvén lévő alapszöveghez.",
+    "placeholders": "Helyettesítők",
+    "insertPlaceholder": "{name} beszúrása",
+    "unknownPlaceholder": "Ismeretlen helyettesítő: {names}",
+    "color": "Kiemelő szín"
+  },
+  "placeholder": {
+    "server": "A szerver neve",
+    "name": "A számláló neve",
+    "unit": "A mértékegység"
+  },
+  "status": {
+    "noChannel": "Válassz csatornát a panelnek.",
+    "channelMissing": "A kiválasztott csatorna már nem létezik. Válassz másikat.",
+    "missingPermissions": "A ShifuBotnak hiányzó jogai vannak ebben a csatornában: {permissions}.",
+    "lastError": "Utolsó hiba: {error}",
+    "panelLive": "A panel él itt: #{channel}.",
+    "panelMissing": "A panel még nincs elküldve. Ments, vagy küldd el újra lent.",
+    "total": "Eddig {count} {unit}"
+  },
+  "top": {
+    "title": "Top 20",
+    "empty": "Még nincs mit számolni.",
+    "unknown": "Ismeretlen tag",
+    "openList": "Teljes lista megnyitása",
+    "openListHelp": "A szerver minden tagja megnyithatja, miután belépett Discorddal."
+  },
+  "preview": {
+    "title": "Élő előnézet",
+    "hint": "A panel pontosan úgy, ahogy a Discord mutatja, a mostani számokkal.",
+    "botTag": "APP",
+    "today": "Ma {time}-kor"
+  },
+  "list": {
+    "pick": "Válassz számlálót",
+    "total": "Összesen {count} {unit}",
+    "members": "{count} tag a listán",
+    "notOnList": "Még nem vagy ezen a listán. Nyomd meg a gombot a Discordos panelen, és felkerülsz.",
+    "empty": "Még nincs mit számolni. Légy te az első!"
+  },
+  "delete": {
+    "button": "Számláló törlése",
+    "help": "Eltávolítja a panelt a Discordról, és törli a számláló összes adatát. Nem vonható vissza.",
+    "title": "Törlöd ezt: {name}?",
+    "body": "A panel üzenet és a számláló összes adata végleg eltűnik.",
+    "confirm": "Számláló törlése",
+    "done": "Számláló törölve",
+    "failed": "Nem sikerült törölni a számlálót"
+  },
+  "replies": {
+    "disabled": "Ez a számláló ki van kapcsolva.",
+    "counted": "Beszámolva! Most **{count}** {unit} a számod. Véletlen nyomtad meg? A **Visszavonás** eddig működik: {time}.",
+    "cooldown": "Lassan a testtel. A következőt ekkor számolhatod: {time}.",
+    "undone": "Visszavonva. Most **{count}** {unit} a számod.",
+    "nothingToUndo": "Nincs mit visszavonni. Csak az elmúlt {minutes} perc nyomásai vonhatók vissza."
+  },
+  "errors": {
+    "no_channel": "nincs kiválasztott csatorna",
+    "channel_missing": "a csatorna nem található",
+    "missing_permissions": "hiányzó jogok a panel csatornában",
+    "send_failed": "a Discord elutasította a panel üzenetet",
+    "limit_reached": "ez a szerver elérte a számlálók korlátját"
+  }
+}

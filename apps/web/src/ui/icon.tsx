@@ -5,7 +5,7 @@
  * gets the matching line icon in the dashboard.
  */
 import type { EmojiName } from '@shifubot/shared';
-import { ChatCircle, CheckCircle, ClipboardText, Compass, DoorOpen, Fire, Flask, GearSix, Globe, HandWaving, type Icon as PhosphorIcon, Info, Microphone, Rocket, ShieldCheck, Sparkle, Star, Trophy, Warning, XCircle } from '@phosphor-icons/react';
+import { ChatCircle, CheckCircle, ClipboardText, Compass, DoorOpen, Hash, Flask, GearSix, Globe, HandWaving, type Icon as PhosphorIcon, Info, Microphone, Rocket, ShieldCheck, Sparkle, Star, Trophy, Warning, XCircle } from '@phosphor-icons/react';
 
 export const icons: Record<EmojiName, PhosphorIcon> = {
   welcome: HandWaving,
@@ -22,7 +22,7 @@ export const icons: Record<EmojiName, PhosphorIcon> = {
   sparkle: Sparkle,
   test: Flask,
   log: ClipboardText,
-  goon: Fire,
+  counter: Hash,
   globe: Globe,
   overview: Compass,
   settings: GearSix,

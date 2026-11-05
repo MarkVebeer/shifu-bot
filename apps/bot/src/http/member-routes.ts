@@ -1,6 +1,6 @@
 /**
  * Member pages: read-only routes every member of a server can use, such as the
- * full goon counter list and the leveling leaderboard. Mounted at /api/servers.
+ * full counter lists and the leveling leaderboard. Mounted at /api/servers.
  *
  * - GET /:guildId: the server and the member pages enabled there (the tabs on the page).
  * - /:guildId/<featureId>/...: the feature's memberRoutes.

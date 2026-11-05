@@ -40,13 +40,15 @@ discord.js, Hono, SQLite and React. Self host it on a Pelican panel, with Docker
   left out on purpose: sent messages, typing, single reactions, poll votes, muting yourself, status
   and activity changes. Each category and event type can be turned off, events are kept 7–180
   days, and viewers only see events from channels they can see.
-- 🍆 **Goon counter** (off by default). A panel in a channel has an **I gooned**, an **Undo** and a
-  **Full list** button. Each press adds one to the member's count. Presses have a cooldown (3
-  minutes by default), and a member can undo their own presses for 5 minutes, only as many as they
-  made. The panel shows the server total and the top 20. **Full list** opens a clean page
-  (`/servers/<id>/goon`) with every member's place, a search and the viewer's own place. Only
-  members of the server can open these member pages: they sign in with Discord and ShifuBot checks
-  membership. Tabs at the top switch between the server's lists (leveling, goon counter).
+- 🔢 **Counters** (none by default). Make as many counters as you need (5 per server by default,
+  see `COUNTER_MAX_PER_GUILD`), each with its own name, unit and emoji, for example "Push-ups" or
+  "Coffee". Each counter's panel has a **+1**, an **Undo** and a **Full list** button. Each press
+  adds one to the member's count. Presses have a cooldown (3 minutes by default), and a member can
+  undo their own presses for 5 minutes, only as many as they made. The panel shows the total and
+  the top 20. **Full list** opens a clean page (`/servers/<id>/counter?c=<counter>`) with every
+  member's place, a search and the viewer's own place. Only members of the server can open these
+  member pages: they sign in with Discord and ShifuBot checks membership. Tabs at the top switch
+  between the server's lists (leveling, counters) and between its counters.
 - 🌐 **English and Hungarian.** Each server picks its language. It drives the dashboard and every
   message the bot sends there.
 - 🛡️ **Raid safe.** At most 10 welcome and 10 goodbye messages per server per minute (configurable).
@@ -171,6 +173,7 @@ Copy `.env.example` to `.env` and fill it in. Every variable is documented there
 | `DISCORD_MESSAGE_CONTENT` | | `false` | Audit log: show the text of edited and deleted messages. Turn on Message Content Intent in the Developer Portal first |
 | `AUDIT_MAX_ROWS_PER_GUILD` | | `500000` | Audit log rows kept per server; the oldest are deleted first |
 | `AUDIT_MAX_EVENTS_PER_MINUTE` | | `1200` | Audit log events recorded per server per minute; the rest are counted as skipped |
+| `COUNTER_MAX_PER_GUILD` | | `5` | Most counters one server can create (1-25) |
 | `BOT_DISABLED` | | `false` | Run only the dashboard (UI development) |
 
 Generate a session secret:

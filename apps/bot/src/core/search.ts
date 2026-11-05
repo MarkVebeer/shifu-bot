@@ -1,5 +1,5 @@
 /**
- * Name search helpers for member lists (goon counter, leveling).
+ * Name search helpers for member lists (counters, leveling).
  */
 
 /**

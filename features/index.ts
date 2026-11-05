@@ -11,8 +11,8 @@ import {
   type MessageKey,
 } from '@shifubot/shared';
 import { auditManifest } from './audit/manifest';
+import { counterManifest } from './counter/manifest';
 import { goodbyeManifest } from './goodbye/manifest';
-import { goonManifest } from './goon/manifest';
 import { levelingManifest } from './leveling/manifest';
 import { verificationManifest } from './verification/manifest';
 import { welcomeManifest } from './welcome/manifest';
@@ -22,7 +22,7 @@ export const features = [
   goodbyeManifest,
   verificationManifest,
   levelingManifest,
-  goonManifest,
+  counterManifest,
   auditManifest,
 ] as const;
 

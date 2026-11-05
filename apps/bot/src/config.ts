@@ -38,6 +38,7 @@ const envSchema = z.object({
   DISCORD_MESSAGE_CONTENT: bool.default('false'),
   AUDIT_MAX_ROWS_PER_GUILD: z.coerce.number().int().min(1_000).max(50_000_000).default(500_000),
   AUDIT_MAX_EVENTS_PER_MINUTE: z.coerce.number().int().min(10).max(100_000).default(1_200),
+  COUNTER_MAX_PER_GUILD: z.coerce.number().int().min(1).max(25).default(5),
 });
 
 export type Config = ReturnType<typeof loadConfig>;
@@ -71,6 +72,9 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     audit: {
       maxRowsPerGuild: raw.AUDIT_MAX_ROWS_PER_GUILD,
       maxEventsPerMinute: raw.AUDIT_MAX_EVENTS_PER_MINUTE,
+    },
+    counter: {
+      maxPerGuild: raw.COUNTER_MAX_PER_GUILD,
     },
     publicUrl: raw.PUBLIC_URL,
     publicOrigin: publicUrl.origin,
