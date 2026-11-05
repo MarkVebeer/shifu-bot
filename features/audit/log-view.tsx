@@ -12,8 +12,8 @@ import { errorText, useI18n } from '../../apps/web/src/lib/i18n';
 import { useApi } from '../../apps/web/src/lib/use-api';
 import { Alert, Avatar, Button, Card, Field, Input, Select, Skeleton, cx } from '../../apps/web/src/ui/primitives';
 import { EventRow } from './event-row';
-import { categoryLabel, typeLabel } from './labels';
-import { AUDIT_CATEGORIES, CATEGORY_EMOJI, typesByCategory, USER_ROLES, type AuditCategory, type AuditEvent, type AuditEventsResponse, type AuditUser, type UserRole } from './manifest';
+import { CategoryIcon, categoryLabel, typeLabel } from './labels';
+import { AUDIT_CATEGORIES, typesByCategory, USER_ROLES, type AuditCategory, type AuditEvent, type AuditEventsResponse, type AuditUser, type UserRole } from './manifest';
 
 const RANGES = { '1h': 3_600_000, '24h': 86_400_000, '7d': 7 * 86_400_000, '30d': 30 * 86_400_000 } as const;
 type Range = keyof typeof RANGES | 'all' | 'custom';
@@ -355,10 +355,10 @@ function Filters({
                   onClick={() => toggleCategory(category)}
                   className={cx(
                     'inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition',
-                    active ? 'border-primary/60 bg-primary/15 text-primary' : 'border-line text-muted hover:text-ink',
+                    active ? 'border-ink bg-ink text-bg' : 'border-line text-muted hover:text-ink',
                   )}
                 >
-                  <span aria-hidden>{CATEGORY_EMOJI[category]}</span>
+                  <CategoryIcon category={category} className="size-3.5" />
                   {categoryLabel(t, category)}
                 </button>
               );
@@ -424,7 +424,7 @@ function Filters({
               .filter((channel) => channel.kind !== 'category')
               .map((channel) => (
                 <option key={channel.id} value={channel.id}>
-                  {channel.kind === 'voice' ? '🔊' : '#'} {channel.name}
+                  {channel.kind === 'voice' ? '♪' : '#'} {channel.name}
                   {channel.parentName ? ` · ${channel.parentName}` : ''}
                 </option>
               ))}

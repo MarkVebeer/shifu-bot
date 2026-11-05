@@ -3,7 +3,43 @@
  */
 import type { AppMessageKey } from '..';
 import type { TFunction } from '../../apps/web/src/lib/i18n';
-import { categoryOf, CATEGORY_EMOJI, type AuditCategory } from './manifest';
+import {
+  Bot,
+  CalendarDays,
+  Drama,
+  Gavel,
+  Hash,
+  House,
+  Mail,
+  MessageSquare,
+  MessagesSquare,
+  Plug,
+  ShieldAlert,
+  Smile,
+  Users,
+  Volume2,
+  type LucideIcon,
+} from 'lucide-react';
+import { createElement } from 'react';
+import { categoryOf, type AuditCategory } from './manifest';
+
+/** Dashboard icon per category. Discord messages keep CATEGORY_EMOJI from the manifest. */
+export const CATEGORY_ICON: Record<AuditCategory, LucideIcon> = {
+  moderation: Gavel,
+  members: Users,
+  messages: MessageSquare,
+  voice: Volume2,
+  channels: Hash,
+  threads: MessagesSquare,
+  roles: Drama,
+  invites: Mail,
+  expressions: Smile,
+  events: CalendarDays,
+  automod: ShieldAlert,
+  integrations: Plug,
+  server: House,
+  shifubot: Bot,
+};
 
 /** "MemberBanAdd" → "Member ban add", for types or fields without a translation. */
 export function humanize(value: string): string {
@@ -33,8 +69,13 @@ export function fieldLabel(t: TFunction, key: string): string {
   return translated(t, `audit.fields.${key}`) ?? humanize(key);
 }
 
-export function typeEmoji(type: string): string {
-  return CATEGORY_EMOJI[categoryOf(type)];
+/** A category's line icon, white by default through currentColor. */
+export function CategoryIcon({ category, className }: { category: AuditCategory; className?: string }) {
+  return createElement(CATEGORY_ICON[category], { className, 'aria-hidden': true });
+}
+
+export function typeIcon(type: string): LucideIcon {
+  return CATEGORY_ICON[categoryOf(type)];
 }
 
 /** "3 minutes ago" in the dashboard language. */

@@ -1,7 +1,7 @@
 /**
  * Welcome feature: dashboard page.
  */
-import { colors, emoji, findUnknownPlaceholders } from '@shifubot/shared';
+import { colors, findUnknownPlaceholders } from '@shifubot/shared';
 import { Eye, Send } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../apps/web/src/lib/api';
@@ -10,6 +10,7 @@ import { useGuild } from '../../apps/web/src/lib/guild';
 import { errorText, useI18n } from '../../apps/web/src/lib/i18n';
 import { useApi } from '../../apps/web/src/lib/use-api';
 import { DiscordMessagePreview } from '../../apps/web/src/ui/discord-preview';
+import { Icon } from '../../apps/web/src/ui/icon';
 import { Alert, Button, Card, CardHeader, Field, Input, Skeleton, Switch, Textarea, cx } from '../../apps/web/src/ui/primitives';
 import { useToast } from '../../apps/web/src/ui/toast';
 import { ColorField, SaveBar } from '../../apps/web/src/ui/widgets';
@@ -194,7 +195,7 @@ export default function WelcomePage() {
     <div className="animate-fade-up">
       <header className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-          <span aria-hidden>{emoji.welcome} </span>
+          <Icon name="welcome" size={26} className="mr-2 inline-block align-[-3px]" />
           {t('welcome.name')}
         </h1>
         <p className="mt-2 max-w-2xl text-muted">{t('welcome.description')}</p>
@@ -220,7 +221,7 @@ export default function WelcomePage() {
           ))}
 
           <Card>
-            <CardHeader icon={emoji.sparkle} title={t('welcome.form.general')} />
+            <CardHeader icon={<Icon name="sparkle" />} title={t('welcome.form.general')} />
             <div className="space-y-5">
               <Switch checked={draft.enabled} onChange={(value) => update('enabled', value)} label={t('welcome.form.enabled')} description={t('welcome.form.enabledHelp')} />
               <ChannelPicker
@@ -234,7 +235,7 @@ export default function WelcomePage() {
           </Card>
 
           <Card>
-            <CardHeader icon={emoji.welcome} title={t('welcome.form.content')} description={t('welcome.form.defaultHint')} />
+            <CardHeader icon={<Icon name="welcome" />} title={t('welcome.form.content')} description={t('welcome.form.defaultHint')} />
             <div className="space-y-5">
               <Field label={t('welcome.form.title')} htmlFor="welcome-title" error={fieldError('title')} warning={placeholderHint('title')}>
                 <Input
@@ -284,7 +285,7 @@ export default function WelcomePage() {
           </Card>
 
           <Card>
-            <CardHeader icon={emoji.sparkle} title={t('welcome.form.style')} />
+            <CardHeader icon={<Icon name="sparkle" />} title={t('welcome.form.style')} />
             <div className="space-y-5">
               <Field label={t('welcome.form.color')} htmlFor="welcome-color" error={fieldError('color')}>
                 <ColorField id="welcome-color" value={draft.color} fallback={colors.primary} onChange={(value) => update('color', value)} />

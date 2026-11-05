@@ -5,7 +5,8 @@ import { useApi } from '../lib/use-api';
 import { Field, Select, Skeleton } from './primitives';
 
 const KIND_ICON: Record<ChannelKind, typeof Hash> = { text: Hash, voice: Volume2, category: FolderClosed };
-const KIND_PREFIX: Record<ChannelKind, string> = { text: '#', voice: '🔊', category: '📁' };
+/** Plain text glyphs: native <option> elements cannot hold SVG icons. */
+const KIND_PREFIX: Record<ChannelKind, string> = { text: '#', voice: '♪', category: '▸' };
 
 /**
  * Pick any number of text channels, voice channels and categories. Chosen ones

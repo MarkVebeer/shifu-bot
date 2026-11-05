@@ -10,7 +10,6 @@ import { useI18n } from '../lib/i18n';
 import { Avatar, Button, Input, cx } from './primitives';
 
 export const LIST_PAGE = 50;
-const MEDALS = ['🥇', '🥈', '🥉'];
 
 interface ListPage<E> {
   entries: E[];
@@ -124,12 +123,10 @@ export function RankRow({
   const podium = rank <= 3;
   return (
     <li
-      className={cx('glass-raised flex items-center gap-3 px-4 sm:gap-4', podium ? 'py-4' : 'py-2.5', mine && 'border-primary/70 shadow-glow')}
+      className={cx('glass-raised flex items-center gap-3 px-4 sm:gap-4', podium ? 'py-4' : 'py-2.5', mine && 'border-white/60')}
       aria-current={mine || undefined}
     >
-      <span className={cx('w-10 shrink-0 text-center font-mono', podium ? 'text-2xl' : 'text-sm text-muted')}>
-        {MEDALS[rank - 1] ?? `#${formatNumber(rank, locale)}`}
-      </span>
+      <RankMark rank={rank} label={formatNumber(rank, locale)} className="w-10" />
       <Avatar src={avatarUrl} name={name} size={podium ? 44 : 36} />
       <span className="min-w-0 flex-1">
         <span className="flex min-w-0 items-center gap-2">
@@ -204,4 +201,18 @@ export function RankedList({
 
 export function formatNumber(value: number, locale: string): string {
   return value.toLocaleString(locale === 'hu' ? 'hu-HU' : 'en-US');
+}
+
+/** Rank number. The top three get a filled white circle so the podium stands out without medal emoji. */
+export function RankMark({ rank, label, className }: { rank: number; label?: string; className?: string }) {
+  const text = label ?? String(rank);
+  return (
+    <span className={cx('grid shrink-0 place-items-center', className)}>
+      {rank <= 3 ? (
+        <span className="grid size-8 place-items-center rounded-full bg-ink font-mono text-sm font-bold text-bg">{text}</span>
+      ) : (
+        <span className="font-mono text-sm text-muted">#{text}</span>
+      )}
+    </span>
+  );
 }

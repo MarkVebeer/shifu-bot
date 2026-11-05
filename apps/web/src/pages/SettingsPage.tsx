@@ -1,4 +1,4 @@
-import { emoji, isLocale } from '@shifubot/shared';
+import { isLocale } from '@shifubot/shared';
 import { RotateCcw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
@@ -7,6 +7,7 @@ import { useGuild } from '../lib/guild';
 import { errorText, useT } from '../lib/i18n';
 import { useSetupDrafts } from '../lib/use-setup-drafts';
 import { Alert, Button, Card, CardHeader, Skeleton } from '../ui/primitives';
+import { Icon } from '../ui/icon';
 import { useToast } from '../ui/toast';
 import { SaveBar } from '../ui/widgets';
 
@@ -49,7 +50,7 @@ export function SettingsPage() {
     <div className="animate-fade-up space-y-6">
       <header>
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-          <span aria-hidden>{emoji.settings} </span>
+          <Icon name="settings" size={26} className="mr-2 inline-block align-[-3px]" />
           {t('settings.title')}
         </h1>
         <p className="mt-2 max-w-2xl text-muted">{t('settings.description')}</p>
@@ -78,7 +79,7 @@ export function SettingsPage() {
             const drafts = setup.drafts!;
             return (
               <Card key={section.id}>
-                <CardHeader icon={emoji[section.emoji]} title={t(section.title)} description={t(section.description)} />
+                <CardHeader icon={<Icon name={section.emoji} />} title={t(section.title)} description={t(section.description)} />
                 <section.Component value={drafts[section.id] as never} onChange={(value) => setup.setDraft(section.id, value)} guild={guild} />
                 {problem && (
                   <div className="mt-4">
@@ -90,10 +91,10 @@ export function SettingsPage() {
           })}
 
           <Card>
-            <CardHeader icon={emoji.rocket} title={t('settings.rerun')} description={t('settings.rerunHelp')} />
+            <CardHeader icon={<Icon name="rocket" />} title={t('settings.rerun')} description={t('settings.rerunHelp')} />
             <Link
               to={`/guilds/${guild.id}/setup`}
-              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line bg-raised/70 px-5 text-sm font-semibold transition hover:border-primary/60"
+              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line bg-raised/70 px-5 text-sm font-semibold transition hover:border-white/40"
             >
               <RotateCcw className="size-4" aria-hidden />
               {t('settings.rerun')}

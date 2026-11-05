@@ -3,7 +3,8 @@
  * re-authorize link for server wide permissions, and step by step hints for
  * channel overrides and role order, which only an admin can change in Discord.
  */
-import { emoji, type BotPermission, type PermissionIssue } from '@shifubot/shared';
+import type { BotPermission, PermissionIssue } from '@shifubot/shared';
+import { Icon } from './icon';
 import { ExternalLink, KeyRound, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 import type { AppMessageKey } from '../../../../features';
@@ -34,7 +35,7 @@ export function PermissionCheck({ variant }: { variant: 'banner' | 'card' }) {
   if (variant === 'card' && !report) {
     return (
       <Card>
-        <CardHeader icon={<KeyRound className="size-5 text-primary" />} title={t('permissions.title')} />
+        <CardHeader icon={<KeyRound className="size-5" />} title={t('permissions.title')} />
         <Skeleton className="h-6 w-2/3" />
       </Card>
     );
@@ -43,9 +44,9 @@ export function PermissionCheck({ variant }: { variant: 'banner' | 'card' }) {
   if (report!.ok) {
     return (
       <Card>
-        <CardHeader icon={<KeyRound className="size-5 text-primary" />} title={t('permissions.title')} />
+        <CardHeader icon={<KeyRound className="size-5" />} title={t('permissions.title')} />
         <p className="flex items-center gap-2 text-sm">
-          <span aria-hidden>{emoji.success}</span>
+          <Icon name="success" size={16} />
           {t('permissions.ok')}
         </p>
       </Card>

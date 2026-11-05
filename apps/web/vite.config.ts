@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import { fileURLToPath } from 'node:url';
 import { defineConfig, type Plugin } from 'vite';
 import { logoDataUri } from '../../packages/shared/src/brand';
-import { colors } from '../../packages/shared/src/tokens';
+import { dashboardColors } from '../../packages/shared/src/tokens';
 
 /** Inject token based values (theme color, favicon) into index.html. */
 function designTokens(): Plugin {
@@ -12,7 +12,7 @@ function designTokens(): Plugin {
     transformIndexHtml: {
       order: 'pre',
       handler: (html) =>
-        html.replaceAll('%SHIFU_THEME_COLOR%', colors.background).replaceAll('%SHIFU_FAVICON%', logoDataUri()),
+        html.replaceAll('%SHIFU_THEME_COLOR%', dashboardColors.background).replaceAll('%SHIFU_FAVICON%', logoDataUri({ mono: true })),
     },
   };
 }

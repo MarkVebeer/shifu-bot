@@ -1,4 +1,4 @@
-import { emoji, isLocale, type GuildOverview } from '@shifubot/shared';
+import { isLocale, type GuildOverview } from '@shifubot/shared';
 import { ArrowLeft, ArrowRight, Check, Pencil, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
@@ -9,6 +9,7 @@ import { errorText, I18nProvider, useT } from '../lib/i18n';
 import { usePermissionReport } from '../lib/use-permissions';
 import { useSetupDrafts } from '../lib/use-setup-drafts';
 import { Alert, Avatar, Button, cx, Logo, Skeleton } from '../ui/primitives';
+import { Icon } from '../ui/icon';
 import { useToast } from '../ui/toast';
 
 /**
@@ -156,19 +157,19 @@ function WizardBody({
 
             {step === 0 && (
               <div className="text-center">
-                <div className="mx-auto mb-6 grid size-20 place-items-center rounded-3xl bg-brand-soft text-4xl shadow-glow ring-1 ring-primary/30" aria-hidden>
-                  {emoji.rocket}
+                <div className="mx-auto mb-6 grid size-20 place-items-center rounded-2xl bg-raised ring-1 ring-line" aria-hidden>
+                  <Icon name="rocket" size={36} />
                 </div>
                 <p className="mb-2 text-sm font-medium uppercase tracking-wider text-primary">{rerun ? t('setup.rerunBadge') : t('setup.badge')}</p>
                 <h1 ref={headingRef} tabIndex={-1} className="text-2xl font-bold tracking-tight outline-none sm:text-3xl">
-                  <span className="text-gradient">{t('setup.introTitle')}</span>
+                  {t('setup.introTitle')}
                 </h1>
                 <p className="mx-auto mt-3 max-w-md text-muted">{t('setup.introBody', { server: guild.name })}</p>
                 <ol className="mx-auto mt-8 max-w-sm space-y-2 text-left">
                   {sections.map((item, index) => (
                     <li key={item.id} className="glass-raised flex items-center gap-3 px-4 py-3 text-sm">
                       <span className="grid size-7 shrink-0 place-items-center rounded-full bg-raised font-mono text-xs text-muted">{index + 1}</span>
-                      <span aria-hidden>{emoji[item.emoji]}</span>
+                      <Icon name={item.emoji} size={16} className="text-muted" />
                       {t(item.title)}
                     </li>
                   ))}
@@ -179,7 +180,7 @@ function WizardBody({
             {section && (
               <section aria-labelledby="setup-step-title">
                 <h1 id="setup-step-title" ref={headingRef} tabIndex={-1} className="flex items-center gap-3 text-2xl font-bold tracking-tight outline-none sm:text-3xl">
-                  <span aria-hidden>{emoji[section.emoji]}</span>
+                  <Icon name={section.emoji} size={26} />
                   {t(section.title)}
                 </h1>
                 <p className="mt-2 text-muted">{t(section.description)}</p>
@@ -197,15 +198,15 @@ function WizardBody({
             {step === lastStep && (
               <section aria-labelledby="setup-done-title">
                 <h1 id="setup-done-title" ref={headingRef} tabIndex={-1} className="flex items-center gap-3 text-2xl font-bold tracking-tight outline-none sm:text-3xl">
-                  <span aria-hidden>{emoji.sparkle}</span>
+                  <Icon name="sparkle" size={26} />
                   {t('setup.doneTitle')}
                 </h1>
                 <p className="mt-2 text-muted">{t('setup.doneBody')}</p>
                 <ul className="mt-6 space-y-2">
                   {sections.map((item, index) => (
                     <li key={item.id} className="glass-raised flex items-center gap-3 px-4 py-3">
-                      <span className="text-xl" aria-hidden>
-                        {emoji[item.emoji]}
+                      <span className="text-muted" aria-hidden>
+                        <Icon name={item.emoji} size={20} />
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block text-sm text-muted">{t(item.title)}</span>

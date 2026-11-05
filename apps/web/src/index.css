@@ -33,30 +33,30 @@
     -webkit-tap-highlight-color: transparent;
   }
   body {
-    @apply min-h-dvh bg-bg bg-aurora bg-fixed font-sans text-ink antialiased;
+    @apply min-h-dvh bg-bg font-sans text-ink antialiased;
   }
   ::selection {
-    @apply bg-primary/30;
+    @apply bg-white/25;
   }
   :focus-visible {
-    @apply outline-2 outline-offset-2 outline-aqua;
+    @apply outline-2 outline-offset-2 outline-white;
   }
 }
 
 @utility glass {
-  @apply rounded-card border border-line/70 bg-surface/70 shadow-panel backdrop-blur-xl;
+  @apply rounded-card border border-line bg-surface;
 }
 
 @utility glass-raised {
-  @apply rounded-panel border border-line/80 bg-raised/70 backdrop-blur-xl;
+  @apply rounded-panel border border-line bg-raised;
 }
 
 @utility glow-hover {
-  @apply transition-[box-shadow,border-color,transform] duration-200 hover:border-primary/50 hover:shadow-glow;
+  @apply transition-colors duration-150 hover:border-white/40;
 }
 
 @utility text-gradient {
-  @apply bg-brand bg-clip-text text-transparent;
+  @apply text-ink;
 }
 
 @utility skeleton {

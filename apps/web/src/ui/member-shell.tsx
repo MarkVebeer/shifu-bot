@@ -15,6 +15,7 @@ import { useAuth } from '../lib/auth';
 import { useCookieLocale, useI18n } from '../lib/i18n';
 import { DiscordGlyph } from '../pages/LoginPage';
 import { Avatar, Button, ButtonLink, Logo, Skeleton, cx } from './primitives';
+import { Icon } from './icon';
 import { LanguageSwitcher } from './widgets';
 
 interface MemberServerValue {
@@ -101,10 +102,10 @@ export function MemberShell({ guildId, featureId }: { guildId: string; featureId
                   aria-current={active ? 'page' : undefined}
                   className={cx(
                     'inline-flex min-h-11 flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-full px-4 text-sm font-semibold transition duration-200',
-                    active ? 'bg-brand text-bg shadow-glow' : 'text-muted hover:bg-raised/60 hover:text-ink',
+                    active ? 'bg-ink text-bg' : 'text-muted hover:bg-raised/60 hover:text-ink',
                   )}
                 >
-                  <span aria-hidden>{tab.emoji}</span>
+                  <Icon name={tab.icon} size={16} />
                   {t(`${tab.id}.name` as AppMessageKey)}
                 </Link>
               );

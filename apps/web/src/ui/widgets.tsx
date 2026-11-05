@@ -25,7 +25,7 @@ export function LanguageSwitcher({ value, onChange, id }: { value: Locale; onCha
             onClick={() => onChange(locale)}
             className={cx(
               'min-h-9 rounded-full px-3.5 text-sm font-medium transition',
-              value === locale ? 'bg-brand text-bg shadow-glow' : 'text-muted hover:text-ink',
+              value === locale ? 'bg-ink text-bg' : 'text-muted hover:text-ink',
             )}
           >
             {t(`lang.${locale}`)}
@@ -114,7 +114,7 @@ export function SaveBar({ visible, saving, onSave, onDiscard }: { visible: boole
       <div
         role="region"
         aria-label={t('common.unsaved')}
-        className="glass pointer-events-auto mx-auto flex max-w-3xl animate-fade-up items-center gap-3 border-primary/40 px-4 py-3 shadow-glow"
+        className="glass pointer-events-auto mx-auto flex max-w-3xl animate-fade-up items-center gap-3 border-white/40 px-4 py-3"
       >
         <span className="size-2 shrink-0 rounded-full bg-warning motion-safe:animate-pulse" aria-hidden />
         <p className="min-w-0 flex-1 truncate text-sm font-medium">{t('common.unsaved')}</p>
@@ -161,7 +161,7 @@ export function ConfirmDialog({
         event.preventDefault();
         onCancel();
       }}
-      className="glass m-auto w-[min(92vw,420px)] p-6 text-ink backdrop:bg-bg/70 backdrop:backdrop-blur-sm open:animate-fade-up"
+      className="glass m-auto w-[min(92vw,420px)] p-6 text-ink backdrop:bg-bg/80 open:animate-fade-up"
     >
       <h2 className="text-lg font-semibold">{title}</h2>
       <p className="mt-2 text-sm text-muted">{body}</p>

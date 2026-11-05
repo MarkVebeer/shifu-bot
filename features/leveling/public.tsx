@@ -3,13 +3,12 @@
  * Shown inside MemberShell, which handles sign-in, membership and the tabs between lists.
  * When chat and voice both earn XP, the list can be ranked by overall, chat or voice level.
  */
-import type { Locale } from '@shifubot/shared';
 import { useSearchParams } from 'react-router';
 import { useI18n } from '../../apps/web/src/lib/i18n';
 import { formatNumber, RankedList, RankRow, SearchBox, useRankedList, YourPlace } from '../../apps/web/src/ui/member-list';
 import { ListSkeleton, Message, useMemberServer } from '../../apps/web/src/ui/member-shell';
 import { Button, cx } from '../../apps/web/src/ui/primitives';
-import { levelLabel, levelsFor, shownLevels, type LeaderboardKind } from './manifest';
+import { levelsFor, shownLevels, type LeaderboardKind } from './manifest';
 import type { LeaderboardListEntry, LeaderboardListResponse } from './server';
 
 const KINDS: LeaderboardKind[] = ['overall', 'text', 'voice'];
@@ -22,7 +21,7 @@ export default function LevelingLeaderboardPage() {
   const by = KINDS.includes(requested as LeaderboardKind) ? (requested as LeaderboardKind) : null;
   const list = useRankedList<LeaderboardListEntry, LeaderboardListResponse>(`/servers/${guildId}/leveling`, by ? { by } : {});
   const n = (value: number) => formatNumber(value, locale);
-  const label = (kind: LeaderboardKind) => levelLabel(kind, locale as Locale);
+  const label = (kind: LeaderboardKind) => t(`leveling.tracks.${kind}`);
 
   if (list.state.kind === 'loading') return <ListSkeleton />;
   if (list.state.kind === 'error')

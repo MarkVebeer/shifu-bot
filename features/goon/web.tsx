@@ -1,7 +1,7 @@
 /**
  * Goon counter: dashboard page.
  */
-import { colors, emoji, findUnknownPlaceholders } from '@shifubot/shared';
+import { colors, findUnknownPlaceholders } from '@shifubot/shared';
 import { ExternalLink, Eye, Send } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../apps/web/src/lib/api';
@@ -10,6 +10,7 @@ import { errorText, useI18n } from '../../apps/web/src/lib/i18n';
 import { useApi } from '../../apps/web/src/lib/use-api';
 import { ChannelPicker } from '../../apps/web/src/ui/channel-picker';
 import { DiscordMessagePreview } from '../../apps/web/src/ui/discord-preview';
+import { Icon } from '../../apps/web/src/ui/icon';
 import { Alert, Avatar, Button, Card, CardHeader, Field, Input, Skeleton, Switch, Textarea } from '../../apps/web/src/ui/primitives';
 import { useToast } from '../../apps/web/src/ui/toast';
 import { ColorField, SaveBar } from '../../apps/web/src/ui/widgets';
@@ -198,7 +199,7 @@ export default function GoonPage() {
       </Card>
 
       <Card className="space-y-4">
-        <CardHeader icon={emoji.leveling} title={t('goon.top.title')} />
+        <CardHeader icon={<Icon name="leveling" />} title={t('goon.top.title')} />
         {status.top.length ? (
           <ol className="space-y-2">
             {status.top.map((entry, index) => {
@@ -236,7 +237,7 @@ export default function GoonPage() {
     <div className="animate-fade-up">
       <header className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-          <span aria-hidden>{emoji.goon} </span>
+          <Icon name="goon" size={26} className="mr-2 inline-block align-[-3px]" />
           {t('goon.name')}
         </h1>
         <p className="mt-2 max-w-2xl text-muted">{t('goon.description')}</p>
@@ -265,7 +266,7 @@ export default function GoonPage() {
           ))}
 
           <Card>
-            <CardHeader icon={emoji.sparkle} title={t('goon.form.general')} />
+            <CardHeader icon={<Icon name="sparkle" />} title={t('goon.form.general')} />
             <div className="space-y-5">
               <Switch checked={draft.enabled} onChange={(value) => update('enabled', value)} label={t('goon.form.enabled')} description={t('goon.form.enabledHelp')} />
               <ChannelPicker id="goon-channel" label={t('goon.form.channel')} value={draft.channelId} onChange={(value) => update('channelId', value)} error={fieldError('channelId')} />
@@ -279,7 +280,7 @@ export default function GoonPage() {
           </Card>
 
           <Card>
-            <CardHeader icon={emoji.settings} title={t('goon.form.rules')} />
+            <CardHeader icon={<Icon name="settings" />} title={t('goon.form.rules')} />
             <div className="space-y-5">
               <Field label={t('goon.form.cooldown')} help={t('goon.form.cooldownHelp')} htmlFor="goon-cooldownMinutes" error={fieldError('cooldownMinutes')}>
                 {minutesInput('cooldownMinutes', 0, 60)}
@@ -291,7 +292,7 @@ export default function GoonPage() {
           </Card>
 
           <Card>
-            <CardHeader icon={emoji.welcome} title={t('goon.form.panel')} description={t('goon.form.defaultHint')} />
+            <CardHeader icon={<Icon name="welcome" />} title={t('goon.form.panel')} description={t('goon.form.defaultHint')} />
             <div className="space-y-5">
               <Field label={t('goon.form.title')} htmlFor="goon-title" error={fieldError('title')} warning={placeholderHint('title')}>
                 <Input
@@ -349,7 +350,7 @@ export default function GoonPage() {
           </Card>
 
           <Card>
-            <CardHeader icon={emoji.sparkle} title={t('goon.form.style')} />
+            <CardHeader icon={<Icon name="sparkle" />} title={t('goon.form.style')} />
             <Field label={t('goon.form.color')} htmlFor="goon-color" error={fieldError('color')}>
               <ColorField id="goon-color" value={draft.color} fallback={colors.primary} onChange={(value) => update('color', value)} />
             </Field>

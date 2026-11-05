@@ -1,12 +1,12 @@
 /**
  * One audit log event: a readable summary line and expandable details.
  */
-import { ChevronDown, Copy, ExternalLink, Hash, User as UserIcon } from 'lucide-react';
+import { Check, ChevronDown, Copy, ExternalLink, Hash, User as UserIcon, X } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { useI18n } from '../../apps/web/src/lib/i18n';
 import { Avatar, cx } from '../../apps/web/src/ui/primitives';
 import { useToast } from '../../apps/web/src/ui/toast';
-import { absoluteTime, fieldLabel, relativeTime, typeEmoji, typeLabel } from './labels';
+import { absoluteTime, fieldLabel, relativeTime, typeIcon, typeLabel } from './labels';
 import type { AuditEvent, AuditEventsResponse } from './manifest';
 
 type Names = Pick<AuditEventsResponse, 'users' | 'channels' | 'roles'>;
@@ -25,7 +25,7 @@ const isImage = (value: unknown): value is string => isUrl(value) && /\.(png|jpe
 
 function formatValue(value: unknown, names: Names, key?: string): ReactNode {
   if (value === null || value === undefined || value === '') return <span className="text-muted">—</span>;
-  if (typeof value === 'boolean') return value ? '✓' : '✗';
+  if (typeof value === 'boolean') return value ? <Check className="inline size-4" aria-label="true" /> : <X className="inline size-4" aria-label="false" />;
   if (typeof value === 'string') {
     if (key && USER_KEYS.has(key)) return names.users[value]?.name ?? value;
     if (key && CHANNEL_KEYS.has(key)) return names.channels[value] ? `#${names.channels[value]!.name}` : value;
@@ -68,6 +68,7 @@ function Chip({ children, onClick, title }: { children: ReactNode; onClick?: () 
 }
 
 export function EventRow({ event, names, actions }: { event: AuditEvent; names: Names; actions: RowActions }) {
+  const TypeIcon = typeIcon(event.type);
   const { t, locale } = useI18n();
   const toast = useToast();
   const [open, setOpen] = useState(false);
@@ -126,10 +127,10 @@ export function EventRow({ event, names, actions }: { event: AuditEvent; names: 
         className="flex w-full items-start gap-3 p-3 text-left transition hover:bg-raised/40 sm:p-4"
       >
         <span className="relative shrink-0">
-          {avatarUser ? <Avatar src={avatarUser.avatarUrl} name={avatarUser.name} size={36} /> : <span className="grid size-9 place-items-center rounded-full bg-raised text-lg">{typeEmoji(event.type)}</span>}
+          {avatarUser ? <Avatar src={avatarUser.avatarUrl} name={avatarUser.name} size={36} /> : <span className="grid size-9 place-items-center rounded-full bg-raised text-muted"><TypeIcon className="size-4" aria-hidden /></span>}
           {avatarUser && (
             <span className="absolute -bottom-1 -right-1 grid size-5 place-items-center rounded-full bg-bg text-xs ring-1 ring-line" aria-hidden>
-              {typeEmoji(event.type)}
+              <TypeIcon className="size-3" />
             </span>
           )}
         </span>

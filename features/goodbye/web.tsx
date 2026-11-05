@@ -1,7 +1,7 @@
 /**
  * Goodbye feature: dashboard page.
  */
-import { colors, emoji, findUnknownPlaceholders } from '@shifubot/shared';
+import { colors, findUnknownPlaceholders } from '@shifubot/shared';
 import { Eye, Send } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../apps/web/src/lib/api';
@@ -10,6 +10,7 @@ import { useGuild } from '../../apps/web/src/lib/guild';
 import { errorText, useI18n } from '../../apps/web/src/lib/i18n';
 import { useApi } from '../../apps/web/src/lib/use-api';
 import { DiscordMessagePreview } from '../../apps/web/src/ui/discord-preview';
+import { Icon } from '../../apps/web/src/ui/icon';
 import { Alert, Button, Card, CardHeader, Field, Input, Skeleton, Switch, Textarea, cx } from '../../apps/web/src/ui/primitives';
 import { useToast } from '../../apps/web/src/ui/toast';
 import { ColorField, SaveBar } from '../../apps/web/src/ui/widgets';
@@ -194,7 +195,7 @@ export default function GoodbyePage() {
     <div className="animate-fade-up">
       <header className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-          <span aria-hidden>{emoji.goodbye} </span>
+          <Icon name="goodbye" size={26} className="mr-2 inline-block align-[-3px]" />
           {t('goodbye.name')}
         </h1>
         <p className="mt-2 max-w-2xl text-muted">{t('goodbye.description')}</p>
@@ -220,7 +221,7 @@ export default function GoodbyePage() {
           ))}
 
           <Card>
-            <CardHeader icon={emoji.sparkle} title={t('goodbye.form.general')} />
+            <CardHeader icon={<Icon name="sparkle" />} title={t('goodbye.form.general')} />
             <div className="space-y-5">
               <Switch checked={draft.enabled} onChange={(value) => update('enabled', value)} label={t('goodbye.form.enabled')} description={t('goodbye.form.enabledHelp')} />
               <ChannelPicker
@@ -234,7 +235,7 @@ export default function GoodbyePage() {
           </Card>
 
           <Card>
-            <CardHeader icon={emoji.goodbye} title={t('goodbye.form.content')} description={t('goodbye.form.defaultHint')} />
+            <CardHeader icon={<Icon name="goodbye" />} title={t('goodbye.form.content')} description={t('goodbye.form.defaultHint')} />
             <div className="space-y-5">
               <Field label={t('goodbye.form.title')} htmlFor="goodbye-title" error={fieldError('title')} warning={placeholderHint('title')}>
                 <Input
@@ -284,7 +285,7 @@ export default function GoodbyePage() {
           </Card>
 
           <Card>
-            <CardHeader icon={emoji.sparkle} title={t('goodbye.form.style')} />
+            <CardHeader icon={<Icon name="sparkle" />} title={t('goodbye.form.style')} />
             <div className="space-y-5">
               <Field label={t('goodbye.form.color')} htmlFor="goodbye-color" error={fieldError('color')}>
                 <ColorField id="goodbye-color" value={draft.color} fallback={colors.primary} onChange={(value) => update('color', value)} />

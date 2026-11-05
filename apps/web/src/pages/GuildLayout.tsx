@@ -1,4 +1,4 @@
-import { emoji, type GuildOverview } from '@shifubot/shared';
+import type { GuildOverview } from '@shifubot/shared';
 import { ChevronsLeft, ChevronsRight, LayoutGrid, LogOut } from 'lucide-react';
 import { Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, NavLink, Outlet, useBlocker, useMatch, useParams } from 'react-router';
@@ -9,6 +9,7 @@ import { GuildContext, type GuildContextValue } from '../lib/guild';
 import { errorText, I18nProvider, useT } from '../lib/i18n';
 import { useApi } from '../lib/use-api';
 import { Alert, Avatar, Button, cx, Logo, Skeleton } from '../ui/primitives';
+import { Icon } from '../ui/icon';
 import { PermissionCheck } from '../ui/permission-check';
 import { ConfirmDialog } from '../ui/widgets';
 import { SetupWizard } from './SetupWizard';
@@ -81,13 +82,14 @@ function GuildShell({ guild, reload }: { guild: GuildOverview; reload: () => Pro
 
   const base = `/guilds/${guild.id}`;
   const items: NavItem[] = [
-    { to: base, label: t('nav.overview'), icon: <span aria-hidden>{emoji.overview}</span>, end: true },
+    { to: base, label: t('nav.overview'), icon: <Icon name="overview" />, end: true },
     ...featurePages.map((feature) => ({
       to: `${base}/features/${feature.id}`,
       label: t(`${feature.id}.name` as 'welcome.name'),
-      icon: <span aria-hidden>{feature.emoji}</span>,
+      icon: <Icon name={feature.icon} />,
     })),
-    { to: `${base}/settings`, label: t('nav.settings'), icon: <span aria-hidden>{emoji.settings}</span> },  ];
+    { to: `${base}/settings`, label: t('nav.settings'), icon: <Icon name="settings" /> },
+  ];
 
   const stableSetDirty = useCallback((value: boolean) => setDirty(value), []);
   const context = useMemo<GuildContextValue>(
@@ -139,7 +141,7 @@ function GuildShell({ guild, reload }: { guild: GuildOverview; reload: () => Pro
                   cx(
                     'flex min-h-11 items-center gap-3 rounded-token px-3 text-sm font-medium transition',
                     collapsed && 'justify-center px-0',
-                    isActive ? 'bg-brand-soft text-ink ring-1 ring-primary/30' : 'text-muted hover:bg-raised/60 hover:text-ink',
+                    isActive ? 'bg-ink text-bg' : 'text-muted hover:bg-raised/60 hover:text-ink',
                   )
                 }
               >

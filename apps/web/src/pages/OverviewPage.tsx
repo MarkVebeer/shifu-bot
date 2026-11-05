@@ -1,4 +1,3 @@
-import { emoji } from '@shifubot/shared';
 import { ArrowRight, Settings, Users } from 'lucide-react';
 import { Link } from 'react-router';
 import { featurePages } from '../features';
@@ -7,6 +6,7 @@ import { useT } from '../lib/i18n';
 import { LocaleBadge } from '../ui/locale-badge';
 import { PermissionCheck } from '../ui/permission-check';
 import { Avatar, Badge, Card, CardHeader } from '../ui/primitives';
+import { Icon } from '../ui/icon';
 
 export function OverviewPage() {
   const t = useT();
@@ -30,7 +30,7 @@ export function OverviewPage() {
           <p className="font-mono text-4xl font-semibold text-gradient">{guild.memberCount.toLocaleString(guild.locale)}</p>
         </Card>
         <Card>
-          <CardHeader icon={emoji.globe} title={t('overview.language')} description={t('overview.languageHelp')} />
+          <CardHeader icon={<Icon name="globe" />} title={t('overview.language')} description={t('overview.languageHelp')} />
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="flex items-center gap-3 text-lg font-semibold">
               <LocaleBadge locale={guild.locale} size="sm" active />
@@ -61,8 +61,8 @@ export function OverviewPage() {
                   to={`/guilds/${guild.id}/features/${feature.id}`}
                   className="glass glow-hover group flex h-full items-start gap-4 p-5 hover:-translate-y-0.5"
                 >
-                  <span className="grid size-12 shrink-0 place-items-center rounded-token bg-brand-soft text-2xl ring-1 ring-primary/25" aria-hidden>
-                    {feature.emoji}
+                  <span className="grid size-12 shrink-0 place-items-center rounded-token bg-raised text-ink ring-1 ring-line" aria-hidden>
+                    <Icon name={feature.icon} size={22} />
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-2">

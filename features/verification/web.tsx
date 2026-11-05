@@ -1,7 +1,7 @@
 /**
  * Verification feature: dashboard page.
  */
-import { colors, emoji, findUnknownPlaceholders } from '@shifubot/shared';
+import { colors, findUnknownPlaceholders } from '@shifubot/shared';
 import { ExternalLink, Eye, RefreshCw, Send, ShieldCheck } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../apps/web/src/lib/api';
@@ -10,6 +10,7 @@ import { errorText, useI18n } from '../../apps/web/src/lib/i18n';
 import { useApi } from '../../apps/web/src/lib/use-api';
 import { ChannelPicker } from '../../apps/web/src/ui/channel-picker';
 import { DiscordMessagePreview } from '../../apps/web/src/ui/discord-preview';
+import { Icon } from '../../apps/web/src/ui/icon';
 import { Alert, Button, Card, CardHeader, Field, Input, Select, Skeleton, Switch, Textarea, cx } from '../../apps/web/src/ui/primitives';
 import { RolePicker } from '../../apps/web/src/ui/role-picker';
 import { useToast } from '../../apps/web/src/ui/toast';
@@ -194,7 +195,7 @@ export default function VerificationPage() {
 
       {draft.mode === 'captcha' && (
         <Card className="space-y-4">
-          <CardHeader icon={emoji.test} title={t('verification.preview.captchaTitle')} description={t('verification.preview.captchaHint')} />
+          <CardHeader icon={<Icon name="test" />} title={t('verification.preview.captchaTitle')} description={t('verification.preview.captchaHint')} />
           <div className="overflow-hidden rounded-panel bg-discord-embed p-3">
             <img
               src={`/api${base}/captcha.png?n=${sampleNonce}`}
@@ -216,7 +217,7 @@ export default function VerificationPage() {
     <div className="animate-fade-up">
       <header className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-          <span aria-hidden>{emoji.verification} </span>
+          <Icon name="verification" size={26} className="mr-2 inline-block align-[-3px]" />
           {t('verification.name')}
         </h1>
         <p className="mt-2 max-w-2xl text-muted">{t('verification.description')}</p>
@@ -248,7 +249,7 @@ export default function VerificationPage() {
           ))}
 
           <Card>
-            <CardHeader icon={emoji.sparkle} title={t('verification.form.general')} />
+            <CardHeader icon={<Icon name="sparkle" />} title={t('verification.form.general')} />
             <div className="space-y-5">
               <Switch checked={draft.enabled} onChange={(value) => update('enabled', value)} label={t('verification.form.enabled')} description={t('verification.form.enabledHelp')} />
               <ChannelPicker
@@ -266,7 +267,7 @@ export default function VerificationPage() {
 
           <Card>
             <CardHeader
-              icon={emoji.verification}
+              icon={<Icon name="verification" />}
               title={t('verification.form.protection')}
               description={t('verification.form.rules', { minutes: CAPTCHA_RULES.expiresMinutes, window: CAPTCHA_RULES.attemptsWindowMinutes })}
             />
@@ -349,7 +350,7 @@ export default function VerificationPage() {
           </Card>
 
           <Card>
-            <CardHeader icon={emoji.welcome} title={t('verification.form.panel')} description={t('verification.form.defaultHint')} />
+            <CardHeader icon={<Icon name="welcome" />} title={t('verification.form.panel')} description={t('verification.form.defaultHint')} />
             <div className="space-y-5">
               <Field label={t('verification.form.title')} htmlFor="verification-title" error={fieldError('title')} warning={placeholderHint('title')}>
                 <Input
@@ -413,7 +414,7 @@ export default function VerificationPage() {
           </Card>
 
           <Card>
-            <CardHeader icon={emoji.sparkle} title={t('verification.form.style')} />
+            <CardHeader icon={<Icon name="sparkle" />} title={t('verification.form.style')} />
             <Field label={t('verification.form.color')} htmlFor="verification-color" error={fieldError('color')}>
               <ColorField id="verification-color" value={draft.color} fallback={colors.primary} onChange={(value) => update('color', value)} />
             </Field>

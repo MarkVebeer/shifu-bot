@@ -1,4 +1,4 @@
-import { emoji, type ChannelOption } from '@shifubot/shared';
+import type { ChannelOption } from '@shifubot/shared';
 import { useGuild } from '../lib/guild';
 import { useT } from '../lib/i18n';
 import { useApi } from '../lib/use-api';
@@ -43,7 +43,7 @@ export function ChannelPicker({
             const options = list.map((channel) => (
               <option key={channel.id} value={channel.id}>
                 # {channel.name}
-                {channel.canSend ? '' : ` ${emoji.warning}`}
+                {channel.canSend ? '' : ' (!)'}
               </option>
             ));
             return parent ? (

@@ -10,7 +10,7 @@ type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
 const buttonStyles: Record<ButtonVariant, string> = {
   primary:
-    'bg-brand text-bg shadow-glow hover:shadow-glow-strong hover:brightness-105 active:scale-[0.98] disabled:opacity-50 disabled:shadow-none',
+    'bg-ink text-bg hover:bg-ink/85 active:scale-[0.98] disabled:opacity-50',
   secondary:
     'border border-line bg-raised/70 text-ink hover:border-primary/60 hover:bg-raised active:scale-[0.98] disabled:opacity-50',
   ghost: 'text-muted hover:bg-raised/60 hover:text-ink disabled:opacity-50',
@@ -89,7 +89,7 @@ export function CardHeader({ title, description, icon }: { title: ReactNode; des
   return (
     <header className="mb-5 flex items-start gap-3">
       {icon && (
-        <span className="grid size-10 shrink-0 place-items-center rounded-token bg-brand-soft text-lg ring-1 ring-primary/25" aria-hidden>
+        <span className="grid size-10 shrink-0 place-items-center rounded-token bg-raised text-ink ring-1 ring-line" aria-hidden>
           {icon}
         </span>
       )}
@@ -102,7 +102,7 @@ export function CardHeader({ title, description, icon }: { title: ReactNode; des
 }
 
 export function Logo({ size = 36 }: { size?: number }) {
-  return <span aria-hidden className="inline-block shrink-0" style={{ width: size, height: size }} dangerouslySetInnerHTML={{ __html: logoSvg(size) }} />;
+  return <span aria-hidden className="inline-block shrink-0" style={{ width: size, height: size }} dangerouslySetInnerHTML={{ __html: logoSvg(size, { mono: true }) }} />;
 }
 
 export function Skeleton({ className }: { className?: string }) {
@@ -236,7 +236,7 @@ export function Switch({
         onClick={() => onChange(!checked)}
         className={cx(
           'relative inline-flex h-8 w-14 shrink-0 items-center rounded-full border transition duration-200',
-          checked ? 'border-primary/60 bg-brand shadow-glow' : 'border-line bg-raised',
+          checked ? 'border-ink bg-ink' : 'border-line bg-raised',
         )}
       >
         <span
@@ -251,9 +251,9 @@ export function Switch({
 }
 
 const alertStyles = {
-  info: { box: 'border-primary/30 bg-primary/10 text-ink', icon: <Info className="size-5 text-primary" aria-hidden /> },
-  success: { box: 'border-success/30 bg-success/10 text-ink', icon: <CheckCircle2 className="size-5 text-success" aria-hidden /> },
-  warning: { box: 'border-warning/35 bg-warning/10 text-ink', icon: <AlertTriangle className="size-5 text-warning" aria-hidden /> },
+  info: { box: 'border-line bg-raised text-ink', icon: <Info className="size-5 text-primary" aria-hidden /> },
+  success: { box: 'border-line bg-raised text-ink', icon: <CheckCircle2 className="size-5 text-success" aria-hidden /> },
+  warning: { box: 'border-warning/40 bg-raised text-ink', icon: <AlertTriangle className="size-5 text-warning" aria-hidden /> },
   danger: { box: 'border-danger/35 bg-danger/10 text-ink', icon: <XCircle className="size-5 text-danger" aria-hidden /> },
 } as const;
 
@@ -277,9 +277,9 @@ export function Badge({ tone = 'muted', children }: { tone?: 'muted' | 'success'
       className={cx(
         'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
         tone === 'muted' && 'bg-raised text-muted',
-        tone === 'success' && 'bg-success/15 text-success',
-        tone === 'primary' && 'bg-primary/15 text-primary',
-        tone === 'warning' && 'bg-warning/15 text-warning',
+        tone === 'success' && 'bg-ink text-bg',
+        tone === 'primary' && 'bg-raised text-ink ring-1 ring-line',
+        tone === 'warning' && 'bg-raised text-warning ring-1 ring-warning/40',
       )}
     >
       {children}
@@ -298,7 +298,7 @@ export function Avatar({ src, name, size = 40 }: { src: string | null; name: str
   return (
     <span
       aria-hidden
-      className="grid shrink-0 place-items-center rounded-full bg-brand-soft font-semibold text-primary ring-1 ring-line"
+      className="grid shrink-0 place-items-center rounded-full bg-raised font-semibold text-ink ring-1 ring-line"
       style={{ width: size, height: size, fontSize: size / 2.8 }}
     >
       {initials}

@@ -1,8 +1,8 @@
-import { emoji } from '@shifubot/shared';
 import { Navigate } from 'react-router';
 import { useAuth } from '../lib/auth';
 import { useCookieLocale, useT } from '../lib/i18n';
 import { ButtonLink, Logo } from '../ui/primitives';
+import { Icon } from '../ui/icon';
 import { LanguageSwitcher } from '../ui/widgets';
 
 export function DiscordGlyph() {
@@ -20,9 +20,9 @@ export function LoginPage() {
   if (!loading && me) return <Navigate to="/guilds" replace />;
 
   const points = [
-    { icon: emoji.welcome, text: t('login.pointWelcome') },
-    { icon: emoji.globe, text: t('login.pointLanguages') },
-    { icon: emoji.sparkle, text: t('login.pointOpenSource') },
+    { icon: 'welcome' as const, text: t('login.pointWelcome') },
+    { icon: 'globe' as const, text: t('login.pointLanguages') },
+    { icon: 'sparkle' as const, text: t('login.pointOpenSource') },
   ];
 
   return (
@@ -32,7 +32,7 @@ export function LoginPage() {
       </div>
       <div className="flex flex-1 items-center justify-center py-10">
         <div className="glass w-full max-w-md animate-fade-up p-8 text-center sm:p-10">
-          <div className="mx-auto mb-6 grid size-20 place-items-center rounded-3xl bg-brand-soft shadow-glow ring-1 ring-primary/30">
+          <div className="mx-auto mb-6 grid size-20 place-items-center rounded-2xl bg-raised ring-1 ring-line">
             <Logo size={52} />
           </div>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
@@ -42,8 +42,8 @@ export function LoginPage() {
           <ul className="mt-7 space-y-2 text-left">
             {points.map((point) => (
               <li key={point.text} className="glass-raised flex items-center gap-3 px-4 py-3 text-sm">
-                <span aria-hidden className="text-lg">
-                  {point.icon}
+                <span aria-hidden className="text-muted">
+                  <Icon name={point.icon} />
                 </span>
                 {point.text}
               </li>

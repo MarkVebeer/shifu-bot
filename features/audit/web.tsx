@@ -1,11 +1,11 @@
 /**
  * Audit log feature: dashboard page with the log and its settings as two tabs.
  */
-import { emoji } from '@shifubot/shared';
 import { useSearchParams } from 'react-router';
 import { useGuild } from '../../apps/web/src/lib/guild';
 import { errorText, useI18n } from '../../apps/web/src/lib/i18n';
 import { useApi } from '../../apps/web/src/lib/use-api';
+import { Icon } from '../../apps/web/src/ui/icon';
 import { Alert, Badge, Skeleton, cx } from '../../apps/web/src/ui/primitives';
 import { LogView } from './log-view';
 import type { AuditResponse } from './manifest';
@@ -38,7 +38,7 @@ export default function AuditPage() {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="flex items-center gap-3 text-2xl font-bold tracking-tight sm:text-3xl">
-            <span aria-hidden>{emoji.log}</span>
+            <Icon name="log" size={26} className="mr-2 inline-block align-[-3px]" />
             {t('audit.name')}
             {audit.data && <Badge tone={audit.data.settings.enabled ? 'success' : 'muted'}>{audit.data.settings.enabled ? t('overview.active') : t('overview.inactive')}</Badge>}
           </h1>

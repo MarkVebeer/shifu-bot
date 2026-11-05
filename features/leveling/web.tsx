@@ -1,7 +1,7 @@
 /**
  * Leveling feature: dashboard page.
  */
-import { colors, emoji, findUnknownPlaceholders } from '@shifubot/shared';
+import { colors, findUnknownPlaceholders } from '@shifubot/shared';
 import { ExternalLink, Eye, RotateCcw, Send, Trophy } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../apps/web/src/lib/api';
@@ -12,6 +12,8 @@ import { useApi } from '../../apps/web/src/lib/use-api';
 import { ChannelMultiPicker } from '../../apps/web/src/ui/channel-multi-picker';
 import { ChannelPicker } from '../../apps/web/src/ui/channel-picker';
 import { DiscordMessagePreview } from '../../apps/web/src/ui/discord-preview';
+import { Icon } from '../../apps/web/src/ui/icon';
+import { RankMark } from '../../apps/web/src/ui/member-list';
 import { Alert, Avatar, Button, Card, CardHeader, Field, Input, Select, Skeleton, Switch, Textarea, cx } from '../../apps/web/src/ui/primitives';
 import { useToast } from '../../apps/web/src/ui/toast';
 import { ColorField, ConfirmDialog, SaveBar } from '../../apps/web/src/ui/widgets';
@@ -246,7 +248,7 @@ export default function LevelingPage() {
     <div className="animate-fade-up space-y-6">
       <header>
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-          <span aria-hidden>{emoji.leveling} </span>
+          <Icon name="leveling" size={26} className="mr-2 inline-block align-[-3px]" />
           {t('leveling.name')}
         </h1>
         <p className="mt-2 max-w-2xl text-muted">{t('leveling.description')}</p>
@@ -273,7 +275,7 @@ export default function LevelingPage() {
 
           <Card>
             <CardHeader
-              icon={emoji.sparkle}
+              icon={<Icon name="sparkle" />}
               title={t('leveling.form.general')}
               description={[
                 draft.xpSources !== 'voice' && t('leveling.form.rulesText', { min: XP_RULES.messageMin, max: XP_RULES.messageMax }),
@@ -313,7 +315,7 @@ export default function LevelingPage() {
           </Card>
 
           <Card>
-            <CardHeader icon={emoji.rocket} title={t('leveling.form.levelUp')} description={t('leveling.form.defaultHint')} />
+            <CardHeader icon={<Icon name="rocket" />} title={t('leveling.form.levelUp')} description={t('leveling.form.defaultHint')} />
             <div className="space-y-5">
               <Field label={t('leveling.form.announceMode')} help={t(`leveling.form.announceModesHelp.${draft.announceMode}`)} htmlFor="leveling-announce-mode">
                 <Select id="leveling-announce-mode" value={draft.announceMode} onChange={(value) => update('announceMode', value as AnnounceMode)} aria-describedby="leveling-announce-mode-help">
@@ -424,7 +426,7 @@ export default function LevelingPage() {
           </Card>
 
           <Card>
-            <CardHeader icon={emoji.sparkle} title={t('leveling.form.color')} />
+            <CardHeader icon={<Icon name="sparkle" />} title={t('leveling.form.color')} />
             <Field label={t('leveling.form.color')} htmlFor="leveling-color" error={fieldError('color')}>
               <ColorField id="leveling-color" value={draft.color} fallback={colors.primary} onChange={(value) => update('color', value)} />
             </Field>
@@ -444,9 +446,7 @@ export default function LevelingPage() {
           <ol className="divide-y divide-line/60">
             {topMembers.map((member, index) => (
               <li key={member.userId} className="flex items-start gap-3 py-3">
-                <span className={cx('w-6 shrink-0 pt-1.5 text-center font-mono text-sm sm:w-8', index < 3 ? 'text-lg' : 'text-muted')}>
-                  {['🥇', '🥈', '🥉'][index] ?? `#${index + 1}`}
-                </span>
+                <RankMark rank={index + 1} className="w-8 pt-0.5" />
                 <Avatar src={member.avatarUrl} name={member.displayName} size={36} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
@@ -520,12 +520,12 @@ const levelingErrorCodes: Record<LevelingErrorCode, true> = {
 };
 
 const badgeTones = {
-  text: 'bg-primary/15 text-primary ring-primary/30',
-  voice: 'bg-aqua/15 text-aqua ring-aqua/30',
-  overall: 'bg-lavender/20 text-lavender ring-lavender/40',
+  text: 'bg-raised text-ink ring-line',
+  voice: 'bg-raised text-ink ring-line',
+  overall: 'bg-ink text-bg ring-ink',
 } as const;
 
-/** "💬 Chat level 12" style badge. The same emoji, color and wording for a level kind everywhere. */
+/** "Chat level 12" style badge with the level kind's icon. The same icon and wording for a level kind everywhere. */
 function LevelBadge({ kind, level, detail }: { kind: LevelTrack | 'overall'; level?: number; detail?: string }) {
   const { t } = useI18n();
   const label = t(`leveling.tracks.${kind}`);
@@ -535,7 +535,7 @@ function LevelBadge({ kind, level, detail }: { kind: LevelTrack | 'overall'; lev
       title={detail}
       className={cx('inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ring-1', badgeTones[kind])}
     >
-      <span aria-hidden>{emoji[LEVEL_EMOJI[kind]]}</span>
+      <Icon name={LEVEL_EMOJI[kind]} size={14} />
       {text}
     </span>
   );

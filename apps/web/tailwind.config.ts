@@ -1,8 +1,15 @@
 /**
- * Tailwind reads every design token from packages/shared. Do not add colors here.
+ * Tailwind reads every design token from packages/shared (the monochrome dashboard set). Do not add colors here.
  */
 import type { Config } from 'tailwindcss';
-import { colors, discordPreviewColors, fonts, gradients, radii, shadows } from '../../packages/shared/src/tokens';
+import {
+  dashboardColors as colors,
+  dashboardGradients as gradients,
+  dashboardRadii as radii,
+  dashboardShadows as shadows,
+  discordPreviewColors,
+  fonts,
+} from '../../packages/shared/src/tokens';
 
 export default {
   content: [],

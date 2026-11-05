@@ -1,7 +1,8 @@
 /**
  * Audit log settings: on/off, what to record, retention, ignore list, invite tracking, purge.
  */
-import { ChevronDown, Trash2 } from 'lucide-react';
+import { Check, ChevronDown, FolderTree, Minus, Search, Trash2 } from 'lucide-react';
+import { Icon } from '../../apps/web/src/ui/icon';
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../apps/web/src/lib/api';
 import { useGuild } from '../../apps/web/src/lib/guild';
@@ -11,8 +12,8 @@ import { ChannelMultiPicker } from '../../apps/web/src/ui/channel-multi-picker';
 import { Alert, Button, Card, CardHeader, Field, Select, Switch, cx } from '../../apps/web/src/ui/primitives';
 import { useToast } from '../../apps/web/src/ui/toast';
 import { ConfirmDialog, SaveBar } from '../../apps/web/src/ui/widgets';
-import { categoryLabel, typeLabel } from './labels';
-import { AUDIT_CATEGORIES, auditSettingsSchema, CATEGORY_EMOJI, RETENTION_DAYS, typesByCategory, type AuditCategory, type AuditResponse, type AuditSettings } from './manifest';
+import { CategoryIcon, categoryLabel, typeLabel } from './labels';
+import { AUDIT_CATEGORIES, auditSettingsSchema, RETENTION_DAYS, typesByCategory, type AuditCategory, type AuditResponse, type AuditSettings } from './manifest';
 
 export function SettingsView({ audit }: { audit: ApiState<AuditResponse> }) {
   const { t, locale } = useI18n();
@@ -88,7 +89,7 @@ export function SettingsView({ audit }: { audit: ApiState<AuditResponse> }) {
       ))}
 
       <Card>
-        <CardHeader icon="📋" title={t('audit.form.general')} />
+        <CardHeader icon={<Icon name="log" />} title={t('audit.form.general')} />
         <div className="space-y-4">
           <Switch checked={draft.enabled} onChange={(enabled) => update('enabled', enabled)} label={t('audit.form.enabled')} description={t('audit.form.enabledHelp')} />
           <p className="text-sm text-muted">
@@ -103,17 +104,17 @@ export function SettingsView({ audit }: { audit: ApiState<AuditResponse> }) {
       </Card>
 
       <Card>
-        <CardHeader icon="🔍" title={t('audit.capabilities.title')} />
+        <CardHeader icon={<Search className="size-[18px]" strokeWidth={1.75} />} title={t('audit.capabilities.title')} />
         <ul className="space-y-2 text-sm">
-          <li className={capabilities.messageContent ? 'text-success' : 'text-muted'}>
-            {capabilities.messageContent ? '✓ ' : '• '}
+          <li className={cx('flex items-start gap-2', capabilities.messageContent ? 'text-ink' : 'text-muted')}>
+            {capabilities.messageContent ? <Check className="mt-0.5 size-4 shrink-0" aria-hidden /> : <Minus className="mt-0.5 size-4 shrink-0" aria-hidden />}
             {capabilities.messageContent ? t('audit.capabilities.messageContentOn') : t('audit.capabilities.messageContentOff')}
           </li>
         </ul>
       </Card>
 
       <Card>
-        <CardHeader icon="🗂️" title={t('audit.form.what')} description={t('audit.form.whatHelp')} />
+        <CardHeader icon={<FolderTree className="size-[18px]" strokeWidth={1.75} />} title={t('audit.form.what')} description={t('audit.form.whatHelp')} />
         <ul className="divide-y divide-line/60">
           {AUDIT_CATEGORIES.map((category) => {
             const on = !draft.disabledCategories.includes(category);
@@ -137,8 +138,8 @@ export function SettingsView({ audit }: { audit: ApiState<AuditResponse> }) {
                       checked={on}
                       onChange={(value) => toggleCategory(category, value)}
                       label={
-                        <span>
-                          <span aria-hidden>{CATEGORY_EMOJI[category]} </span>
+                        <span className="inline-flex items-center gap-2">
+                          <CategoryIcon category={category} className="size-4 text-muted" />
                           {categoryLabel(t, category)}
                         </span>
                       }
@@ -198,7 +199,7 @@ export function SettingsView({ audit }: { audit: ApiState<AuditResponse> }) {
       </Card>
 
       <Card className="border-danger/30">
-        <CardHeader icon="⚠️" title={t('audit.form.danger')} description={t('audit.form.purgeHelp')} />
+        <CardHeader icon={<Icon name="warning" />} title={t('audit.form.danger')} description={t('audit.form.purgeHelp')} />
         <Button variant="danger" onClick={() => setConfirmPurge(true)} icon={<Trash2 className="size-4" aria-hidden />} disabled={stats.events === 0}>
           {t('audit.form.purge')}
         </Button>

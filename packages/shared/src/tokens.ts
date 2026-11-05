@@ -96,3 +96,42 @@ export const shadows = {
 
 /** Default color of every embed the bot sends. */
 export const DEFAULT_EMBED_COLOR = colors.primary;
+
+/**
+ * Dashboard palette: a flat two tone black and white theme with one muted red for
+ * errors and destructive actions. Only the web dashboard reads these. Discord
+ * embeds and the server error pages keep using `colors` above.
+ * The keys match `colors` so the Tailwind names stay the same.
+ */
+export const dashboardColors = {
+  background: '#000000',
+  surface: '#0A0A0A',
+  surfaceRaised: '#161616',
+  border: '#2A2A2A',
+  text: '#FFFFFF',
+  muted: '#A3A3A3',
+  primary: '#FFFFFF',
+  lavender: '#FFFFFF',
+  aqua: '#FFFFFF',
+  success: '#FFFFFF',
+  warning: '#D4D4D4',
+  danger: '#F87171',
+} as const satisfies Record<ColorToken, string>;
+
+export const dashboardGradients = {
+  brand: `linear-gradient(${dashboardColors.primary}, ${dashboardColors.primary})`,
+  brandSoft: `linear-gradient(${withAlpha(dashboardColors.text, 0.07)}, ${withAlpha(dashboardColors.text, 0.07)})`,
+  aurora: 'none',
+} as const;
+
+export const dashboardShadows = {
+  glow: `0 0 0 1px ${withAlpha(dashboardColors.text, 0.28)}`,
+  glowStrong: `0 0 0 1px ${withAlpha(dashboardColors.text, 0.6)}`,
+  panel: 'none',
+} as const;
+
+export const dashboardRadii = {
+  md: '8px',
+  lg: '10px',
+  xl: '12px',
+} as const;
