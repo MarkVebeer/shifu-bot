@@ -1,33 +1,43 @@
 /**
- * Tailwind reads every design token from packages/shared (the monochrome dashboard set). Do not add colors here.
+ * Tailwind reads every design token from packages/shared (the dashboard set). Do not add colors here.
+ * Color names are shadcn/ui's (background, foreground, card, muted-foreground ...) plus
+ * `brand` (the one accent), `success`, `warning` and `subtle`.
  */
 import type { Config } from 'tailwindcss';
-import {
-  dashboardColors as colors,
-  dashboardGradients as gradients,
-  dashboardRadii as radii,
-  dashboardShadows as shadows,
-  discordPreviewColors,
-  fonts,
-} from '../../packages/shared/src/tokens';
+import { dashboardRadii as radii, dashboardTheme as theme, discordPreviewColors, fonts } from '../../packages/shared/src/tokens';
 
 export default {
   content: [],
   theme: {
     extend: {
       colors: {
-        bg: colors.background,
-        surface: colors.surface,
-        raised: colors.surfaceRaised,
-        line: colors.border,
-        ink: colors.text,
-        muted: colors.muted,
-        primary: colors.primary,
-        lavender: colors.lavender,
-        aqua: colors.aqua,
-        success: colors.success,
-        warning: colors.warning,
-        danger: colors.danger,
+        background: theme.background,
+        foreground: theme.foreground,
+        card: { DEFAULT: theme.card, foreground: theme.cardForeground },
+        popover: { DEFAULT: theme.popover, foreground: theme.popoverForeground },
+        primary: { DEFAULT: theme.primary, foreground: theme.primaryForeground },
+        secondary: { DEFAULT: theme.secondary, foreground: theme.secondaryForeground },
+        muted: { DEFAULT: theme.muted, foreground: theme.mutedForeground },
+        accent: { DEFAULT: theme.accent, foreground: theme.accentForeground },
+        destructive: { DEFAULT: theme.destructive },
+        border: theme.border,
+        input: theme.input,
+        ring: theme.ring,
+        brand: { DEFAULT: theme.brand, foreground: theme.brandForeground },
+        success: theme.success,
+        warning: theme.warning,
+        subtle: theme.subtle,
+        elevated: theme.elevated,
+        sidebar: {
+          DEFAULT: theme.sidebar,
+          foreground: theme.sidebarForeground,
+          primary: theme.sidebarPrimary,
+          'primary-foreground': theme.sidebarPrimaryForeground,
+          accent: theme.sidebarAccent,
+          'accent-foreground': theme.sidebarAccentForeground,
+          border: theme.sidebarBorder,
+          ring: theme.sidebarRing,
+        },
         discord: {
           bg: discordPreviewColors.background,
           embed: discordPreviewColors.embed,
@@ -46,19 +56,10 @@ export default {
         mono: [...fonts.mono],
       },
       borderRadius: {
-        token: radii.md,
-        card: radii.xl,
-        panel: radii.lg,
-      },
-      backgroundImage: {
-        brand: gradients.brand,
-        'brand-soft': gradients.brandSoft,
-        aurora: gradients.aurora,
-      },
-      boxShadow: {
-        glow: shadows.glow,
-        'glow-strong': shadows.glowStrong,
-        panel: shadows.panel,
+        sm: radii.sm,
+        md: radii.md,
+        lg: radii.lg,
+        xl: radii.xl,
       },
     },
   },

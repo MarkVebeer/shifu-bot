@@ -3,7 +3,7 @@
  * client shows it. Supports the markdown subset used in embeds.
  */
 import { ButtonStyle, discordPreviewColors, intToHex, type ActionRowData, type EmbedData, type MessagePayload } from '@shifubot/shared';
-import { ExternalLink } from 'lucide-react';
+import { ArrowSquareOut } from '@phosphor-icons/react';
 import { Fragment, type ReactNode } from 'react';
 
 interface PreviewProps {
@@ -143,7 +143,7 @@ function ActionRow({ row }: { row: ActionRowData }) {
         >
           {button.emoji && <span aria-hidden>{button.emoji.name}</span>}
           {button.label}
-          {'url' in button && <ExternalLink className="size-3.5" aria-hidden />}
+          {'url' in button && <ArrowSquareOut className="size-3.5" aria-hidden />}
         </span>
       ))}
     </div>
@@ -152,7 +152,7 @@ function ActionRow({ row }: { row: ActionRowData }) {
 
 export function DiscordMessagePreview({ payload, bot, mentions, botTag, timestampLabel }: PreviewProps) {
   return (
-    <div className="overflow-hidden rounded-panel bg-discord-bg px-3 py-4 font-sans text-discord-text sm:px-4">
+    <div className="overflow-hidden rounded-lg bg-discord-bg px-3 py-4 font-sans text-discord-text sm:px-4">
       <div className="flex gap-3 sm:gap-4">
         <img src={bot.avatarUrl} alt="" className="size-9 shrink-0 rounded-full sm:size-10" />
         <div className="min-w-0 flex-1">

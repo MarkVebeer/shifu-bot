@@ -2,7 +2,7 @@
  * Building blocks of the ranked lists on member pages (goon counter, leveling):
  * a hook that loads a list with search and paging, the search box, and rows.
  */
-import { Search } from 'lucide-react';
+import { MagnifyingGlass } from '@phosphor-icons/react';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router';
 import { api, ApiRequestError } from '../lib/api';
@@ -87,7 +87,7 @@ export function SearchBox({ value, onChange }: { value: string; onChange: (value
   const { t } = useI18n();
   return (
     <div className="relative">
-      <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden />
+      <MagnifyingGlass className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
       <Input
         type="search"
         value={value}
@@ -123,7 +123,7 @@ export function RankRow({
   const podium = rank <= 3;
   return (
     <li
-      className={cx('glass-raised flex items-center gap-3 px-4 sm:gap-4', podium ? 'py-4' : 'py-2.5', mine && 'border-white/60')}
+      className={cx('flex items-center gap-3 rounded-lg border bg-card px-4 shadow-sm sm:gap-4', podium ? 'py-4' : 'py-2.5', mine && 'border-primary')}
       aria-current={mine || undefined}
     >
       <RankMark rank={rank} label={formatNumber(rank, locale)} className="w-10" />
@@ -131,9 +131,9 @@ export function RankRow({
       <span className="min-w-0 flex-1">
         <span className="flex min-w-0 items-center gap-2">
           <span className={cx('truncate', podium && 'text-lg font-semibold')}>{name}</span>
-          {mine && <span className="shrink-0 rounded-full bg-brand-soft px-2 py-0.5 text-xs font-semibold text-primary">{t('memberPages.you')}</span>}
+          {mine && <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-primary">{t('memberPages.you')}</span>}
         </span>
-        {detail && <span className="mt-0.5 block truncate text-xs text-muted">{detail}</span>}
+        {detail && <span className="mt-0.5 block truncate text-xs text-muted-foreground">{detail}</span>}
       </span>
       <span className={cx('shrink-0 text-right font-mono font-bold', podium ? 'text-xl' : 'text-base')}>{value}</span>
     </li>
@@ -144,18 +144,18 @@ export function RankRow({
 export function YourPlace({ rank, name, value, unit, detail }: { rank: number; name: string; value: ReactNode; unit: string; detail?: ReactNode }) {
   const { t, locale } = useI18n();
   return (
-    <section className="glass-raised flex items-center gap-4 border-primary/40 px-5 py-4" aria-label={t('memberPages.yourPlace')}>
-      <span className="grid min-w-14 place-items-center rounded-token bg-brand-soft px-2 py-1 font-mono text-xl font-bold text-primary ring-1 ring-primary/30">
+    <section className="flex items-center gap-4 rounded-lg border border-primary/60 bg-card px-5 py-4 shadow-sm" aria-label={t('memberPages.yourPlace')}>
+      <span className="grid min-w-14 place-items-center rounded-md bg-muted px-2 py-1 font-mono text-xl font-bold text-primary ring-1 ring-primary/30">
         #{formatNumber(rank, locale)}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-sm text-muted">{t('memberPages.yourPlace')}</p>
+        <p className="text-sm text-muted-foreground">{t('memberPages.yourPlace')}</p>
         <p className="truncate font-semibold">{name}</p>
-        {detail && <p className="truncate text-xs text-muted">{detail}</p>}
+        {detail && <p className="truncate text-xs text-muted-foreground">{detail}</p>}
       </div>
       <span className="text-right">
         <span className="block font-mono text-2xl font-bold">{value}</span>
-        <span className="text-xs text-muted">{unit}</span>
+        <span className="text-xs text-muted-foreground">{unit}</span>
       </span>
     </section>
   );
@@ -182,11 +182,11 @@ export function RankedList({
   const { t, locale } = useI18n();
   return (
     <>
-      {q && matches > 0 && <p className="-mt-2 text-sm text-muted">{t('memberPages.matches', { count: formatNumber(matches, locale) })}</p>}
+      {q && matches > 0 && <p className="-mt-2 text-sm text-muted-foreground">{t('memberPages.matches', { count: formatNumber(matches, locale) })}</p>}
       {shown ? (
         <ol className="space-y-2">{children}</ol>
       ) : (
-        <p className="glass p-6 text-center text-muted">{q ? t('memberPages.noResults', { q }) : emptyText}</p>
+        <p data-slot="card" className="rounded-xl border bg-card p-6 text-center text-muted-foreground shadow-sm">{q ? t('memberPages.noResults', { q }) : emptyText}</p>
       )}
       {shown < matches && (
         <div className="flex justify-center">
@@ -209,9 +209,9 @@ export function RankMark({ rank, label, className }: { rank: number; label?: str
   return (
     <span className={cx('grid shrink-0 place-items-center', className)}>
       {rank <= 3 ? (
-        <span className="grid size-8 place-items-center rounded-full bg-ink font-mono text-sm font-bold text-bg">{text}</span>
+        <span className="grid size-8 place-items-center rounded-full bg-foreground font-mono text-sm font-bold text-background">{text}</span>
       ) : (
-        <span className="font-mono text-sm text-muted">#{text}</span>
+        <span className="font-mono text-sm text-muted-foreground">#{text}</span>
       )}
     </span>
   );

@@ -1,10 +1,11 @@
+import { Button as UiButton } from '@/components/ui/button';
 import type { ChannelKind, ChannelOption } from '@shifubot/shared';
-import { FolderClosed, Hash, Volume2, X } from 'lucide-react';
+import { Folder, Hash, SpeakerHigh, X } from '@phosphor-icons/react';
 import { useGuild } from '../lib/guild';
 import { useApi } from '../lib/use-api';
 import { Field, Select, Skeleton } from './primitives';
 
-const KIND_ICON: Record<ChannelKind, typeof Hash> = { text: Hash, voice: Volume2, category: FolderClosed };
+const KIND_ICON: Record<ChannelKind, typeof Hash> = { text: Hash, voice: SpeakerHigh, category: Folder };
 /** Plain text glyphs: native <option> elements cannot hold SVG icons. */
 const KIND_PREFIX: Record<ChannelKind, string> = { text: '#', voice: '♪', category: '▸' };
 
@@ -59,7 +60,7 @@ export function ChannelMultiPicker({
       ) : (
         <div className="space-y-3">
           {value.length === 0 ? (
-            <p className="text-sm text-muted">{emptyText}</p>
+            <p className="text-sm text-muted-foreground">{emptyText}</p>
           ) : (
             <ul className="flex flex-wrap gap-2">
               {value.map((channelId) => {
@@ -68,17 +69,18 @@ export function ChannelMultiPicker({
                 const name = channel?.name ?? channelId;
                 return (
                   <li key={channelId}>
-                    <span className="inline-flex min-h-10 items-center gap-2 rounded-full border border-line bg-raised/60 py-1 pl-3 pr-1 text-sm">
-                      <Icon className="size-4 text-muted" aria-hidden />
-                      <span className={channel ? undefined : 'text-muted line-through'}>{name}</span>
-                      <button
-                        type="button"
+                    <span className="inline-flex min-h-10 items-center gap-2 rounded-full border bg-muted/50 py-1 pl-3 pr-1 text-sm">
+                      <Icon className="size-4 text-muted-foreground" aria-hidden />
+                      <span className={channel ? undefined : 'text-muted-foreground line-through'}>{name}</span>
+                      <UiButton
+                        variant="ghost"
+                        size="icon-sm"
+                        className="rounded-full text-muted-foreground hover:text-destructive"
                         onClick={() => onChange(value.filter((item) => item !== channelId))}
                         aria-label={removeLabel(name)}
-                        className="grid size-8 place-items-center rounded-full text-muted transition hover:bg-danger/15 hover:text-danger"
                       >
-                        <X className="size-4" aria-hidden />
-                      </button>
+                        <X aria-hidden />
+                      </UiButton>
                     </span>
                   </li>
                 );

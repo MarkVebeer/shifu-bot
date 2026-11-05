@@ -3,13 +3,15 @@
  * shared and survives a reload.
  */
 import type { ChannelOption } from '@shifubot/shared';
-import { Download, Filter, RefreshCw, Search, X } from 'lucide-react';
+import { ArrowsClockwise, DownloadSimple, Funnel, MagnifyingGlass, X } from '@phosphor-icons/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { api } from '../../apps/web/src/lib/api';
 import { useGuild } from '../../apps/web/src/lib/guild';
 import { errorText, useI18n } from '../../apps/web/src/lib/i18n';
 import { useApi } from '../../apps/web/src/lib/use-api';
+import { Button as UiButton } from '@/components/ui/button';
+import { Toggle } from '@/components/ui/toggle';
 import { Alert, Avatar, Button, Card, Field, Input, Select, Skeleton, cx } from '../../apps/web/src/ui/primitives';
 import { EventRow } from './event-row';
 import { CategoryIcon, categoryLabel, typeLabel } from './labels';
@@ -21,7 +23,7 @@ const RANGE_KEYS: Range[] = ['1h', '24h', '7d', '30d', 'all', 'custom'];
 const PAGE = 50;
 const POLL_MS = 15_000;
 
-/** Filter params kept in the URL, next to "tab". */
+/** Funnel params kept in the URL, next to "tab". */
 const FILTER_PARAMS = ['range', 'from', 'to', 'categories', 'types', 'user', 'userRole', 'channel', 'q'] as const;
 
 const toLocalInput = (ms: number) => {
@@ -182,7 +184,7 @@ export function LogView({ enabled }: { enabled: boolean }) {
       <section aria-live="polite" className="min-w-0 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <Button variant="secondary" onClick={() => setRefreshTick((tick) => tick + 1)} icon={<RefreshCw className="size-4" aria-hidden />}>
+            <Button variant="secondary" onClick={() => setRefreshTick((tick) => tick + 1)} icon={<ArrowsClockwise className="size-4" aria-hidden />}>
               {t('audit.list.refresh')}
             </Button>
             {newCount > 0 && (
@@ -192,10 +194,10 @@ export function LogView({ enabled }: { enabled: boolean }) {
             )}
           </div>
           <div className="flex items-center gap-2 text-sm">
-            <Download className="size-4 text-muted" aria-hidden />
-            <span className="text-muted">{t('audit.list.export')}</span>
+            <DownloadSimple className="size-4 text-muted-foreground" aria-hidden />
+            <span className="text-muted-foreground">{t('audit.list.export')}</span>
             {(['csv', 'json'] as const).map((format) => (
-              <a key={format} href={exportHref(format)} download className="inline-flex min-h-9 items-center rounded-full border border-line px-3 font-medium hover:border-primary/60">
+              <a key={format} href={exportHref(format)} download className="inline-flex min-h-9 items-center rounded-full border border-border px-3 font-medium hover:border-primary/60">
                 {format === 'csv' ? t('audit.list.exportCsv') : t('audit.list.exportJson')}
               </a>
             ))}
@@ -215,7 +217,7 @@ export function LogView({ enabled }: { enabled: boolean }) {
           </ul>
         ) : events.length === 0 ? (
           <Card>
-            <p className="text-center text-muted">{t('audit.list.empty')}</p>
+            <p className="text-center text-muted-foreground">{t('audit.list.empty')}</p>
           </Card>
         ) : (
           <>
@@ -238,7 +240,7 @@ export function LogView({ enabled }: { enabled: boolean }) {
                   {loadingMore ? t('audit.list.loading') : t('audit.list.loadMore')}
                 </Button>
               ) : (
-                <p className="text-sm text-muted">{t('audit.list.end')}</p>
+                <p className="text-sm text-muted-foreground">{t('audit.list.end')}</p>
               )}
             </div>
           </>
@@ -297,7 +299,7 @@ function Filters({
 
   return (
     <aside className="min-w-0">
-      <Button variant="secondary" className="mb-3 w-full xl:hidden" onClick={() => setOpen((value) => !value)} aria-expanded={open} icon={<Filter className="size-4" aria-hidden />}>
+      <Button variant="secondary" className="mb-3 w-full xl:hidden" onClick={() => setOpen((value) => !value)} aria-expanded={open} icon={<Funnel className="size-4" aria-hidden />}>
         {t('audit.filters.title')}
         {activeFilters > 0 && ` · ${t('audit.filters.active', { count: String(activeFilters) })}`}
       </Button>
@@ -305,15 +307,15 @@ function Filters({
         <div className="flex items-center justify-between gap-2">
           <h2 className="font-semibold">{t('audit.filters.title')}</h2>
           {activeFilters > 0 && (
-            <button type="button" onClick={clearAll} className="text-sm font-medium text-primary hover:underline">
+            <UiButton variant="link" size="sm" className="h-auto px-0" onClick={clearAll}>
               {t('audit.filters.clear')}
-            </button>
+            </UiButton>
           )}
         </div>
 
         <Field label={t('audit.filters.search')} htmlFor="audit-search">
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden />
+            <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
             <Input id="audit-search" type="search" value={text} onChange={(event) => setText(event.target.value)} placeholder={t('audit.filters.searchPlaceholder')} className="pl-9" maxLength={200} />
           </div>
         </Field>
@@ -348,19 +350,17 @@ function Filters({
             {AUDIT_CATEGORIES.map((category) => {
               const active = categories.includes(category);
               return (
-                <button
+                <Toggle
                   key={category}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => toggleCategory(category)}
-                  className={cx(
-                    'inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition',
-                    active ? 'border-ink bg-ink text-bg' : 'border-line text-muted hover:text-ink',
-                  )}
+                  variant="outline"
+                  size="sm"
+                  pressed={active}
+                  onPressedChange={() => toggleCategory(category)}
+                  className="h-9 rounded-full px-3 text-xs"
                 >
                   <CategoryIcon category={category} className="size-3.5" />
                   {categoryLabel(t, category)}
-                </button>
+                </Toggle>
               );
             })}
           </div>
@@ -372,16 +372,17 @@ function Filters({
               <ul className="flex flex-wrap gap-1.5">
                 {types.map((type) => (
                   <li key={type}>
-                    <span className="inline-flex min-h-9 items-center gap-1 rounded-full border border-line bg-raised/60 py-0.5 pl-3 pr-1 text-xs">
+                    <span className="inline-flex min-h-9 items-center gap-1 rounded-full border bg-muted/50 py-0.5 pl-3 pr-1 text-xs">
                       {typeLabel(t, type)}
-                      <button
-                        type="button"
+                      <UiButton
+                        variant="ghost"
+                        size="icon-sm"
+                        className="size-7 rounded-full text-muted-foreground hover:text-destructive"
                         onClick={() => setFilter({ types: types.filter((item) => item !== type).join(',') || null })}
                         aria-label={t('audit.filters.remove', { name: typeLabel(t, type) })}
-                        className="grid size-7 place-items-center rounded-full text-muted hover:bg-danger/15 hover:text-danger"
                       >
-                        <X className="size-3.5" aria-hidden />
-                      </button>
+                        <X aria-hidden />
+                      </UiButton>
                     </span>
                   </li>
                 ))}
@@ -464,18 +465,19 @@ function UserFilter({ userId, names, onChange }: { userId: string | null; names:
     const name = selected?.name ?? userId;
     return (
       <Field label={t('audit.filters.user')} htmlFor="audit-user">
-        <span className="inline-flex min-h-11 max-w-full items-center gap-2 rounded-full border border-line bg-raised/60 py-1 pl-1 pr-1 text-sm">
+        <span className="inline-flex min-h-11 max-w-full items-center gap-2 rounded-full border bg-muted/50 py-1 pl-1 pr-1 text-sm">
           <Avatar src={selected?.avatarUrl ?? null} name={name} size={32} />
           <span className="truncate">{name}</span>
-          <button
+          <UiButton
             id="audit-user"
-            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className="rounded-full text-muted-foreground hover:text-destructive"
             onClick={() => onChange(null)}
             aria-label={t('audit.filters.remove', { name })}
-            className="grid size-8 shrink-0 place-items-center rounded-full text-muted hover:bg-danger/15 hover:text-danger"
           >
-            <X className="size-4" aria-hidden />
-          </button>
+            <X aria-hidden />
+          </UiButton>
         </span>
       </Field>
     );
@@ -497,7 +499,7 @@ function UserFilter({ userId, names, onChange }: { userId: string | null; names:
           aria-controls="audit-user-results"
         />
         {focused && results.length > 0 && (
-          <ul id="audit-user-results" role="listbox" className="glass absolute inset-x-0 top-full z-20 mt-1 max-h-72 overflow-auto p-1">
+          <ul id="audit-user-results" role="listbox" className="absolute inset-x-0 top-full z-20 mt-1 max-h-72 animate-in fade-in-0 zoom-in-95 overflow-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
             {results.map((user) => (
               <li key={user.id} role="option" aria-selected={false}>
                 <button
@@ -508,12 +510,12 @@ function UserFilter({ userId, names, onChange }: { userId: string | null; names:
                     setText('');
                     onChange(user.id);
                   }}
-                  className="flex w-full items-center gap-2 rounded-token p-2 text-left text-sm hover:bg-raised"
+                  className="flex w-full items-center gap-2 rounded-sm p-2 text-left text-sm outline-none hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent"
                 >
                   <Avatar src={user.avatarUrl} name={user.name} size={28} />
                   <span className="min-w-0">
                     <span className="block truncate font-medium">{user.name}</span>
-                    <span className="block truncate text-xs text-muted">@{user.username}</span>
+                    <span className="block truncate text-xs text-muted-foreground">@{user.username}</span>
                   </span>
                 </button>
               </li>

@@ -1,9 +1,12 @@
 /**
  * One audit log event: a readable summary line and expandable details.
  */
-import { Check, ChevronDown, Copy, ExternalLink, Hash, User as UserIcon, X } from 'lucide-react';
+import { ArrowSquareOut, CaretDown, Check, Copy, Hash, User as UserIcon, X } from '@phosphor-icons/react';
 import { useState, type ReactNode } from 'react';
 import { useI18n } from '../../apps/web/src/lib/i18n';
+import { Badge } from '@/components/ui/badge';
+import { Button as UiButton } from '@/components/ui/button';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Avatar, cx } from '../../apps/web/src/ui/primitives';
 import { useToast } from '../../apps/web/src/ui/toast';
 import { absoluteTime, fieldLabel, relativeTime, typeIcon, typeLabel } from './labels';
@@ -24,12 +27,12 @@ const isUrl = (value: unknown): value is string => typeof value === 'string' && 
 const isImage = (value: unknown): value is string => isUrl(value) && /\.(png|jpe?g|gif|webp)(\?|$)/i.test(value);
 
 function formatValue(value: unknown, names: Names, key?: string): ReactNode {
-  if (value === null || value === undefined || value === '') return <span className="text-muted">—</span>;
+  if (value === null || value === undefined || value === '') return <span className="text-muted-foreground">—</span>;
   if (typeof value === 'boolean') return value ? <Check className="inline size-4" aria-label="true" /> : <X className="inline size-4" aria-label="false" />;
   if (typeof value === 'string') {
     if (key && USER_KEYS.has(key)) return names.users[value]?.name ?? value;
     if (key && CHANNEL_KEYS.has(key)) return names.channels[value] ? `#${names.channels[value]!.name}` : value;
-    if (isImage(value)) return <img src={value} alt="" className="size-10 rounded-full ring-1 ring-line" />;
+    if (isImage(value)) return <img src={value} alt="" className="size-10 rounded-full ring-1 ring-border" />;
     if (isUrl(value)) {
       return (
         <a href={value} target="_blank" rel="noreferrer noopener" className="break-all text-primary hover:underline">
@@ -54,16 +57,31 @@ function formatValue(value: unknown, names: Names, key?: string): ReactNode {
     const entity = value as { id: string; name?: string };
     return entity.name ?? names.users[entity.id]?.name ?? names.channels[entity.id]?.name ?? entity.id;
   }
-  return <code className="break-all text-xs text-muted">{JSON.stringify(value)}</code>;
+  return <code className="break-all text-xs text-muted-foreground">{JSON.stringify(value)}</code>;
 }
 
 function Chip({ children, onClick, title }: { children: ReactNode; onClick?: () => void; title?: string }) {
-  const className = 'inline-flex max-w-full items-center gap-1.5 truncate rounded-full bg-raised/80 px-2 py-0.5 text-xs font-medium text-ink';
-  if (!onClick) return <span className={className}>{children}</span>;
+  if (!onClick)
+    return (
+      <Badge variant="secondary" className="max-w-full truncate rounded-full">
+        {children}
+      </Badge>
+    );
   return (
-    <button type="button" onClick={onClick} title={title} className={cx(className, 'transition hover:bg-primary/15 hover:text-primary')}>
-      {children}
-    </button>
+    <Badge asChild variant="secondary" className="max-w-full truncate rounded-full">
+      <button
+        type="button"
+        onClick={(event) => {
+          // The chip sits inside the row toggle: filter, do not also open the row.
+          event.stopPropagation();
+          onClick();
+        }}
+        title={title}
+        className="hover:bg-accent hover:text-accent-foreground"
+      >
+        {children}
+      </button>
+    </Badge>
   );
 }
 
@@ -119,17 +137,25 @@ export function EventRow({ event, names, actions }: { event: AuditEvent; names: 
   };
 
   return (
-    <li className="glass overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        aria-expanded={open}
-        className="flex w-full items-start gap-3 p-3 text-left transition hover:bg-raised/40 sm:p-4"
-      >
+    <Collapsible asChild open={open} onOpenChange={setOpen}>
+    <li className="overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm">
+      {/* A div with the button role: the summary holds its own buttons (user chips), which a <button> cannot contain. */}
+      <CollapsibleTrigger asChild>
+        <div
+          role="button"
+          tabIndex={0}
+          aria-expanded={open}
+          onKeyDown={(event) => {
+            if (event.target !== event.currentTarget || (event.key !== 'Enter' && event.key !== ' ')) return;
+            event.preventDefault();
+            setOpen((value) => !value);
+          }}
+          className="flex w-full cursor-pointer items-start gap-3 p-3 text-left outline-none transition-colors hover:bg-accent/50 focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:p-4"
+        >
         <span className="relative shrink-0">
-          {avatarUser ? <Avatar src={avatarUser.avatarUrl} name={avatarUser.name} size={36} /> : <span className="grid size-9 place-items-center rounded-full bg-raised text-muted"><TypeIcon className="size-4" aria-hidden /></span>}
+          {avatarUser ? <Avatar src={avatarUser.avatarUrl} name={avatarUser.name} size={36} /> : <span className="grid size-9 place-items-center rounded-full bg-muted text-muted-foreground"><TypeIcon className="size-4" aria-hidden /></span>}
           {avatarUser && (
-            <span className="absolute -bottom-1 -right-1 grid size-5 place-items-center rounded-full bg-bg text-xs ring-1 ring-line" aria-hidden>
+            <span className="absolute -bottom-1 -right-1 grid size-5 place-items-center rounded-full bg-background text-xs ring-1 ring-border" aria-hidden>
               <TypeIcon className="size-3" />
             </span>
           )}
@@ -137,11 +163,11 @@ export function EventRow({ event, names, actions }: { event: AuditEvent; names: 
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-baseline justify-between gap-x-3">
             <span className="min-w-0 break-words font-semibold">{typeLabel(t, event.type)}</span>
-            <time dateTime={new Date(event.at).toISOString()} title={absoluteTime(locale, event.at)} className="shrink-0 text-xs text-muted">
+            <time dateTime={new Date(event.at).toISOString()} title={absoluteTime(locale, event.at)} className="shrink-0 text-xs text-muted-foreground">
               {relativeTime(locale, event.at)}
             </time>
           </span>
-          <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted">
+          <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
             {actor && (
               <>
                 <span>{t('audit.row.by')}</span>
@@ -167,43 +193,44 @@ export function EventRow({ event, names, actions }: { event: AuditEvent; names: 
             )}
             {typeof data.newAccount === 'boolean' && data.newAccount && <span className="rounded-full bg-warning/15 px-2 py-0.5 font-medium text-warning">{t('audit.row.newAccount')}</span>}
           </span>
-          {typeof data.reason === 'string' && <span className="mt-1 block text-sm text-ink/90">{t('audit.row.reason', { reason: data.reason })}</span>}
+          {typeof data.reason === 'string' && <span className="mt-1 block text-sm text-foreground/90">{t('audit.row.reason', { reason: data.reason })}</span>}
           {event.type === 'shifubot.eventsSkipped' && <span className="mt-1 block text-sm text-warning">{t('audit.row.skipped', { count: String(data.count ?? 0) })}</span>}
-          {typeof data.content === 'string' && !open && <span className="mt-1 line-clamp-2 block text-sm text-ink/90">{data.content}</span>}
+          {typeof data.content === 'string' && !open && <span className="mt-1 line-clamp-2 block text-sm text-foreground/90">{data.content}</span>}
         </span>
-        <ChevronDown className={cx('mt-1 size-4 shrink-0 text-muted transition', open && 'rotate-180')} aria-hidden />
-      </button>
+        <CaretDown className={cx('mt-1 size-4 shrink-0 text-muted-foreground transition', open && 'rotate-180')} aria-hidden />
+        </div>
+      </CollapsibleTrigger>
 
-      {open && (
-        <div className="animate-fade-in space-y-4 border-t border-line/60 bg-bg/30 p-3 text-sm sm:p-4">
+      <CollapsibleContent>
+        <div className="animate-fade-in space-y-4 border-t bg-background/40 p-3 text-sm sm:p-4">
           {typeof data.content === 'string' && (
             <section>
-              <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">{fieldLabel(t, 'content')}</h3>
-              <p className="whitespace-pre-wrap break-words rounded-token bg-raised/50 p-3">{data.content}</p>
+              <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{fieldLabel(t, 'content')}</h3>
+              <p className="whitespace-pre-wrap break-words rounded-md bg-muted/50 p-3">{data.content}</p>
             </section>
           )}
           {(event.type === 'message.deleted' || event.type === 'message.edited') && data.content === undefined && !hasBeforeAfter && (
-            <p className="text-xs text-muted">{t('audit.row.noContent')}</p>
+            <p className="text-xs text-muted-foreground">{t('audit.row.noContent')}</p>
           )}
           {hasBeforeAfter && (
             <section className="grid gap-3 sm:grid-cols-2">
               {(['before', 'after'] as const).map((key) => (
                 <div key={key}>
-                  <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">{t(`audit.row.${key}`)}</h3>
-                  <div className={cx('rounded-token p-3', key === 'before' ? 'bg-danger/10' : 'bg-success/10')}>{formatValue(data[key], names, key)}</div>
+                  <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t(`audit.row.${key}`)}</h3>
+                  <div className={cx('rounded-md p-3', key === 'before' ? 'bg-destructive/10' : 'bg-success/10')}>{formatValue(data[key], names, key)}</div>
                 </div>
               ))}
             </section>
           )}
           {changes.length > 0 && (
             <section>
-              <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">{fieldLabel(t, 'changes')}</h3>
-              <ul className="divide-y divide-line/60 rounded-token bg-raised/40">
+              <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{fieldLabel(t, 'changes')}</h3>
+              <ul className="divide-y divide-border rounded-md bg-muted/40">
                 {changes.map((change, index) => (
                   <li key={`${change.key}-${index}`} className="grid gap-1 p-2 sm:grid-cols-[10rem_1fr]">
-                    <span className="font-medium text-muted">{fieldLabel(t, change.key.replace(/^\$/, ''))}</span>
+                    <span className="font-medium text-muted-foreground">{fieldLabel(t, change.key.replace(/^\$/, ''))}</span>
                     <span className="flex min-w-0 flex-wrap items-center gap-2">
-                      {change.old !== null && change.old !== undefined && <span className="min-w-0 text-danger line-through decoration-danger/60">{formatValue(change.old, names, change.key)}</span>}
+                      {change.old !== null && change.old !== undefined && <span className="min-w-0 text-destructive line-through decoration-danger/60">{formatValue(change.old, names, change.key)}</span>}
                       {change.old !== null && change.old !== undefined && change.new !== null && change.new !== undefined && <span aria-hidden>→</span>}
                       {change.new !== null && change.new !== undefined && <span className="min-w-0 text-success">{formatValue(change.new, names, change.key)}</span>}
                     </span>
@@ -214,7 +241,7 @@ export function EventRow({ event, names, actions }: { event: AuditEvent; names: 
           )}
           {attachments.length > 0 && (
             <section>
-              <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted">{fieldLabel(t, 'attachments')}</h3>
+              <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{fieldLabel(t, 'attachments')}</h3>
               <ul className="space-y-1">
                 {attachments.map((file) => (
                   <li key={file.url}>
@@ -230,7 +257,7 @@ export function EventRow({ event, names, actions }: { event: AuditEvent; names: 
             <dl className="grid gap-x-4 gap-y-1 sm:grid-cols-[10rem_1fr]">
               {rest.map(([key, value]) => (
                 <div key={key} className="contents">
-                  <dt className="font-medium text-muted">{fieldLabel(t, key)}</dt>
+                  <dt className="font-medium text-muted-foreground">{fieldLabel(t, key)}</dt>
                   <dd className="min-w-0">{formatValue(value, names, key)}</dd>
                 </div>
               ))}
@@ -238,35 +265,30 @@ export function EventRow({ event, names, actions }: { event: AuditEvent; names: 
           )}
           <div className="flex flex-wrap items-center gap-2 text-xs">
             {discordUrl && (
-              <a href={discordUrl} target="_blank" rel="noreferrer noopener" className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-line px-3 font-medium hover:border-primary/60">
-                <ExternalLink className="size-3.5" aria-hidden />
+              <a href={discordUrl} target="_blank" rel="noreferrer noopener" className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-border px-3 font-medium hover:border-primary/60">
+                <ArrowSquareOut className="size-3.5" aria-hidden />
                 {t('audit.row.openInDiscord')}
               </a>
             )}
             {event.channelId && channel && (
-              <button type="button" onClick={() => actions.onChannel(event.channelId!)} className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-line px-3 font-medium hover:border-primary/60">
-                <Hash className="size-3.5" aria-hidden />
+              <UiButton variant="outline" size="sm" className="h-9 rounded-full" onClick={() => actions.onChannel(event.channelId!)}>
+                <Hash aria-hidden />
                 {t('audit.row.filterChannel', { name: channel.name })}
-              </button>
+              </UiButton>
             )}
             {[event.actorId, event.targetId, typeof data.messageId === 'string' ? data.messageId : null]
               .filter((id): id is string => Boolean(id && /^\d{17,20}$/.test(id)))
               .filter((id, index, all) => all.indexOf(id) === index)
               .map((id) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => copy(id)}
-                  title={t('audit.row.copyId')}
-                  className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-line px-3 font-mono text-muted hover:border-primary/60 hover:text-ink"
-                >
-                  <Copy className="size-3.5" aria-hidden />
+                <UiButton key={id} variant="outline" size="sm" className="h-9 rounded-full font-mono text-muted-foreground" onClick={() => copy(id)} title={t('audit.row.copyId')}>
+                  <Copy aria-hidden />
                   {id}
-                </button>
+                </UiButton>
               ))}
           </div>
         </div>
-      )}
+      </CollapsibleContent>
     </li>
+    </Collapsible>
   );
 }

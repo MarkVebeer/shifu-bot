@@ -1,8 +1,9 @@
 /**
  * Goon counter: dashboard page.
  */
+import { Button as UiButton } from '@/components/ui/button';
 import { colors, findUnknownPlaceholders } from '@shifubot/shared';
-import { ExternalLink, Eye, Send } from 'lucide-react';
+import { ArrowSquareOut, Eye, PaperPlaneTilt } from '@phosphor-icons/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../apps/web/src/lib/api';
 import { useGuild } from '../../apps/web/src/lib/guild';
@@ -11,7 +12,7 @@ import { useApi } from '../../apps/web/src/lib/use-api';
 import { ChannelPicker } from '../../apps/web/src/ui/channel-picker';
 import { DiscordMessagePreview } from '../../apps/web/src/ui/discord-preview';
 import { Icon } from '../../apps/web/src/ui/icon';
-import { Alert, Avatar, Button, Card, CardHeader, Field, Input, Skeleton, Switch, Textarea } from '../../apps/web/src/ui/primitives';
+import { Alert, Avatar, Button, Card, CardHeader, Field, Input, Skeleton, Switch, Textarea, PageHeader, Badge } from '../../apps/web/src/ui/primitives';
 import { useToast } from '../../apps/web/src/ui/toast';
 import { ColorField, SaveBar } from '../../apps/web/src/ui/widgets';
 import { buildGoonPanel, GOON_PLACEHOLDERS, goonSettingsSchema, listPath, type GoonSettings } from './manifest';
@@ -169,7 +170,7 @@ export default function GoonPage() {
         aria-invalid={Boolean(fieldError(field))}
         className="w-28 font-mono"
       />
-      <span className="text-sm text-muted">{t('goon.form.minutes')}</span>
+      <span className="text-sm text-muted-foreground">{t('goon.form.minutes')}</span>
     </div>
   );
 
@@ -182,17 +183,17 @@ export default function GoonPage() {
           <div className="space-y-3">
             {panelLive ? (
               <a href={status.panel!.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline">
-                <ExternalLink className="size-4" aria-hidden />
+                <ArrowSquareOut className="size-4" aria-hidden />
                 {t('goon.status.panelLive', { channel: status.panel!.channelName })}
               </a>
             ) : (
               <p className="text-sm text-warning">{t('goon.status.panelMissing')}</p>
             )}
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <Button variant="secondary" onClick={repost} loading={reposting} disabled={dirty} icon={<Send className="size-4" aria-hidden />}>
+              <Button variant="secondary" onClick={repost} loading={reposting} disabled={dirty} icon={<PaperPlaneTilt className="size-4" aria-hidden />}>
                 {reposting ? t('goon.panel.reposting') : t('goon.panel.repost')}
               </Button>
-              <p className="text-xs text-muted">{t('goon.panel.help')}</p>
+              <p className="text-xs text-muted-foreground">{t('goon.panel.help')}</p>
             </div>
           </div>
         )}
@@ -206,7 +207,7 @@ export default function GoonPage() {
               const name = entry.displayName ?? t('goon.top.unknown');
               return (
                 <li key={entry.userId} className="flex items-center gap-3">
-                  <span className="w-6 text-right font-mono text-sm text-muted">{index + 1}.</span>
+                  <span className="w-6 text-right font-mono text-sm text-muted-foreground">{index + 1}.</span>
                   <Avatar src={entry.avatarUrl} name={name} size={32} />
                   <span className="min-w-0 flex-1 truncate">{name}</span>
                   <span className="font-mono font-semibold">{entry.count.toLocaleString(guild.locale)}</span>
@@ -215,19 +216,19 @@ export default function GoonPage() {
             })}
           </ol>
         ) : (
-          <p className="text-sm text-muted">{t('goon.top.empty')}</p>
+          <p className="text-sm text-muted-foreground">{t('goon.top.empty')}</p>
         )}
-        <div className="space-y-1 border-t border-line pt-4">
+        <div className="space-y-1 border-t border-border pt-4">
           <a
             href={listPath(guild.id)}
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
           >
-            <ExternalLink className="size-4" aria-hidden />
+            <ArrowSquareOut className="size-4" aria-hidden />
             {t('goon.top.openList')}
           </a>
-          <p className="text-xs text-muted">{t('goon.top.openListHelp')}</p>
+          <p className="text-xs text-muted-foreground">{t('goon.top.openListHelp')}</p>
         </div>
       </Card>
     </div>
@@ -235,16 +236,12 @@ export default function GoonPage() {
 
   return (
     <div className="animate-fade-up">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-          <Icon name="goon" size={26} className="mr-2 inline-block align-[-3px]" />
-          {t('goon.name')}
-        </h1>
-        <p className="mt-2 max-w-2xl text-muted">{t('goon.description')}</p>
-        {status.total > 0 && (
-          <p className="mt-3 text-sm text-muted">{t('goon.status.total', { count: status.total.toLocaleString(guild.locale) })}</p>
-        )}
-      </header>
+      <PageHeader
+        title={t('goon.name')}
+        description={t('goon.description')}
+        badge={<Badge tone={goon.data.settings.enabled ? 'success' : 'muted'}>{goon.data.settings.enabled ? t('overview.active') : t('overview.inactive')}</Badge>}
+        actions={status.total > 0 ? <p className="text-sm tabular-nums text-muted-foreground">{t('goon.status.total', { count: status.total.toLocaleString(guild.locale) })}</p> : undefined}
+      />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)]">
         <div className="lg:order-last">
@@ -324,16 +321,17 @@ export default function GoonPage() {
                 <ul className="flex flex-wrap gap-2">
                   {GOON_PLACEHOLDERS.map((name) => (
                     <li key={name}>
-                      <button
+                      <UiButton
                         type="button"
                         onClick={() => insertPlaceholder(name)}
                         aria-label={t('goon.form.insertPlaceholder', { name: `{${name}}` })}
                         title={t(`goon.placeholder.${name}`)}
-                        className="glow-hover inline-flex min-h-10 items-center gap-2 rounded-full border border-line bg-raised/60 px-3 text-sm"
+                        variant="outline"
+                        className="h-10 rounded-full font-normal"
                       >
-                        <code className="font-mono text-aqua">{`{${name}}`}</code>
-                        <span className="hidden text-muted sm:inline">{t(`goon.placeholder.${name}`)}</span>
-                      </button>
+                        <code className="font-mono">{`{${name}}`}</code>
+                        <span className="hidden text-muted-foreground sm:inline">{t(`goon.placeholder.${name}`)}</span>
+                      </UiButton>
                     </li>
                   ))}
                 </ul>
@@ -370,10 +368,10 @@ function GoonSkeleton() {
       <Skeleton className="h-4 w-96 max-w-full" />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)]">
         <div className="space-y-6">
-          <Skeleton className="h-72 rounded-card" />
-          <Skeleton className="h-56 rounded-card" />
+          <Skeleton className="h-72 rounded-lg" />
+          <Skeleton className="h-56 rounded-lg" />
         </div>
-        <Skeleton className="h-80 rounded-card" />
+        <Skeleton className="h-80 rounded-lg" />
       </div>
     </div>
   );

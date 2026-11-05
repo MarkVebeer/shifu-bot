@@ -98,39 +98,83 @@ export const shadows = {
 export const DEFAULT_EMBED_COLOR = colors.primary;
 
 /**
- * Dashboard palette: a flat two tone black and white theme with one muted red for
- * errors and destructive actions. Only the web dashboard reads these. Discord
- * embeds and the server error pages keep using `colors` above.
- * The keys match `colors` so the Tailwind names stay the same.
+ * Dashboard palette: a cool gray scale (like Tailwind's zinc) with one accent,
+ * the same periwinkle as the bot's default embed color, so the dashboard and the
+ * messages it configures feel related. Only the web dashboard reads these.
+ * Discord embeds and the server error pages keep using `colors` above.
+ *
+ * Gray steps, darkest first: background → card → muted → accent (hover) → border → input.
  */
-export const dashboardColors = {
-  background: '#000000',
-  surface: '#0A0A0A',
-  surfaceRaised: '#161616',
-  border: '#2A2A2A',
-  text: '#FFFFFF',
-  muted: '#A3A3A3',
-  primary: '#FFFFFF',
-  lavender: '#FFFFFF',
-  aqua: '#FFFFFF',
-  success: '#FFFFFF',
-  warning: '#D4D4D4',
-  danger: '#F87171',
-} as const satisfies Record<ColorToken, string>;
-
-export const dashboardGradients = {
-  brand: `linear-gradient(${dashboardColors.primary}, ${dashboardColors.primary})`,
-  brandSoft: `linear-gradient(${withAlpha(dashboardColors.text, 0.07)}, ${withAlpha(dashboardColors.text, 0.07)})`,
-  aurora: 'none',
+const gray = {
+  950: '#0c0c0e',
+  925: '#111114',
+  900: '#16161a',
+  850: '#1c1c21',
+  800: '#232329',
+  750: '#2a2a31',
+  700: '#34343c',
+  500: '#71717b',
+  400: '#9d9da8',
+  200: '#d4d4d8',
+  50: '#f4f4f5',
 } as const;
 
-export const dashboardShadows = {
-  glow: `0 0 0 1px ${withAlpha(dashboardColors.text, 0.28)}`,
-  glowStrong: `0 0 0 1px ${withAlpha(dashboardColors.text, 0.6)}`,
-  panel: 'none',
+export const dashboardColors = {
+  background: gray[950],
+  surface: gray[925],
+  surfaceRaised: gray[850],
+  border: gray[800],
+  text: gray[50],
+  muted: gray[400],
+  /** The one accent: switches, checkboxes, selected choices, focus rings, links, active nav. */
+  brand: colors.primary,
+  brandForeground: '#0b1020',
+  success: '#4ade80',
+  warning: '#fbbf24',
+  danger: '#f87171',
+} as const;
+
+/** The same palette under the token names shadcn/ui components use. */
+export const dashboardTheme = {
+  background: gray[950],
+  foreground: gray[50],
+  card: gray[925],
+  cardForeground: gray[50],
+  popover: gray[900],
+  popoverForeground: gray[50],
+  /** Primary buttons stay light; color is kept for controls that show a state. */
+  primary: gray[50],
+  primaryForeground: gray[950],
+  secondary: gray[850],
+  secondaryForeground: gray[50],
+  muted: gray[850],
+  mutedForeground: gray[400],
+  accent: gray[800],
+  accentForeground: gray[50],
+  destructive: dashboardColors.danger,
+  border: gray[800],
+  input: gray[750],
+  ring: dashboardColors.brand,
+  brand: dashboardColors.brand,
+  brandForeground: dashboardColors.brandForeground,
+  success: dashboardColors.success,
+  warning: dashboardColors.warning,
+  sidebar: gray[950],
+  sidebarForeground: gray[200],
+  sidebarPrimary: dashboardColors.brand,
+  sidebarPrimaryForeground: dashboardColors.brandForeground,
+  sidebarAccent: gray[850],
+  sidebarAccentForeground: gray[50],
+  sidebarBorder: gray[800],
+  sidebarRing: dashboardColors.brand,
+  /** Subtle gray text that is quieter than mutedForeground, e.g. timestamps and hints. */
+  subtle: gray[500],
+  /** A step above the card for nested surfaces (code, chips). */
+  elevated: gray[700],
 } as const;
 
 export const dashboardRadii = {
+  sm: '6px',
   md: '8px',
   lg: '10px',
   xl: '12px',

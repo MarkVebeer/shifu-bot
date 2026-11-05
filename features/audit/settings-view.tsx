@@ -1,7 +1,11 @@
 /**
  * Audit log settings: on/off, what to record, retention, ignore list, invite tracking, purge.
  */
-import { Check, ChevronDown, FolderTree, Minus, Search, Trash2 } from 'lucide-react';
+import { CaretDown, Check, MagnifyingGlass, Minus, Trash, TreeStructure } from '@phosphor-icons/react';
+import { Button as UiButton } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Label } from '@/components/ui/label';
 import { Icon } from '../../apps/web/src/ui/icon';
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../apps/web/src/lib/api';
@@ -92,7 +96,7 @@ export function SettingsView({ audit }: { audit: ApiState<AuditResponse> }) {
         <CardHeader icon={<Icon name="log" />} title={t('audit.form.general')} />
         <div className="space-y-4">
           <Switch checked={draft.enabled} onChange={(enabled) => update('enabled', enabled)} label={t('audit.form.enabled')} description={t('audit.form.enabledHelp')} />
-          <p className="text-sm text-muted">
+          <p className="text-sm text-muted-foreground">
             {stats.events > 0 && stats.oldest
               ? t('audit.form.stats', {
                   count: stats.events.toLocaleString(locale),
@@ -104,9 +108,9 @@ export function SettingsView({ audit }: { audit: ApiState<AuditResponse> }) {
       </Card>
 
       <Card>
-        <CardHeader icon={<Search className="size-[18px]" strokeWidth={1.75} />} title={t('audit.capabilities.title')} />
+        <CardHeader icon={<MagnifyingGlass className="size-[18px]" />} title={t('audit.capabilities.title')} />
         <ul className="space-y-2 text-sm">
-          <li className={cx('flex items-start gap-2', capabilities.messageContent ? 'text-ink' : 'text-muted')}>
+          <li className={cx('flex items-start gap-2', capabilities.messageContent ? 'text-foreground' : 'text-muted-foreground')}>
             {capabilities.messageContent ? <Check className="mt-0.5 size-4 shrink-0" aria-hidden /> : <Minus className="mt-0.5 size-4 shrink-0" aria-hidden />}
             {capabilities.messageContent ? t('audit.capabilities.messageContentOn') : t('audit.capabilities.messageContentOff')}
           </li>
@@ -114,32 +118,29 @@ export function SettingsView({ audit }: { audit: ApiState<AuditResponse> }) {
       </Card>
 
       <Card>
-        <CardHeader icon={<FolderTree className="size-[18px]" strokeWidth={1.75} />} title={t('audit.form.what')} description={t('audit.form.whatHelp')} />
-        <ul className="divide-y divide-line/60">
+        <CardHeader icon={<TreeStructure className="size-[18px]" />} title={t('audit.form.what')} description={t('audit.form.whatHelp')} />
+        <ul className="divide-y divide-border">
           {AUDIT_CATEGORIES.map((category) => {
             const on = !draft.disabledCategories.includes(category);
             const types = grouped[category];
             const enabledTypes = types.filter((type) => !draft.disabledTypes.includes(type)).length;
             const expanded = openCategory === category;
             return (
-              <li key={category} className="py-2">
+              <Collapsible asChild key={category} open={expanded} onOpenChange={(next) => setOpenCategory(next ? category : null)}>
+              <li className="py-2">
                 <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setOpenCategory(expanded ? null : category)}
-                    aria-expanded={expanded}
-                    aria-controls={`audit-types-${category}`}
-                    className="grid size-9 shrink-0 place-items-center rounded-full text-muted hover:bg-raised hover:text-ink"
-                  >
-                    <ChevronDown className={cx('size-4 transition', expanded && 'rotate-180')} aria-hidden />
-                  </button>
+                  <CollapsibleTrigger asChild>
+                    <UiButton variant="ghost" size="icon" className="size-9 shrink-0 rounded-full text-muted-foreground" aria-label={categoryLabel(t, category)}>
+                      <CaretDown className={cx('transition', expanded && 'rotate-180')} aria-hidden />
+                    </UiButton>
+                  </CollapsibleTrigger>
                   <div className="min-w-0 flex-1">
                     <Switch
                       checked={on}
                       onChange={(value) => toggleCategory(category, value)}
                       label={
                         <span className="inline-flex items-center gap-2">
-                          <CategoryIcon category={category} className="size-4 text-muted" />
+                          <CategoryIcon category={category} className="size-4 text-muted-foreground" />
                           {categoryLabel(t, category)}
                         </span>
                       }
@@ -147,28 +148,23 @@ export function SettingsView({ audit }: { audit: ApiState<AuditResponse> }) {
                     />
                   </div>
                 </div>
-                {expanded && (
+                <CollapsibleContent asChild>
                   <ul id={`audit-types-${category}`} className="ml-11 mt-2 grid animate-fade-in gap-1 sm:grid-cols-2">
                     {types.map((type) => {
                       const typeOn = !draft.disabledTypes.includes(type);
                       return (
                         <li key={type}>
-                          <label className={cx('flex min-h-10 cursor-pointer items-center gap-2 rounded-token px-2 text-sm hover:bg-raised/60', !on && 'opacity-50')}>
-                            <input
-                              type="checkbox"
-                              checked={typeOn}
-                              disabled={!on}
-                              onChange={(event) => toggleType(type, event.target.checked)}
-                              className="size-4 accent-primary"
-                            />
+                          <Label className={cx('flex min-h-10 cursor-pointer items-center gap-2 rounded-md px-2 font-normal hover:bg-accent/50', !on && 'opacity-50')}>
+                            <Checkbox checked={typeOn} disabled={!on} onCheckedChange={(checked) => toggleType(type, checked === true)} />
                             {typeLabel(t, type)}
-                          </label>
+                          </Label>
                         </li>
                       );
                     })}
                   </ul>
-                )}
+                </CollapsibleContent>
               </li>
+              </Collapsible>
             );
           })}
         </ul>
@@ -198,9 +194,9 @@ export function SettingsView({ audit }: { audit: ApiState<AuditResponse> }) {
         <Switch checked={draft.trackInvites} onChange={(value) => update('trackInvites', value)} label={t('audit.form.trackInvites')} description={t('audit.form.trackInvitesHelp')} />
       </Card>
 
-      <Card className="border-danger/30">
+      <Card className="border-destructive/30">
         <CardHeader icon={<Icon name="warning" />} title={t('audit.form.danger')} description={t('audit.form.purgeHelp')} />
-        <Button variant="danger" onClick={() => setConfirmPurge(true)} icon={<Trash2 className="size-4" aria-hidden />} disabled={stats.events === 0}>
+        <Button variant="danger" onClick={() => setConfirmPurge(true)} icon={<Trash className="size-4" aria-hidden />} disabled={stats.events === 0}>
           {t('audit.form.purge')}
         </Button>
       </Card>

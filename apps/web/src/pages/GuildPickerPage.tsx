@@ -1,12 +1,13 @@
 import type { GuildListItem } from '@shifubot/shared';
-import { ArrowRight, LogOut, Plus, RefreshCw } from 'lucide-react';
+import { ArrowRight, ArrowsClockwise, Plus, SignOut } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { errorText, useCookieLocale, useT } from '../lib/i18n';
 import { useApi } from '../lib/use-api';
-import { Alert, Avatar, Badge, Button, ButtonLink, Logo, Skeleton } from '../ui/primitives';
+import { Button as UiButton } from '@/components/ui/button';
+import { Alert, Avatar, Badge, Button, ButtonLink, Logo, Skeleton, Card, PageHeader } from '../ui/primitives';
 import { LanguageSwitcher } from '../ui/widgets';
 
 export function GuildPickerPage() {
@@ -27,7 +28,7 @@ export function GuildPickerPage() {
 
   return (
     <div className="min-h-dvh">
-      <header className="sticky top-0 z-30 border-b border-line/60 bg-bg/70 backdrop-blur-xl">
+      <header className="sticky top-0 z-30 border-b border-border bg-background/70 backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl items-center gap-3 px-4 py-3">
           <Logo size={32} />
           <span className="font-semibold">ShifuBot</span>
@@ -37,7 +38,7 @@ export function GuildPickerPage() {
             </div>
             {me && <Avatar src={me.user.avatarUrl} name={me.user.username} size={36} />}
             <Button variant="ghost" size="icon" onClick={() => void logout()} aria-label={t('common.logout')} title={t('common.logout')}>
-              <LogOut className="size-5" aria-hidden />
+              <SignOut className="size-5" aria-hidden />
             </Button>
           </div>
         </div>
@@ -47,28 +48,28 @@ export function GuildPickerPage() {
         <div className="mb-4 sm:hidden">
           <LanguageSwitcher value={locale} onChange={setLocale} />
         </div>
-        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t('guilds.title')}</h1>
-            <p className="mt-1 text-muted">{t('guilds.subtitle')}</p>
-          </div>
-          <Button variant="secondary" onClick={refresh} loading={refreshing} icon={<RefreshCw className="size-4" aria-hidden />}>
-            {t('guilds.refresh')}
-          </Button>
-        </div>
+        <PageHeader
+          title={t('guilds.title')}
+          description={t('guilds.subtitle')}
+          actions={
+            <Button variant="secondary" onClick={refresh} loading={refreshing} icon={<ArrowsClockwise className="size-4" aria-hidden />}>
+              {t('guilds.refresh')}
+            </Button>
+          }
+        />
 
         {error ? (
           <Alert tone="danger">{errorText(t, error)}</Alert>
         ) : loading || !data ? (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true" aria-label={t('common.loading')}>
             {Array.from({ length: 6 }, (_, index) => (
-              <div key={index} className="glass flex items-center gap-4 p-5">
+              <Card key={index} className="flex items-center gap-4 p-5 sm:p-5">
                 <Skeleton className="size-14 rounded-full" />
                 <div className="flex-1 space-y-2">
                   <Skeleton className="h-4 w-3/4" />
                   <Skeleton className="h-3 w-1/2" />
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         ) : data.guilds.length === 0 ? (
@@ -78,7 +79,7 @@ export function GuildPickerPage() {
             {data.guilds.map((guild, index) => (
               <li
                 key={guild.id}
-                className="glass glow-hover flex animate-fade-up flex-col gap-4 p-5"
+                data-slot="card" className="flex animate-fade-up flex-col gap-4 rounded-xl border bg-card p-5 text-card-foreground shadow-sm transition-colors hover:bg-accent/30"
                 style={{ animationDelay: `${Math.min(index, 10) * 30}ms` }}
               >
                 <div className="flex items-center gap-4">
@@ -96,13 +97,12 @@ export function GuildPickerPage() {
                   </div>
                 </div>
                 {guild.botPresent ? (
-                  <Link
-                    to={`/guilds/${guild.id}`}
-                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-brand px-5 text-sm font-semibold text-bg shadow-glow transition hover:shadow-glow-strong"
-                  >
-                    {t('guilds.manage')}
-                    <ArrowRight className="size-4" aria-hidden />
-                  </Link>
+                  <UiButton asChild className="min-h-11">
+                    <Link to={`/guilds/${guild.id}`}>
+                      {t('guilds.manage')}
+                      <ArrowRight aria-hidden />
+                    </Link>
+                  </UiButton>
                 ) : (
                   <ButtonLink href={guild.inviteUrl} external variant="secondary" icon={<Plus className="size-4" aria-hidden />}>
                     {t('guilds.invite')}

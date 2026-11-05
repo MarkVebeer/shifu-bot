@@ -1,7 +1,11 @@
 @import 'tailwindcss';
+@import 'tw-animate-css';
 @config '../tailwind.config.ts';
 @source '../../../features';
 @source '../../../packages/shared/src';
+
+/* The dashboard is dark only: shadcn/ui's dark: styles always apply (<html class="dark">). */
+@custom-variant dark (&:is(.dark *));
 
 @theme {
   --animate-fade-up: fade-up 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
@@ -28,39 +32,26 @@
 }
 
 @layer base {
+  *,
+  ::before,
+  ::after {
+    @apply border-border outline-ring/50;
+  }
   html {
     color-scheme: dark;
     -webkit-tap-highlight-color: transparent;
   }
   body {
-    @apply min-h-dvh bg-bg font-sans text-ink antialiased;
+    @apply min-h-dvh bg-background font-sans text-foreground antialiased;
+    /* Inter: single-storey a, open digits, straight-sided l: calmer and more legible at small sizes. */
+    font-feature-settings: "cv01", "cv02", "cv11", "ss03";
   }
   ::selection {
-    @apply bg-white/25;
+    @apply bg-brand/30;
   }
   :focus-visible {
-    @apply outline-2 outline-offset-2 outline-white;
+    @apply outline-2 outline-offset-2 outline-ring;
   }
-}
-
-@utility glass {
-  @apply rounded-card border border-line bg-surface;
-}
-
-@utility glass-raised {
-  @apply rounded-panel border border-line bg-raised;
-}
-
-@utility glow-hover {
-  @apply transition-colors duration-150 hover:border-white/40;
-}
-
-@utility text-gradient {
-  @apply text-ink;
-}
-
-@utility skeleton {
-  @apply rounded-token bg-linear-to-r from-raised via-line to-raised bg-[length:200%_100%] animate-shimmer;
 }
 
 @media (prefers-reduced-motion: reduce) {

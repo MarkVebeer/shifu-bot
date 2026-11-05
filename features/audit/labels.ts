@@ -3,42 +3,26 @@
  */
 import type { AppMessageKey } from '..';
 import type { TFunction } from '../../apps/web/src/lib/i18n';
-import {
-  Bot,
-  CalendarDays,
-  Drama,
-  Gavel,
-  Hash,
-  House,
-  Mail,
-  MessageSquare,
-  MessagesSquare,
-  Plug,
-  ShieldAlert,
-  Smile,
-  Users,
-  Volume2,
-  type LucideIcon,
-} from 'lucide-react';
+import { CalendarBlank, ChatCircle, ChatsCircle, Envelope, Gavel, Hash, House, type Icon as PhosphorIcon, MaskHappy, Plug, Robot, ShieldWarning, Smiley, SpeakerHigh, Users } from '@phosphor-icons/react';
 import { createElement } from 'react';
 import { categoryOf, type AuditCategory } from './manifest';
 
 /** Dashboard icon per category. Discord messages keep CATEGORY_EMOJI from the manifest. */
-export const CATEGORY_ICON: Record<AuditCategory, LucideIcon> = {
+export const CATEGORY_ICON: Record<AuditCategory, PhosphorIcon> = {
   moderation: Gavel,
   members: Users,
-  messages: MessageSquare,
-  voice: Volume2,
+  messages: ChatCircle,
+  voice: SpeakerHigh,
   channels: Hash,
-  threads: MessagesSquare,
-  roles: Drama,
-  invites: Mail,
-  expressions: Smile,
-  events: CalendarDays,
-  automod: ShieldAlert,
+  threads: ChatsCircle,
+  roles: MaskHappy,
+  invites: Envelope,
+  expressions: Smiley,
+  events: CalendarBlank,
+  automod: ShieldWarning,
   integrations: Plug,
   server: House,
-  shifubot: Bot,
+  shifubot: Robot,
 };
 
 /** "MemberBanAdd" → "Member ban add", for types or fields without a translation. */
@@ -74,7 +58,7 @@ export function CategoryIcon({ category, className }: { category: AuditCategory;
   return createElement(CATEGORY_ICON[category], { className, 'aria-hidden': true });
 }
 
-export function typeIcon(type: string): LucideIcon {
+export function typeIcon(type: string): PhosphorIcon {
   return CATEGORY_ICON[categoryOf(type)];
 }
 

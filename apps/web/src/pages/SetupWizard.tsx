@@ -1,5 +1,5 @@
 import { isLocale, type GuildOverview } from '@shifubot/shared';
-import { ArrowLeft, ArrowRight, Check, Pencil, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, PencilSimple, X } from '@phosphor-icons/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { getTranslator } from '../../../../features';
@@ -8,7 +8,7 @@ import { GuildContext, type GuildContextValue } from '../lib/guild';
 import { errorText, I18nProvider, useT } from '../lib/i18n';
 import { usePermissionReport } from '../lib/use-permissions';
 import { useSetupDrafts } from '../lib/use-setup-drafts';
-import { Alert, Avatar, Button, cx, Logo, Skeleton } from '../ui/primitives';
+import { Alert, Avatar, Button, cx, Logo, Skeleton, Card } from '../ui/primitives';
 import { Icon } from '../ui/icon';
 import { useToast } from '../ui/toast';
 
@@ -98,7 +98,7 @@ function WizardBody({
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="sticky top-0 z-30 border-b border-line/60 bg-bg/75 backdrop-blur-xl">
+      <header className="sticky top-0 z-30 border-b border-border bg-background/75 backdrop-blur-xl">
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
           <Logo size={30} />
           <Avatar src={guild.iconUrl} name={guild.name} size={30} />
@@ -106,26 +106,26 @@ function WizardBody({
           {rerun ? (
             <Link
               to={`${base}/settings`}
-              className="inline-flex min-h-11 items-center gap-2 rounded-full px-3 text-sm text-muted hover:bg-raised/60 hover:text-ink"
+              className="inline-flex min-h-11 items-center gap-2 rounded-full px-3 text-sm text-muted-foreground hover:bg-muted/60 hover:text-foreground"
             >
               <X className="size-4" aria-hidden />
               {t('setup.cancel')}
             </Link>
           ) : (
-            <Link to="/guilds" className="inline-flex min-h-11 items-center rounded-full px-3 text-sm text-muted hover:bg-raised/60 hover:text-ink">
+            <Link to="/guilds" className="inline-flex min-h-11 items-center rounded-full px-3 text-sm text-muted-foreground hover:bg-muted/60 hover:text-foreground">
               {t('setup.leave')}
             </Link>
           )}
         </div>
         <div
-          className="h-1 bg-raised"
+          className="h-1 bg-muted"
           role="progressbar"
           aria-label={t('setup.progress')}
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={progress}
         >
-          <div className="h-full bg-brand transition-[width] duration-500" style={{ width: `${progress}%` }} />
+          <div className="h-full bg-primary transition-[width] duration-500" style={{ width: `${progress}%` }} />
         </div>
       </header>
 
@@ -145,7 +145,7 @@ function WizardBody({
           <div className="space-y-4" aria-busy="true">
             <Skeleton className="h-8 w-2/3" />
             <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-40 w-full rounded-card" />
+            <Skeleton className="h-40 w-full rounded-lg" />
           </div>
         ) : (
           <div key={step} className="animate-fade-up">
@@ -157,19 +157,19 @@ function WizardBody({
 
             {step === 0 && (
               <div className="text-center">
-                <div className="mx-auto mb-6 grid size-20 place-items-center rounded-2xl bg-raised ring-1 ring-line" aria-hidden>
+                <div className="mx-auto mb-6 grid size-20 place-items-center rounded-2xl bg-muted ring-1 ring-border" aria-hidden>
                   <Icon name="rocket" size={36} />
                 </div>
                 <p className="mb-2 text-sm font-medium uppercase tracking-wider text-primary">{rerun ? t('setup.rerunBadge') : t('setup.badge')}</p>
                 <h1 ref={headingRef} tabIndex={-1} className="text-2xl font-bold tracking-tight outline-none sm:text-3xl">
                   {t('setup.introTitle')}
                 </h1>
-                <p className="mx-auto mt-3 max-w-md text-muted">{t('setup.introBody', { server: guild.name })}</p>
+                <p className="mx-auto mt-3 max-w-md text-muted-foreground">{t('setup.introBody', { server: guild.name })}</p>
                 <ol className="mx-auto mt-8 max-w-sm space-y-2 text-left">
                   {sections.map((item, index) => (
-                    <li key={item.id} className="glass-raised flex items-center gap-3 px-4 py-3 text-sm">
-                      <span className="grid size-7 shrink-0 place-items-center rounded-full bg-raised font-mono text-xs text-muted">{index + 1}</span>
-                      <Icon name={item.emoji} size={16} className="text-muted" />
+                    <li key={item.id} className="flex items-center gap-3 rounded-lg border bg-muted/50 px-4 py-3 text-sm">
+                      <span className="grid size-7 shrink-0 place-items-center rounded-full bg-muted font-mono text-xs text-muted-foreground">{index + 1}</span>
+                      <Icon name={item.emoji} size={16} className="text-muted-foreground" />
                       {t(item.title)}
                     </li>
                   ))}
@@ -183,10 +183,10 @@ function WizardBody({
                   <Icon name={section.emoji} size={26} />
                   {t(section.title)}
                 </h1>
-                <p className="mt-2 text-muted">{t(section.description)}</p>
-                <div className="glass mt-6 p-4 sm:p-6">
+                <p className="mt-2 text-muted-foreground">{t(section.description)}</p>
+                <Card className="mt-6">
                   <section.Component value={drafts[section.id] as never} onChange={(value) => setup.setDraft(section.id, value)} guild={guild} />
-                </div>
+                </Card>
                 {showProblem && problem && (
                   <div className="mt-4">
                     <Alert tone="warning">{t(problem)}</Alert>
@@ -201,19 +201,19 @@ function WizardBody({
                   <Icon name="sparkle" size={26} />
                   {t('setup.doneTitle')}
                 </h1>
-                <p className="mt-2 text-muted">{t('setup.doneBody')}</p>
+                <p className="mt-2 text-muted-foreground">{t('setup.doneBody')}</p>
                 <ul className="mt-6 space-y-2">
                   {sections.map((item, index) => (
-                    <li key={item.id} className="glass-raised flex items-center gap-3 px-4 py-3">
-                      <span className="text-muted" aria-hidden>
+                    <li key={item.id} className="flex items-center gap-3 rounded-lg border bg-muted/50 px-4 py-3">
+                      <span className="text-muted-foreground" aria-hidden>
                         <Icon name={item.emoji} size={20} />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block text-sm text-muted">{t(item.title)}</span>
+                        <span className="block text-sm text-muted-foreground">{t(item.title)}</span>
                         <span className="block font-medium">{item.summary(drafts[item.id] as never, t)}</span>
                       </span>
                       <Button variant="ghost" size="icon" onClick={() => setStep(index + 1)} aria-label={`${t('setup.edit')}: ${t(item.title)}`}>
-                        <Pencil className="size-4" aria-hidden />
+                        <PencilSimple className="size-4" aria-hidden />
                       </Button>
                     </li>
                   ))}
@@ -225,7 +225,7 @@ function WizardBody({
       </main>
 
       {drafts && !setup.error && (
-        <footer className="fixed inset-x-0 bottom-0 z-30 border-t border-line/60 bg-bg/80 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl sm:static sm:border-0 sm:bg-transparent sm:pb-10 sm:backdrop-blur-none">
+        <footer className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/80 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl sm:static sm:border-0 sm:bg-transparent sm:pb-10 sm:backdrop-blur-none">
           <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-3">
             {step > 0 && (
               <Button variant="ghost" onClick={() => setStep((current) => current - 1)} icon={<ArrowLeft className="size-4" aria-hidden />} disabled={finishing}>

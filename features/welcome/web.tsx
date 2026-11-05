@@ -1,8 +1,9 @@
 /**
  * Welcome feature: dashboard page.
  */
+import { Button as UiButton } from '@/components/ui/button';
 import { colors, findUnknownPlaceholders } from '@shifubot/shared';
-import { Eye, Send } from 'lucide-react';
+import { Eye, PaperPlaneTilt } from '@phosphor-icons/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../apps/web/src/lib/api';
 import { useAuth } from '../../apps/web/src/lib/auth';
@@ -11,7 +12,7 @@ import { errorText, useI18n } from '../../apps/web/src/lib/i18n';
 import { useApi } from '../../apps/web/src/lib/use-api';
 import { DiscordMessagePreview } from '../../apps/web/src/ui/discord-preview';
 import { Icon } from '../../apps/web/src/ui/icon';
-import { Alert, Button, Card, CardHeader, Field, Input, Skeleton, Switch, Textarea, cx } from '../../apps/web/src/ui/primitives';
+import { Alert, Button, Card, CardHeader, Field, Input, Skeleton, Switch, Textarea, cx, PageHeader, Badge } from '../../apps/web/src/ui/primitives';
 import { useToast } from '../../apps/web/src/ui/toast';
 import { ColorField, SaveBar } from '../../apps/web/src/ui/widgets';
 import {
@@ -183,23 +184,21 @@ export default function WelcomePage() {
         timestampLabel={timeLabel}
       />
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <Button variant="secondary" onClick={sendTest} loading={testing} icon={<Send className="size-4" aria-hidden />}>
+        <Button variant="secondary" onClick={sendTest} loading={testing} icon={<PaperPlaneTilt className="size-4" aria-hidden />}>
           {testing ? t('welcome.test.sending') : t('welcome.test.button')}
         </Button>
-        <p className="text-xs text-muted">{t('welcome.test.help')}</p>
+        <p className="text-xs text-muted-foreground">{t('welcome.test.help')}</p>
       </div>
     </Card>
   );
 
   return (
     <div className="animate-fade-up">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-          <Icon name="welcome" size={26} className="mr-2 inline-block align-[-3px]" />
-          {t('welcome.name')}
-        </h1>
-        <p className="mt-2 max-w-2xl text-muted">{t('welcome.description')}</p>
-      </header>
+      <PageHeader
+        title={t('welcome.name')}
+        description={t('welcome.description')}
+        badge={<Badge tone={welcome.data.settings.enabled ? 'success' : 'muted'}>{welcome.data.settings.enabled ? t('overview.active') : t('overview.inactive')}</Badge>}
+      />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)]">
         <div className="lg:order-last">
@@ -267,16 +266,17 @@ export default function WelcomePage() {
                 <ul className="flex flex-wrap gap-2">
                   {WELCOME_PLACEHOLDERS.map((name) => (
                     <li key={name}>
-                      <button
+                      <UiButton
                         type="button"
                         onClick={() => insertPlaceholder(name)}
                         aria-label={t('welcome.form.insertPlaceholder', { name: `{${name}}` })}
                         title={t(`welcome.placeholder.${name}`)}
-                        className="glow-hover inline-flex min-h-10 items-center gap-2 rounded-full border border-line bg-raised/60 px-3 text-sm"
+                        variant="outline"
+                        className="h-10 rounded-full font-normal"
                       >
-                        <code className="font-mono text-aqua">{`{${name}}`}</code>
-                        <span className="hidden text-muted sm:inline">{t(`welcome.placeholder.${name}`)}</span>
-                      </button>
+                        <code className="font-mono">{`{${name}}`}</code>
+                        <span className="hidden text-muted-foreground sm:inline">{t(`welcome.placeholder.${name}`)}</span>
+                      </UiButton>
                     </li>
                   ))}
                 </ul>
@@ -353,10 +353,10 @@ function WelcomeSkeleton() {
       <Skeleton className="h-4 w-96 max-w-full" />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)]">
         <div className={cx('space-y-6')}>
-          <Skeleton className="h-56 rounded-card" />
-          <Skeleton className="h-72 rounded-card" />
+          <Skeleton className="h-56 rounded-lg" />
+          <Skeleton className="h-72 rounded-lg" />
         </div>
-        <Skeleton className="h-80 rounded-card" />
+        <Skeleton className="h-80 rounded-lg" />
       </div>
     </div>
   );

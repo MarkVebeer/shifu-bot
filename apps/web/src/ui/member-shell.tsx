@@ -5,7 +5,7 @@
  * server's lists, and the page. Also handles signing in and "not a member".
  */
 import type { MemberPagesResponse, MeResponse } from '@shifubot/shared';
-import { LogOut } from 'lucide-react';
+import { SignOut } from '@phosphor-icons/react';
 import { createContext, Suspense, useContext, useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import type { AppMessageKey } from '../../../../features';
@@ -14,7 +14,7 @@ import { api, ApiRequestError } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useCookieLocale, useI18n } from '../lib/i18n';
 import { DiscordGlyph } from '../pages/LoginPage';
-import { Avatar, Button, ButtonLink, Logo, Skeleton, cx } from './primitives';
+import { Avatar, Button, ButtonLink, Card, Logo, Skeleton, cx } from './primitives';
 import { Icon } from './icon';
 import { LanguageSwitcher } from './widgets';
 
@@ -92,7 +92,7 @@ export function MemberShell({ guildId, featureId }: { guildId: string; featureId
           <h1 className="min-w-0 truncate text-2xl font-bold tracking-tight sm:text-3xl">{server.name}</h1>
         </header>
         {tabs.length > 1 && (
-          <nav aria-label={t('memberPages.tabs')} className="glass flex gap-1 overflow-x-auto p-1">
+          <nav aria-label={t('memberPages.tabs')} className="flex h-11 items-center gap-1 overflow-x-auto rounded-lg bg-muted p-1 text-muted-foreground">
             {tabs.map((tab) => {
               const active = tab.id === featureId;
               return (
@@ -101,8 +101,8 @@ export function MemberShell({ guildId, featureId }: { guildId: string; featureId
                   to={`/servers/${guildId}/${tab.id}`}
                   aria-current={active ? 'page' : undefined}
                   className={cx(
-                    'inline-flex min-h-11 flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-full px-4 text-sm font-semibold transition duration-200',
-                    active ? 'bg-ink text-bg' : 'text-muted hover:bg-raised/60 hover:text-ink',
+                    'inline-flex h-full flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-md px-4 text-sm font-medium transition-[color,box-shadow]',
+                    active ? 'bg-background text-foreground shadow-sm' : 'hover:text-foreground',
                   )}
                 >
                   <Icon name={tab.icon} size={16} />
@@ -149,7 +149,7 @@ function PageFrame({ children }: { children: ReactNode }) {
               onClick={() => void logout(window.location.pathname + window.location.search)}
               aria-label={t('common.logout')}
               title={t('common.logout')}
-              icon={<LogOut className="size-5" aria-hidden />}
+              icon={<SignOut className="size-5" aria-hidden />}
             >
               <span className="hidden sm:inline">{t('common.logout')}</span>
             </Button>
@@ -165,14 +165,14 @@ function PageFrame({ children }: { children: ReactNode }) {
 export function Message({ title, text, children }: { title: string; text: string; children?: ReactNode }) {
   return (
     <div className="flex min-h-[60dvh] items-center justify-center">
-      <div className="glass w-full max-w-md p-8 text-center sm:p-10">
-        <div className="mx-auto mb-5 grid size-16 place-items-center rounded-3xl bg-brand-soft ring-1 ring-primary/30" aria-hidden>
+      <Card className="w-full max-w-md p-8 text-center sm:p-10">
+        <div className="mx-auto mb-5 grid size-16 place-items-center rounded-2xl border bg-muted" aria-hidden>
           <Logo size={40} />
         </div>
         <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{title}</h1>
-        {text && <p className="mt-3 text-muted">{text}</p>}
+        {text && <p className="mt-3 text-muted-foreground">{text}</p>}
         {children}
-      </div>
+      </Card>
     </div>
   );
 }
@@ -181,10 +181,10 @@ export function Message({ title, text, children }: { title: string; text: string
 export function ListSkeleton() {
   return (
     <div className="space-y-4" aria-busy="true">
-      <Skeleton className="h-20 rounded-card" />
+      <Skeleton className="h-20 rounded-lg" />
       <Skeleton className="h-11 rounded-full" />
       {Array.from({ length: 8 }, (_, i) => (
-        <Skeleton key={i} className="h-14 rounded-card" />
+        <Skeleton key={i} className="h-14 rounded-lg" />
       ))}
     </div>
   );

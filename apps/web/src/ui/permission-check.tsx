@@ -5,7 +5,7 @@
  */
 import type { BotPermission, PermissionIssue } from '@shifubot/shared';
 import { Icon } from './icon';
-import { ExternalLink, KeyRound, RefreshCw } from 'lucide-react';
+import { ArrowsClockwise, ArrowSquareOut, Key } from '@phosphor-icons/react';
 import { useState } from 'react';
 import type { AppMessageKey } from '../../../../features';
 import { useGuild } from '../lib/guild';
@@ -35,7 +35,7 @@ export function PermissionCheck({ variant }: { variant: 'banner' | 'card' }) {
   if (variant === 'card' && !report) {
     return (
       <Card>
-        <CardHeader icon={<KeyRound className="size-5" />} title={t('permissions.title')} />
+        <CardHeader icon={<Key className="size-5" />} title={t('permissions.title')} />
         <Skeleton className="h-6 w-2/3" />
       </Card>
     );
@@ -44,7 +44,7 @@ export function PermissionCheck({ variant }: { variant: 'banner' | 'card' }) {
   if (report!.ok) {
     return (
       <Card>
-        <CardHeader icon={<KeyRound className="size-5" />} title={t('permissions.title')} />
+        <CardHeader icon={<Key className="size-5" />} title={t('permissions.title')} />
         <p className="flex items-center gap-2 text-sm">
           <Icon name="success" size={16} />
           {t('permissions.ok')}
@@ -68,12 +68,12 @@ export function PermissionCheck({ variant }: { variant: 'banner' | 'card' }) {
       tone="danger"
       action={
         <Button variant="ghost" size="icon" onClick={recheck} loading={checking} aria-label={t('permissions.recheck')} title={t('permissions.recheck')}>
-          <RefreshCw className="size-4" aria-hidden />
+          <ArrowsClockwise className="size-4" aria-hidden />
         </Button>
       }
     >
       <p className="font-semibold">{t('permissions.problemTitle')}</p>
-      <p className="text-muted">{t('permissions.problemBody')}</p>
+      <p className="text-muted-foreground">{t('permissions.problemBody')}</p>
 
       {missing.length > 0 && (
         <div className="mt-3 space-y-3">
@@ -81,15 +81,15 @@ export function PermissionCheck({ variant }: { variant: 'banner' | 'card' }) {
             {missing.map((item) => (
               <li key={item.permission}>
                 <span className="font-medium">{t(`permissions.names.${item.permission}`)}</span>{' '}
-                <span className="text-muted">({t('permissions.neededBy', { features: item.features.map(featureName).join(', ') })})</span>
+                <span className="text-muted-foreground">({t('permissions.neededBy', { features: item.features.map(featureName).join(', ') })})</span>
               </li>
             ))}
           </ul>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <ButtonLink href={grantUrl} external icon={<KeyRound className="size-4" aria-hidden />}>
+            <ButtonLink href={grantUrl} external icon={<Key className="size-4" aria-hidden />}>
               {t('permissions.grant')}
             </ButtonLink>
-            <p className="text-xs text-muted">{t('permissions.grantHelp')}</p>
+            <p className="text-xs text-muted-foreground">{t('permissions.grantHelp')}</p>
           </div>
         </div>
       )}
@@ -100,7 +100,7 @@ export function PermissionCheck({ variant }: { variant: 'banner' | 'card' }) {
             {issues.map((issue) => (
               <li key={`${issue.feature}:${issue.code}:${issue.channel?.id ?? ''}`}>
                 {issueText(issue)}
-                {issue.permissions?.length ? <span className="text-muted"> ({permissionNames(issue.permissions)})</span> : null}
+                {issue.permissions?.length ? <span className="text-muted-foreground"> ({permissionNames(issue.permissions)})</span> : null}
                 {issue.channel && (
                   <a
                     href={`https://discord.com/channels/${guild.id}/${issue.channel.id}`}
@@ -109,13 +109,13 @@ export function PermissionCheck({ variant }: { variant: 'banner' | 'card' }) {
                     className="ml-2 inline-flex items-center gap-1 text-primary hover:underline"
                   >
                     {t('permissions.openChannel')}
-                    <ExternalLink className="size-3" aria-hidden />
+                    <ArrowSquareOut className="size-3" aria-hidden />
                   </a>
                 )}
               </li>
             ))}
           </ul>
-          {channelIssues.length > 0 && <p className="text-xs text-muted">{t('permissions.channelFix')}</p>}
+          {channelIssues.length > 0 && <p className="text-xs text-muted-foreground">{t('permissions.channelFix')}</p>}
         </div>
       )}
     </Alert>

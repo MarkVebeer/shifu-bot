@@ -41,7 +41,7 @@ export function RolePicker({
         <div className="flex items-center gap-3">
           <span
             aria-hidden
-            className="size-4 shrink-0 rounded-full border border-line"
+            className="size-4 shrink-0 rounded-full border border-border"
             style={{ background: selected?.color ?? 'transparent' }}
           />
           <div className="min-w-0 flex-1">

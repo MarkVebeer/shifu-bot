@@ -28,7 +28,7 @@ export default function GoonListPage() {
   const { data } = list.state;
   return (
     <div className="space-y-5">
-      <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
+      <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
         <span>{t('goon.list.total', { count: n(data.total) })}</span>
         <span>{t('goon.list.members', { count: n(data.members) })}</span>
       </p>
@@ -36,7 +36,7 @@ export default function GoonListPage() {
       {data.me ? (
         <YourPlace rank={data.me.rank} name={me.user.globalName ?? me.user.username} value={n(data.me.count)} unit={t('goon.list.goons')} />
       ) : (
-        <p className="glass-raised px-5 py-4 text-sm text-muted">{t('goon.list.notOnList')}</p>
+        <p className="rounded-lg border bg-muted/50 px-5 py-4 text-sm text-muted-foreground">{t('goon.list.notOnList')}</p>
       )}
 
       <SearchBox value={list.search} onChange={list.setSearch} />

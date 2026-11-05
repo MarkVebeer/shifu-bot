@@ -1,56 +1,35 @@
 /**
- * The dashboard's icon set. Every icon comes from lucide-react and draws in
- * `currentColor`, so it follows the monochrome text color. The names match the
+ * The dashboard's icon set. Every icon comes from Phosphor (@phosphor-icons/react) and draws in
+ * `currentColor`, so it follows the text color. The names match the
  * shared emoji set, so a feature or section that names an emoji for Discord
  * gets the matching line icon in the dashboard.
  */
 import type { EmojiName } from '@shifubot/shared';
-import {
-  CircleCheck,
-  ClipboardList,
-  Compass,
-  DoorOpen,
-  Flame,
-  FlaskConical,
-  Globe,
-  Hand,
-  Info,
-  MessageSquare,
-  Mic,
-  OctagonX,
-  Rocket,
-  Settings,
-  ShieldCheck,
-  Sparkles,
-  Star,
-  TriangleAlert,
-  Trophy,
-  type LucideIcon,
-} from 'lucide-react';
+import { ChatCircle, CheckCircle, ClipboardText, Compass, DoorOpen, Fire, Flask, GearSix, Globe, HandWaving, type Icon as PhosphorIcon, Info, Microphone, Rocket, ShieldCheck, Sparkle, Star, Trophy, Warning, XCircle } from '@phosphor-icons/react';
 
-export const icons: Record<EmojiName, LucideIcon> = {
-  welcome: Hand,
+export const icons: Record<EmojiName, PhosphorIcon> = {
+  welcome: HandWaving,
   goodbye: DoorOpen,
   verification: ShieldCheck,
   leveling: Trophy,
-  chat: MessageSquare,
-  voice: Mic,
+  chat: ChatCircle,
+  voice: Microphone,
   overall: Star,
-  success: CircleCheck,
-  warning: TriangleAlert,
-  error: OctagonX,
+  success: CheckCircle,
+  warning: Warning,
+  error: XCircle,
   info: Info,
-  sparkle: Sparkles,
-  test: FlaskConical,
-  log: ClipboardList,
-  goon: Flame,
+  sparkle: Sparkle,
+  test: Flask,
+  log: ClipboardText,
+  goon: Fire,
   globe: Globe,
   overview: Compass,
-  settings: Settings,
+  settings: GearSix,
   rocket: Rocket,
 };
 
 export function Icon({ name, size = 18, className }: { name: EmojiName; size?: number; className?: string }) {
   const Component = icons[name];
-  return <Component aria-hidden size={size} strokeWidth={1.75} className={className} />;
+  return <Component aria-hidden size={size} className={className} />;
 }

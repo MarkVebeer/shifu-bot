@@ -1,8 +1,9 @@
 /**
  * Verification feature: dashboard page.
  */
+import { Button as UiButton } from '@/components/ui/button';
 import { colors, findUnknownPlaceholders } from '@shifubot/shared';
-import { ExternalLink, Eye, RefreshCw, Send, ShieldCheck } from 'lucide-react';
+import { ArrowsClockwise, ArrowSquareOut, Eye, PaperPlaneTilt, ShieldCheck } from '@phosphor-icons/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../apps/web/src/lib/api';
 import { useGuild } from '../../apps/web/src/lib/guild';
@@ -11,10 +12,10 @@ import { useApi } from '../../apps/web/src/lib/use-api';
 import { ChannelPicker } from '../../apps/web/src/ui/channel-picker';
 import { DiscordMessagePreview } from '../../apps/web/src/ui/discord-preview';
 import { Icon } from '../../apps/web/src/ui/icon';
-import { Alert, Button, Card, CardHeader, Field, Input, Select, Skeleton, Switch, Textarea, cx } from '../../apps/web/src/ui/primitives';
+import { Alert, Button, Card, CardHeader, Field, Input, Select, Skeleton, Switch, Textarea, cx, PageHeader, Badge } from '../../apps/web/src/ui/primitives';
 import { RolePicker } from '../../apps/web/src/ui/role-picker';
 import { useToast } from '../../apps/web/src/ui/toast';
-import { ColorField, SaveBar } from '../../apps/web/src/ui/widgets';
+import { ChoiceCards, ColorField, SaveBar } from '../../apps/web/src/ui/widgets';
 import {
   buildVerificationPanel,
   CAPTCHA_RULES,
@@ -177,17 +178,17 @@ export default function VerificationPage() {
                 rel="noreferrer"
                 className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
               >
-                <ExternalLink className="size-4" aria-hidden />
+                <ArrowSquareOut className="size-4" aria-hidden />
                 {t('verification.status.panelLive', { channel: status.panel!.channelName })}
               </a>
             ) : (
               <p className="text-sm text-warning">{t('verification.status.panelMissing')}</p>
             )}
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <Button variant="secondary" onClick={repost} loading={reposting} disabled={dirty} icon={<Send className="size-4" aria-hidden />}>
+              <Button variant="secondary" onClick={repost} loading={reposting} disabled={dirty} icon={<PaperPlaneTilt className="size-4" aria-hidden />}>
                 {reposting ? t('verification.panel.reposting') : t('verification.panel.repost')}
               </Button>
-              <p className="text-xs text-muted">{t('verification.panel.help')}</p>
+              <p className="text-xs text-muted-foreground">{t('verification.panel.help')}</p>
             </div>
           </div>
         )}
@@ -196,7 +197,7 @@ export default function VerificationPage() {
       {draft.mode === 'captcha' && (
         <Card className="space-y-4">
           <CardHeader icon={<Icon name="test" />} title={t('verification.preview.captchaTitle')} description={t('verification.preview.captchaHint')} />
-          <div className="overflow-hidden rounded-panel bg-discord-embed p-3">
+          <div className="overflow-hidden rounded-lg bg-discord-embed p-3">
             <img
               src={`/api${base}/captcha.png?n=${sampleNonce}`}
               alt={t('verification.preview.captchaAlt')}
@@ -205,7 +206,7 @@ export default function VerificationPage() {
               className="h-auto w-full rounded-[4px]"
             />
           </div>
-          <Button variant="ghost" onClick={() => setSampleNonce((n) => n + 1)} icon={<RefreshCw className="size-4" aria-hidden />}>
+          <Button variant="ghost" onClick={() => setSampleNonce((n) => n + 1)} icon={<ArrowsClockwise className="size-4" aria-hidden />}>
             {t('verification.preview.newSample')}
           </Button>
         </Card>
@@ -215,19 +216,17 @@ export default function VerificationPage() {
 
   return (
     <div className="animate-fade-up">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-          <Icon name="verification" size={26} className="mr-2 inline-block align-[-3px]" />
-          {t('verification.name')}
-        </h1>
-        <p className="mt-2 max-w-2xl text-muted">{t('verification.description')}</p>
-        {status.verifiedCount > 0 && (
-          <p className="mt-3 inline-flex items-center gap-2 text-sm text-muted">
+      <PageHeader
+        title={t('verification.name')}
+        description={t('verification.description')}
+        badge={<Badge tone={verification.data.settings.enabled ? 'success' : 'muted'}>{verification.data.settings.enabled ? t('overview.active') : t('overview.inactive')}</Badge>}
+        actions={status.verifiedCount > 0 ? (
+          <p className="inline-flex items-center gap-2 text-sm tabular-nums text-muted-foreground">
             <ShieldCheck className="size-4 text-success" aria-hidden />
             {t('verification.status.verifiedCount', { count: status.verifiedCount.toLocaleString(guild.locale) })}
           </p>
-        )}
-      </header>
+        ) : undefined}
+      />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)]">
         <div className="lg:order-last">
@@ -310,14 +309,14 @@ export default function VerificationPage() {
                           aria-invalid={Boolean(fieldError('timeoutMinutes'))}
                           className="w-32 font-mono"
                         />
-                        <span className="text-sm text-muted">{t('verification.form.minutes')}</span>
+                        <span className="text-sm text-muted-foreground">{t('verification.form.minutes')}</span>
                       </div>
                     </Field>
                   )}
                   {(draft.failAction === 'kick' || draft.failAction === 'ban') && <Alert tone="warning">{t('verification.form.failActionWarning')}</Alert>}
                 </>
               ) : (
-                <p className="text-sm text-muted">{t('verification.form.captchaOnly')}</p>
+                <p className="text-sm text-muted-foreground">{t('verification.form.captchaOnly')}</p>
               )}
               <Field
                 label={t('verification.form.minAccountAge')}
@@ -337,7 +336,7 @@ export default function VerificationPage() {
                     aria-invalid={Boolean(fieldError('minAccountAgeDays'))}
                     className="w-28 font-mono"
                   />
-                  <span className="text-sm text-muted">{t('verification.form.days')}</span>
+                  <span className="text-sm text-muted-foreground">{t('verification.form.days')}</span>
                 </div>
               </Field>
               <Switch
@@ -387,16 +386,17 @@ export default function VerificationPage() {
                 <ul className="flex flex-wrap gap-2">
                   {VERIFICATION_PLACEHOLDERS.map((name) => (
                     <li key={name}>
-                      <button
+                      <UiButton
                         type="button"
                         onClick={() => insertPlaceholder(name)}
                         aria-label={t('verification.form.insertPlaceholder', { name: `{${name}}` })}
                         title={t(`verification.placeholder.${name}`)}
-                        className="glow-hover inline-flex min-h-10 items-center gap-2 rounded-full border border-line bg-raised/60 px-3 text-sm"
+                        variant="outline"
+                        className="h-10 rounded-full font-normal"
                       >
-                        <code className="font-mono text-aqua">{`{${name}}`}</code>
-                        <span className="hidden text-muted sm:inline">{t(`verification.placeholder.${name}`)}</span>
-                      </button>
+                        <code className="font-mono">{`{${name}}`}</code>
+                        <span className="hidden text-muted-foreground sm:inline">{t(`verification.placeholder.${name}`)}</span>
+                      </UiButton>
                     </li>
                   ))}
                 </ul>
@@ -449,41 +449,15 @@ function ModePicker({ value, onChange }: { value: VerificationMode; onChange: (m
   } satisfies Record<VerificationMode, { title: string; help: string }>;
   return (
     <div className="flex flex-col gap-2">
-      <p id="verification-mode-label" className="text-sm font-medium text-ink">
+      <p id="verification-mode-label" className="text-sm font-medium text-foreground">
         {t('verification.form.mode')}
       </p>
-      <div role="radiogroup" aria-labelledby="verification-mode-label" className="grid gap-3 sm:grid-cols-2">
-        {VERIFICATION_MODES.map((mode) => {
-          const selected = value === mode;
-          return (
-            <button
-              key={mode}
-              type="button"
-              role="radio"
-              aria-checked={selected}
-              onClick={() => onChange(mode)}
-              className={cx(
-                'glass-raised flex min-h-16 items-start gap-3 px-4 py-3 text-left transition duration-200',
-                selected ? 'border-primary/70 shadow-glow' : 'hover:border-primary/40',
-              )}
-            >
-              <span
-                aria-hidden
-                className={cx(
-                  'mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border-2 transition',
-                  selected ? 'border-primary bg-primary' : 'border-line',
-                )}
-              >
-                {selected && <span className="size-1.5 rounded-full bg-bg" />}
-              </span>
-              <span className="min-w-0">
-                <span className="block font-semibold">{labels[mode].title}</span>
-                <span className="block text-sm text-muted">{labels[mode].help}</span>
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      <ChoiceCards
+        aria-labelledby="verification-mode-label"
+        value={value}
+        onChange={onChange}
+        choices={VERIFICATION_MODES.map((mode) => ({ value: mode, title: labels[mode].title, hint: labels[mode].help }))}
+      />
     </div>
   );
 }
@@ -495,10 +469,10 @@ function VerificationSkeleton() {
       <Skeleton className="h-4 w-96 max-w-full" />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)]">
         <div className={cx('space-y-6')}>
-          <Skeleton className="h-72 rounded-card" />
-          <Skeleton className="h-56 rounded-card" />
+          <Skeleton className="h-72 rounded-lg" />
+          <Skeleton className="h-56 rounded-lg" />
         </div>
-        <Skeleton className="h-80 rounded-card" />
+        <Skeleton className="h-80 rounded-lg" />
       </div>
     </div>
   );

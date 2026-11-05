@@ -77,6 +77,10 @@ const apiTarget = process.env.API_PROXY_TARGET ?? `http://127.0.0.1:${apiPort ==
 export default defineConfig({
   plugins: [react(), tailwindcss(), designTokens(), devApiProxy(apiTarget, ['/api', '/auth', '/healthz'])],
   envDir: repoRoot,
+  resolve: {
+    // shadcn/ui components import from @/ (apps/web/src).
+    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
+  },
   server: {
     port: DEV_PORT,
     fs: { allow: [repoRoot] },

@@ -1,8 +1,9 @@
 /**
  * Leveling feature: dashboard page.
  */
+import { Button as UiButton } from '@/components/ui/button';
 import { colors, findUnknownPlaceholders } from '@shifubot/shared';
-import { ExternalLink, Eye, RotateCcw, Send, Trophy } from 'lucide-react';
+import { ArrowCounterClockwise, ArrowSquareOut, Eye, PaperPlaneTilt, Trophy } from '@phosphor-icons/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../apps/web/src/lib/api';
 import { useAuth } from '../../apps/web/src/lib/auth';
@@ -14,7 +15,7 @@ import { ChannelPicker } from '../../apps/web/src/ui/channel-picker';
 import { DiscordMessagePreview } from '../../apps/web/src/ui/discord-preview';
 import { Icon } from '../../apps/web/src/ui/icon';
 import { RankMark } from '../../apps/web/src/ui/member-list';
-import { Alert, Avatar, Button, Card, CardHeader, Field, Input, Select, Skeleton, Switch, Textarea, cx } from '../../apps/web/src/ui/primitives';
+import { Alert, Avatar, Button, Card, CardHeader, Field, Input, Select, Skeleton, Switch, Textarea, cx, PageHeader, Badge } from '../../apps/web/src/ui/primitives';
 import { useToast } from '../../apps/web/src/ui/toast';
 import { ColorField, ConfirmDialog, SaveBar } from '../../apps/web/src/ui/widgets';
 import {
@@ -225,17 +226,17 @@ export default function LevelingPage() {
             <div className="space-y-3">
               {status.panel ? (
                 <a href={status.panel.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline">
-                  <ExternalLink className="size-4" aria-hidden />
+                  <ArrowSquareOut className="size-4" aria-hidden />
                   {t('leveling.status.panelLive', { channel: status.panel.channelName })}
                 </a>
               ) : (
                 <p className="text-sm text-warning">{t('leveling.status.panelMissing')}</p>
               )}
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <Button variant="secondary" onClick={repost} loading={reposting} disabled={dirty} icon={<Send className="size-4" aria-hidden />}>
+                <Button variant="secondary" onClick={repost} loading={reposting} disabled={dirty} icon={<PaperPlaneTilt className="size-4" aria-hidden />}>
                   {reposting ? t('leveling.panel.reposting') : t('leveling.panel.repost')}
                 </Button>
-                <p className="text-xs text-muted">{t('leveling.panel.help')}</p>
+                <p className="text-xs text-muted-foreground">{t('leveling.panel.help')}</p>
               </div>
             </div>
           )}
@@ -246,13 +247,11 @@ export default function LevelingPage() {
 
   return (
     <div className="animate-fade-up space-y-6">
-      <header>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-          <Icon name="leveling" size={26} className="mr-2 inline-block align-[-3px]" />
-          {t('leveling.name')}
-        </h1>
-        <p className="mt-2 max-w-2xl text-muted">{t('leveling.description')}</p>
-      </header>
+      <PageHeader
+        title={t('leveling.name')}
+        description={t('leveling.description')}
+        badge={<Badge tone={leveling.data.settings.enabled ? 'success' : 'muted'}>{leveling.data.settings.enabled ? t('overview.active') : t('overview.inactive')}</Badge>}
+      />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)]">
         <div className="lg:order-last">
@@ -291,9 +290,9 @@ export default function LevelingPage() {
             />
             <ul className="mb-5 grid gap-2 sm:grid-cols-3" aria-label={t('leveling.levels.title')}>
               {shownLevels(draft.xpSources).map((kind) => (
-                <li key={kind} className="glass-raised px-3 py-2.5">
+                <li key={kind} className="rounded-lg border bg-muted/50 px-3 py-2.5">
                   <LevelBadge kind={kind} />
-                  <p className="mt-1.5 text-xs text-muted">{t(`leveling.levels.${kind}Help`)}</p>
+                  <p className="mt-1.5 text-xs text-muted-foreground">{t(`leveling.levels.${kind}Help`)}</p>
                 </li>
               ))}
             </ul>
@@ -366,16 +365,17 @@ export default function LevelingPage() {
                     <ul className="flex flex-wrap gap-2">
                       {LEVEL_UP_PLACEHOLDERS.map((name) => (
                         <li key={name}>
-                          <button
+                          <UiButton
                             type="button"
                             onClick={() => insertPlaceholder(name)}
                             aria-label={t('leveling.form.insertPlaceholder', { name: `{${name}}` })}
                             title={t(`leveling.placeholder.${name}`)}
-                            className="glow-hover inline-flex min-h-10 items-center gap-2 rounded-full border border-line bg-raised/60 px-3 text-sm"
+                            variant="outline"
+                        className="h-10 rounded-full font-normal"
                           >
-                            <code className="font-mono text-aqua">{`{${name}}`}</code>
-                            <span className="hidden text-muted sm:inline">{t(`leveling.placeholder.${name}`)}</span>
-                          </button>
+                            <code className="font-mono">{`{${name}}`}</code>
+                            <span className="hidden text-muted-foreground sm:inline">{t(`leveling.placeholder.${name}`)}</span>
+                          </UiButton>
                         </li>
                       ))}
                     </ul>
@@ -439,11 +439,11 @@ export default function LevelingPage() {
       <Card className="space-y-4">
         <CardHeader icon={<Trophy className="size-5 text-primary" />} title={t('leveling.top.title')} description={t('leveling.top.hint')} />
         {top.loading && !top.data ? (
-          <Skeleton className="h-40 rounded-panel" />
+          <Skeleton className="h-40 rounded-lg" />
         ) : topMembers.length === 0 ? (
-          <p className="text-sm text-muted">{t('leveling.top.empty')}</p>
+          <p className="text-sm text-muted-foreground">{t('leveling.top.empty')}</p>
         ) : (
-          <ol className="divide-y divide-line/60">
+          <ol className="divide-y divide-border">
             {topMembers.map((member, index) => (
               <li key={member.userId} className="flex items-start gap-3 py-3">
                 <RankMark rank={index + 1} className="w-8 pt-0.5" />
@@ -451,7 +451,7 @@ export default function LevelingPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
                     <p className="truncate font-medium">{member.displayName}</p>
-                    <p className="shrink-0 font-mono text-xs text-muted">{t('leveling.top.xp', { xp: n(member.xp) })}</p>
+                    <p className="shrink-0 font-mono text-xs text-muted-foreground">{t('leveling.top.xp', { xp: n(member.xp) })}</p>
                   </div>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
                     {shownLevels(topSources).map((kind) => (
@@ -463,7 +463,7 @@ export default function LevelingPage() {
                       />
                     ))}
                   </div>
-                  <p className="mt-1 text-xs text-muted">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     {activeTracks(topSources)
                       .map((track) =>
                         track === 'text'
@@ -477,7 +477,7 @@ export default function LevelingPage() {
             ))}
           </ol>
         )}
-        <div className="flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <a
               href={leaderboardPath(guild.id)}
@@ -485,13 +485,13 @@ export default function LevelingPage() {
               rel="noreferrer"
               className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
             >
-              <ExternalLink className="size-4" aria-hidden />
+              <ArrowSquareOut className="size-4" aria-hidden />
               {t('leveling.top.openList')}
             </a>
-            <p className="text-xs text-muted">{t('leveling.top.openListHelp')}</p>
+            <p className="text-xs text-muted-foreground">{t('leveling.top.openListHelp')}</p>
           </div>
           {topMembers.length > 0 && (
-            <Button variant="ghost" onClick={() => setConfirmReset(true)} icon={<RotateCcw className="size-4" aria-hidden />}>
+            <Button variant="ghost" onClick={() => setConfirmReset(true)} icon={<ArrowCounterClockwise className="size-4" aria-hidden />}>
               {t('leveling.top.reset')}
             </Button>
           )}
@@ -520,9 +520,9 @@ const levelingErrorCodes: Record<LevelingErrorCode, true> = {
 };
 
 const badgeTones = {
-  text: 'bg-raised text-ink ring-line',
-  voice: 'bg-raised text-ink ring-line',
-  overall: 'bg-ink text-bg ring-ink',
+  text: 'bg-muted text-foreground ring-border',
+  voice: 'bg-muted text-foreground ring-border',
+  overall: 'bg-foreground text-background ring-foreground',
 } as const;
 
 /** "Chat level 12" style badge with the level kind's icon. The same icon and wording for a level kind everywhere. */
@@ -548,10 +548,10 @@ function LevelingSkeleton() {
       <Skeleton className="h-4 w-96 max-w-full" />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)]">
         <div className="space-y-6">
-          <Skeleton className="h-56 rounded-card" />
-          <Skeleton className="h-72 rounded-card" />
+          <Skeleton className="h-56 rounded-lg" />
+          <Skeleton className="h-72 rounded-lg" />
         </div>
-        <Skeleton className="h-80 rounded-card" />
+        <Skeleton className="h-80 rounded-lg" />
       </div>
     </div>
   );

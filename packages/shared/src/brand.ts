@@ -11,7 +11,7 @@ export function logoSvg(size = 64, { mono = false }: { mono?: boolean } = {}): s
   if (mono) {
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 64 64">
 <rect width="64" height="64" rx="14" fill="${dashboardColors.background}"/>
-<rect x="2.5" y="2.5" width="59" height="59" rx="12" fill="none" stroke="${dashboardColors.text}" stroke-width="2"/>
+<rect x="2.5" y="2.5" width="59" height="59" rx="12" fill="none" stroke="${dashboardColors.border}" stroke-width="2"/>
 <path d="${LOGO_PATH}" fill="${dashboardColors.text}"/>
 </svg>`;
   }

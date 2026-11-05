@@ -1,54 +1,65 @@
+/**
+ * ShifuBot's UI primitives, built on the shadcn/ui components in components/ui.
+ * Pages use these wrappers, so they keep one small API (variant names, touch
+ * sized controls, labels and help text) while the look comes from shadcn/ui.
+ */
 import { logoSvg } from '@shifubot/shared';
-import { AlertTriangle, CheckCircle2, Info, Loader2, XCircle } from 'lucide-react';
-import { forwardRef, useId, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from 'react';
+import { CheckCircle, CircleNotch, Info, Warning, XCircle } from '@phosphor-icons/react';
+import { Children, Fragment, isValidElement, useId, type ComponentProps, type ReactElement, type ReactNode } from 'react';
+import { Alert as UiAlert, AlertDescription } from '@/components/ui/alert';
+import { Avatar as UiAvatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge as UiBadge } from '@/components/ui/badge';
+import { Button as UiButton } from '@/components/ui/button';
+import { Card as UiCard } from '@/components/ui/card';
+import { Input as UiInput } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select as UiSelect, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton as UiSkeleton } from '@/components/ui/skeleton';
+import { Switch as UiSwitch } from '@/components/ui/switch';
+import { Textarea as UiTextarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 
-export function cx(...classes: (string | false | null | undefined)[]): string {
-  return classes.filter(Boolean).join(' ');
-}
+/** Join class names; later Tailwind classes win. Same as shadcn's cn(). */
+export const cx = cn;
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
-const buttonStyles: Record<ButtonVariant, string> = {
-  primary:
-    'bg-ink text-bg hover:bg-ink/85 active:scale-[0.98] disabled:opacity-50',
-  secondary:
-    'border border-line bg-raised/70 text-ink hover:border-primary/60 hover:bg-raised active:scale-[0.98] disabled:opacity-50',
-  ghost: 'text-muted hover:bg-raised/60 hover:text-ink disabled:opacity-50',
-  danger: 'border border-danger/40 bg-danger/10 text-danger hover:bg-danger/20 disabled:opacity-50',
-};
+const shadcnVariant = {
+  primary: 'default',
+  secondary: 'outline',
+  ghost: 'ghost',
+  danger: 'destructive',
+} as const satisfies Record<ButtonVariant, ComponentProps<typeof UiButton>['variant']>;
 
-export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+/** At least 44 px tall so every control is easy to hit on touch screens. */
+const buttonSizes = {
+  md: 'h-auto min-h-11 px-5',
+  lg: 'h-auto min-h-12 px-6 text-base',
+  icon: 'size-11',
+} as const;
+
+export interface ButtonProps extends ComponentProps<'button'> {
   variant?: ButtonVariant;
-  size?: 'md' | 'lg' | 'icon';
+  size?: keyof typeof buttonSizes;
   loading?: boolean;
   icon?: ReactNode;
 }
 
-export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { variant = 'primary', size = 'md', loading, icon, className, children, disabled, type = 'button', ...rest },
-  ref,
-) {
+export function Button({ variant = 'primary', size = 'md', loading, icon, className, children, disabled, type = 'button', ...rest }: ButtonProps) {
   return (
-    <button
-      ref={ref}
+    <UiButton
       type={type}
+      variant={shadcnVariant[variant]}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
-      className={cx(
-        'inline-flex shrink-0 select-none items-center justify-center gap-2 whitespace-nowrap rounded-full font-semibold transition duration-200 disabled:cursor-not-allowed',
-        size === 'md' && 'min-h-11 px-5 text-sm',
-        size === 'lg' && 'min-h-12 px-6 text-base',
-        size === 'icon' && 'size-11 shrink-0',
-        buttonStyles[variant],
-        className,
-      )}
+      className={cn(buttonSizes[size], variant === 'ghost' && 'text-muted-foreground hover:text-foreground', className)}
       {...rest}
     >
-      {loading ? <Loader2 className="size-4 animate-spin" aria-hidden /> : icon}
+      {loading ? <CircleNotch className="animate-spin" aria-hidden /> : icon}
       {children}
-    </button>
+    </UiButton>
   );
-});
+}
 
 export function ButtonLink({
   href,
@@ -66,37 +77,79 @@ export function ButtonLink({
   external?: boolean;
 }) {
   return (
-    <a
-      href={href}
-      {...(external ? { target: '_blank', rel: 'noreferrer noopener' } : {})}
-      className={cx(
-        'inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold transition duration-200',
-        buttonStyles[variant],
-        className,
-      )}
-    >
-      {icon}
-      {children}
-    </a>
+    <UiButton asChild variant={shadcnVariant[variant]} className={cn(buttonSizes.md, className)}>
+      <a href={href} {...(external ? { target: '_blank', rel: 'noreferrer noopener' } : {})}>
+        {icon}
+        {children}
+      </a>
+    </UiButton>
   );
 }
 
-export function Card({ children, className, as: Tag = 'section' }: { children: ReactNode; className?: string; as?: 'section' | 'div' | 'article' }) {
-  return <Tag className={cx('glass p-4 sm:p-6', className)}>{children}</Tag>;
+/** shadcn/ui Card with ShifuBot's padding. `as` sets the landmark role ("section" by default). */
+export function Card({ children, className }: { children: ReactNode; className?: string; as?: 'section' | 'div' | 'article' }) {
+  return (
+    <UiCard className={cn('block gap-0 p-4 sm:p-6', className)}>
+      {children}
+    </UiCard>
+  );
 }
 
-export function CardHeader({ title, description, icon }: { title: ReactNode; description?: ReactNode; icon?: ReactNode }) {
+/** Card title row: a small gray icon, the title, and an optional line of help below it. */
+export function CardHeader({ title, description, icon, action }: { title: ReactNode; description?: ReactNode; icon?: ReactNode; action?: ReactNode }) {
   return (
-    <header className="mb-5 flex items-start gap-3">
-      {icon && (
-        <span className="grid size-10 shrink-0 place-items-center rounded-token bg-raised text-ink ring-1 ring-line" aria-hidden>
-          {icon}
-        </span>
-      )}
+    <header data-slot="card-header" className="mb-5 flex items-start justify-between gap-4">
       <div className="min-w-0">
-        <h2 className="text-base font-semibold text-ink">{title}</h2>
-        {description && <p className="mt-0.5 text-sm text-muted">{description}</p>}
+        <h2 className="flex items-center gap-2 text-[15px] font-semibold leading-6 tracking-tight">
+          {icon && (
+            <span className="text-muted-foreground [&_svg]:size-4" aria-hidden>
+              {icon}
+            </span>
+          )}
+          {title}
+        </h2>
+        {description && <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{description}</p>}
       </div>
+      {action}
+    </header>
+  );
+}
+
+/**
+ * The top of every dashboard page: title, one line of description and optional
+ * actions on the right, closed by a hairline so the content starts clearly below.
+ */
+export function PageHeader({
+  title,
+  description,
+  eyebrow,
+  badge,
+  actions,
+  leading,
+}: {
+  title: ReactNode;
+  description?: ReactNode;
+  /** Small gray line above the title, e.g. "Feature" or "Server overview". */
+  eyebrow?: ReactNode;
+  badge?: ReactNode;
+  actions?: ReactNode;
+  /** Shown before the title block, e.g. the server avatar. */
+  leading?: ReactNode;
+}) {
+  return (
+    <header className="mb-8 flex flex-wrap items-end justify-between gap-4 border-b pb-6">
+      <div className="flex min-w-0 items-center gap-4">
+        {leading}
+        <div className="min-w-0">
+          {eyebrow && <p className="mb-1 text-xs font-medium uppercase tracking-[0.08em] text-subtle">{eyebrow}</p>}
+          <h1 className="flex flex-wrap items-center gap-3 text-2xl font-semibold tracking-tight">
+            <span className="min-w-0 truncate">{title}</span>
+            {badge}
+          </h1>
+          {description && <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-muted-foreground">{description}</p>}
+        </div>
+      </div>
+      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </header>
   );
 }
@@ -106,7 +159,7 @@ export function Logo({ size = 36 }: { size?: number }) {
 }
 
 export function Skeleton({ className }: { className?: string }) {
-  return <div aria-hidden className={cx('skeleton', className)} />;
+  return <UiSkeleton aria-hidden className={className} />;
 }
 
 export function Field({
@@ -130,13 +183,17 @@ export function Field({
 }) {
   return (
     <div className="flex flex-col gap-2">
-      <label htmlFor={htmlFor} className="flex items-center gap-2 text-sm font-medium text-ink">
+      <Label htmlFor={htmlFor} className="text-[13px]">
         {label}
-        {optional && <span className="rounded-full bg-raised px-2 py-0.5 text-[11px] font-normal text-muted">{optionalLabel}</span>}
-      </label>
+        {optional && (
+          <UiBadge variant="secondary" className="font-normal text-muted-foreground">
+            {optionalLabel}
+          </UiBadge>
+        )}
+      </Label>
       {children}
       {error ? (
-        <p id={`${htmlFor}-error`} className="text-sm text-danger" role="alert">
+        <p id={`${htmlFor}-error`} className="text-sm text-destructive" role="alert">
           {error}
         </p>
       ) : warning ? (
@@ -145,7 +202,7 @@ export function Field({
         </p>
       ) : (
         help && (
-          <p id={`${htmlFor}-help`} className="text-sm text-muted">
+          <p id={`${htmlFor}-help`} className="text-sm text-muted-foreground">
             {help}
           </p>
         )
@@ -154,26 +211,72 @@ export function Field({
   );
 }
 
-const inputClass =
-  'w-full rounded-token border border-line bg-bg/60 px-3.5 text-base text-ink placeholder:text-muted/60 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 aria-[invalid=true]:border-danger sm:text-sm';
+export function Input({ className, ...rest }: ComponentProps<'input'>) {
+  return <UiInput className={cn('h-11 text-base sm:text-sm', className)} {...rest} />;
+}
 
-export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(function Input({ className, ...rest }, ref) {
-  return <input ref={ref} className={cx(inputClass, 'min-h-11', className)} {...rest} />;
-});
+export function Textarea({ className, ...rest }: ComponentProps<'textarea'>) {
+  return <UiTextarea className={cn('min-h-28 resize-y py-3 text-base leading-relaxed sm:text-sm', className)} {...rest} />;
+}
 
-export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement>>(function Textarea(
-  { className, ...rest },
-  ref,
-) {
-  return <textarea ref={ref} className={cx(inputClass, 'min-h-28 resize-y py-3 leading-relaxed', className)} {...rest} />;
-});
+/** Radix Select does not allow "" as an item value, so "" (none chosen) travels as this. */
+const EMPTY = '__none__';
 
+const textOf = (node: ReactNode): string =>
+  Children.toArray(node)
+    .map((child) => (typeof child === 'string' || typeof child === 'number' ? String(child) : isValidElement<{ children?: ReactNode }>(child) ? textOf(child.props.children) : ''))
+    .join('');
+
+interface OptionProps {
+  value?: string | number;
+  disabled?: boolean;
+  children?: ReactNode;
+}
+
+/** Turn <option> / <optgroup> children into shadcn/ui SelectItem / SelectGroup. */
+function toItems(children: ReactNode): { items: ReactElement[]; placeholder: string | null } {
+  let placeholder: string | null = null;
+  const walk = (node: ReactNode): ReactElement[] =>
+    Children.toArray(node).flatMap((child): ReactElement[] => {
+      if (!isValidElement(child)) return [];
+      if (child.type === Fragment) return walk((child.props as { children?: ReactNode }).children);
+      if (child.type === 'optgroup') {
+        const props = child.props as { label?: string; children?: ReactNode };
+        return [
+          <SelectGroup key={child.key ?? props.label}>
+            <SelectLabel>{props.label}</SelectLabel>
+            {walk(props.children)}
+          </SelectGroup>,
+        ];
+      }
+      if (child.type === 'option') {
+        const props = child.props as OptionProps;
+        const value = String(props.value ?? '');
+        const label = textOf(props.children);
+        if (value === '') placeholder = label;
+        return [
+          <SelectItem key={child.key ?? value} value={value === '' ? EMPTY : value} disabled={props.disabled}>
+            {label}
+          </SelectItem>,
+        ];
+      }
+      return [];
+    });
+  const items = walk(children);
+  return { items, placeholder };
+}
+
+/**
+ * shadcn/ui Select. Callers pass plain <option> and <optgroup> children like a
+ * native select; an option with value "" is the "nothing chosen" choice.
+ */
 export function Select({
   id,
   value,
   onChange,
   children,
-  ...rest
+  disabled,
+  'aria-describedby': describedBy,
 }: {
   id: string;
   value: string;
@@ -182,21 +285,16 @@ export function Select({
   'aria-describedby'?: string;
   disabled?: boolean;
 }) {
+  const { items, placeholder } = toItems(children);
   return (
-    <div className="relative">
-      <select
-        id={id}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className={cx(inputClass, 'min-h-11 appearance-none pr-10')}
-        {...rest}
-      >
-        {children}
-      </select>
-      <span aria-hidden className="pointer-events-none absolute inset-y-0 right-3.5 grid place-items-center text-muted">
-        ▾
-      </span>
-    </div>
+    <UiSelect value={value === '' ? (placeholder === null ? '' : EMPTY) : value} onValueChange={(next) => onChange(next === EMPTY ? '' : next)} disabled={disabled}>
+      <SelectTrigger id={id} aria-describedby={describedBy} className="h-11 min-h-11 w-full text-base sm:text-sm">
+        <SelectValue placeholder={placeholder ?? undefined} />
+      </SelectTrigger>
+      <SelectContent position="popper" className="max-h-80">
+        {items}
+      </SelectContent>
+    </UiSelect>
   );
 }
 
@@ -216,79 +314,65 @@ export function Switch({
   const generated = useId();
   const id = idProp ?? generated;
   return (
-    <div className="flex items-center justify-between gap-4 py-1">
+    <div className="flex min-h-11 items-center justify-between gap-4 py-1">
       <div className="min-w-0">
-        <label htmlFor={id} className="cursor-pointer text-sm font-medium text-ink">
+        <Label htmlFor={id} className="cursor-pointer text-sm">
           {label}
-        </label>
+        </Label>
         {description && (
-          <p id={`${id}-desc`} className="mt-0.5 text-sm text-muted">
+          <p id={`${id}-desc`} className="mt-1 text-sm text-muted-foreground">
             {description}
           </p>
         )}
       </div>
-      <button
-        id={id}
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        aria-describedby={description ? `${id}-desc` : undefined}
-        onClick={() => onChange(!checked)}
-        className={cx(
-          'relative inline-flex h-8 w-14 shrink-0 items-center rounded-full border transition duration-200',
-          checked ? 'border-ink bg-ink' : 'border-line bg-raised',
-        )}
-      >
-        <span
-          className={cx(
-            'inline-block size-6 rounded-full shadow transition-transform duration-200',
-            checked ? 'translate-x-7 bg-bg' : 'translate-x-1 bg-muted',
-          )}
-        />
-      </button>
+      <UiSwitch id={id} checked={checked} onCheckedChange={onChange} aria-describedby={description ? `${id}-desc` : undefined} />
     </div>
   );
 }
 
-const alertStyles = {
-  info: { box: 'border-line bg-raised text-ink', icon: <Info className="size-5 text-primary" aria-hidden /> },
-  success: { box: 'border-line bg-raised text-ink', icon: <CheckCircle2 className="size-5 text-success" aria-hidden /> },
-  warning: { box: 'border-warning/40 bg-raised text-ink', icon: <AlertTriangle className="size-5 text-warning" aria-hidden /> },
-  danger: { box: 'border-danger/35 bg-danger/10 text-ink', icon: <XCircle className="size-5 text-danger" aria-hidden /> },
+const alertTones = {
+  info: { variant: 'default', className: '', icon: <Info aria-hidden /> },
+  success: { variant: 'default', className: '', icon: <CheckCircle aria-hidden /> },
+  warning: { variant: 'default', className: 'border-warning/40 [&>svg]:text-warning', icon: <Warning aria-hidden /> },
+  danger: { variant: 'destructive', className: 'border-destructive/40', icon: <XCircle aria-hidden /> },
 } as const;
 
-export function Alert({ tone = 'info', children, action }: { tone?: keyof typeof alertStyles; children: ReactNode; action?: ReactNode }) {
-  const style = alertStyles[tone];
+export function Alert({ tone = 'info', children, action }: { tone?: keyof typeof alertTones; children: ReactNode; action?: ReactNode }) {
+  const style = alertTones[tone];
   return (
-    <div
+    <UiAlert
+      variant={style.variant}
       role={tone === 'danger' || tone === 'warning' ? 'alert' : 'status'}
-      className={cx('flex animate-fade-in items-start gap-3 rounded-panel border px-4 py-3 text-sm', style.box)}
+      className={cn('animate-fade-in', style.className)}
     >
-      <span className="mt-0.5 shrink-0">{style.icon}</span>
-      <div className="min-w-0 flex-1 leading-relaxed">{children}</div>
-      {action}
-    </div>
+      {style.icon}
+      <AlertDescription className={cn('leading-relaxed text-foreground', action && 'flex flex-wrap items-center justify-between gap-3')}>
+        <div className="min-w-0 flex-1">{children}</div>
+        {action}
+      </AlertDescription>
+    </UiAlert>
   );
 }
 
-export function Badge({ tone = 'muted', children }: { tone?: 'muted' | 'success' | 'primary' | 'warning'; children: ReactNode }) {
+const badgeTones = {
+  muted: { className: 'border-border bg-muted text-muted-foreground', dot: 'bg-subtle' },
+  success: { className: 'border-success/25 bg-success/10 text-success', dot: 'bg-success' },
+  primary: { className: 'border-brand/30 bg-brand/10 text-brand', dot: 'bg-brand' },
+  warning: { className: 'border-warning/30 bg-warning/10 text-warning', dot: 'bg-warning' },
+} as const;
+
+/** Small status pill with a colored dot: "● Active", "● Off". */
+export function Badge({ tone = 'muted', children }: { tone?: keyof typeof badgeTones; children: ReactNode }) {
+  const style = badgeTones[tone];
   return (
-    <span
-      className={cx(
-        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
-        tone === 'muted' && 'bg-raised text-muted',
-        tone === 'success' && 'bg-ink text-bg',
-        tone === 'primary' && 'bg-raised text-ink ring-1 ring-line',
-        tone === 'warning' && 'bg-raised text-warning ring-1 ring-warning/40',
-      )}
-    >
+    <UiBadge variant="outline" className={cn('gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium', style.className)}>
+      <span aria-hidden className={cn('size-1.5 rounded-full', style.dot)} />
       {children}
-    </span>
+    </UiBadge>
   );
 }
 
 export function Avatar({ src, name, size = 40 }: { src: string | null; name: string; size?: number }) {
-  if (src) return <img src={src} alt="" width={size} height={size} className="shrink-0 rounded-full ring-1 ring-line" style={{ width: size, height: size }} />;
   const initials = name
     .split(/\s+/)
     .map((part) => part[0])
@@ -296,12 +380,11 @@ export function Avatar({ src, name, size = 40 }: { src: string | null; name: str
     .slice(0, 2)
     .toUpperCase();
   return (
-    <span
-      aria-hidden
-      className="grid shrink-0 place-items-center rounded-full bg-raised font-semibold text-ink ring-1 ring-line"
-      style={{ width: size, height: size, fontSize: size / 2.8 }}
-    >
-      {initials}
-    </span>
+    <UiAvatar className="shrink-0 border" style={{ width: size, height: size }}>
+      {src && <AvatarImage src={src} alt="" />}
+      <AvatarFallback aria-hidden className="font-semibold" style={{ fontSize: size / 2.8 }}>
+        {initials}
+      </AvatarFallback>
+    </UiAvatar>
   );
 }

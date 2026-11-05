@@ -17,7 +17,8 @@
     "isolatedModules": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "paths": { "@/*": ["./apps/web/src/*"] }
   },
   "include": ["apps/*/src", "apps/web/*.ts", "packages/*/src", "features", "scripts"],
   "exclude": ["node_modules", "**/dist"]

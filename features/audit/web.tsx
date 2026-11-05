@@ -6,7 +6,8 @@ import { useGuild } from '../../apps/web/src/lib/guild';
 import { errorText, useI18n } from '../../apps/web/src/lib/i18n';
 import { useApi } from '../../apps/web/src/lib/use-api';
 import { Icon } from '../../apps/web/src/ui/icon';
-import { Alert, Badge, Skeleton, cx } from '../../apps/web/src/ui/primitives';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, Badge, Skeleton, PageHeader } from '../../apps/web/src/ui/primitives';
 import { LogView } from './log-view';
 import type { AuditResponse } from './manifest';
 import { SettingsView } from './settings-view';
@@ -34,36 +35,21 @@ export default function AuditPage() {
     );
 
   return (
-    <div className="animate-fade-up space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="flex items-center gap-3 text-2xl font-bold tracking-tight sm:text-3xl">
-            <Icon name="log" size={26} className="mr-2 inline-block align-[-3px]" />
-            {t('audit.name')}
-            {audit.data && <Badge tone={audit.data.settings.enabled ? 'success' : 'muted'}>{audit.data.settings.enabled ? t('overview.active') : t('overview.inactive')}</Badge>}
-          </h1>
-          <p className="mt-2 max-w-2xl text-muted">{t('audit.description')}</p>
-        </div>
-        <div role="tablist" aria-label={t('audit.name')} className="inline-flex rounded-full border border-line bg-raised/50 p-1">
-          {TABS.map((item) => (
-            <button
-              key={item}
-              type="button"
-              role="tab"
-              id={`audit-tab-${item}`}
-              aria-selected={tab === item}
-              aria-controls={`audit-panel-${item}`}
-              onClick={() => selectTab(item)}
-              className={cx(
-                'min-h-10 rounded-full px-5 text-sm font-semibold transition',
-                tab === item ? 'bg-brand text-bg shadow-glow' : 'text-muted hover:text-ink',
-              )}
-            >
-              {t(`audit.tabs.${item}`)}
-            </button>
-          ))}
-        </div>
-      </header>
+    <Tabs value={tab} onValueChange={(next) => selectTab(next as Tab)} className="animate-fade-up gap-0">
+      <PageHeader
+        title={t('audit.name')}
+        description={t('audit.description')}
+        badge={audit.data && <Badge tone={audit.data.settings.enabled ? 'success' : 'muted'}>{audit.data.settings.enabled ? t('overview.active') : t('overview.inactive')}</Badge>}
+        actions={
+          <TabsList aria-label={t('audit.name')} className="h-11">
+            {TABS.map((item) => (
+              <TabsTrigger key={item} value={item} className="px-5">
+                {t(`audit.tabs.${item}`)}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        }
+      />
 
       {audit.error ? (
         <Alert tone="danger">{errorText(t, audit.error)}</Alert>
@@ -73,10 +59,8 @@ export default function AuditPage() {
           <Skeleton className="h-64 w-full" />
         </div>
       ) : (
-        <div role="tabpanel" id={`audit-panel-${tab}`} aria-labelledby={`audit-tab-${tab}`}>
-          {tab === 'log' ? <LogView enabled={audit.data.settings.enabled} /> : <SettingsView audit={audit} />}
-        </div>
+        <TabsContent value={tab}>{tab === 'log' ? <LogView enabled={audit.data.settings.enabled} /> : <SettingsView audit={audit} />}</TabsContent>
       )}
-    </div>
+    </Tabs>
   );
 }

@@ -31,7 +31,7 @@ function LevelingSetup({ value, onChange }: SetupSectionProps<LevelingSettings>)
               value={value.leaderboardChannelId}
               onChange={(leaderboardChannelId) => onChange({ ...value, leaderboardChannelId })}
             />
-            <p className="text-sm text-muted">{t('leveling.form.leaderboardHelp')}</p>
+            <p className="text-sm text-muted-foreground">{t('leveling.form.leaderboardHelp')}</p>
           </div>
         </div>
       )}

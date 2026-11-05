@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router';
 import { useAuth } from '../lib/auth';
 import { useCookieLocale, useT } from '../lib/i18n';
-import { ButtonLink, Logo } from '../ui/primitives';
+import { ButtonLink, Card, Logo } from '../ui/primitives';
 import { Icon } from '../ui/icon';
 import { LanguageSwitcher } from '../ui/widgets';
 
@@ -31,18 +31,18 @@ export function LoginPage() {
         <LanguageSwitcher value={locale} onChange={setLocale} />
       </div>
       <div className="flex flex-1 items-center justify-center py-10">
-        <div className="glass w-full max-w-md animate-fade-up p-8 text-center sm:p-10">
-          <div className="mx-auto mb-6 grid size-20 place-items-center rounded-2xl bg-raised ring-1 ring-line">
+        <Card className="w-full max-w-md animate-fade-up p-8 text-center sm:p-10">
+          <div className="mx-auto mb-6 grid size-20 place-items-center rounded-2xl bg-muted ring-1 ring-border">
             <Logo size={52} />
           </div>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            <span className="text-gradient">{t('login.title')}</span>
+            {t('login.title')}
           </h1>
-          <p className="mt-3 text-muted">{t('login.subtitle')}</p>
+          <p className="mt-3 text-muted-foreground">{t('login.subtitle')}</p>
           <ul className="mt-7 space-y-2 text-left">
             {points.map((point) => (
-              <li key={point.text} className="glass-raised flex items-center gap-3 px-4 py-3 text-sm">
-                <span aria-hidden className="text-muted">
+              <li key={point.text} className="flex items-center gap-3 rounded-lg border bg-muted/50 px-4 py-3 text-sm">
+                <span aria-hidden className="text-muted-foreground">
                   <Icon name={point.icon} />
                 </span>
                 {point.text}
@@ -52,8 +52,8 @@ export function LoginPage() {
           <ButtonLink href="/auth/login" className="mt-8 w-full min-h-12 text-base" icon={<DiscordGlyph />}>
             {t('login.button')}
           </ButtonLink>
-          <p className="mt-4 text-xs leading-relaxed text-muted">{t('login.note')}</p>
-        </div>
+          <p className="mt-4 text-xs leading-relaxed text-muted-foreground">{t('login.note')}</p>
+        </Card>
       </div>
     </main>
   );

@@ -1,0 +1,6 @@
+{
+  "//": "Only here so the shadcn CLI can resolve the @/ alias. Type checking runs from the root tsconfig.",
+  "extends": "../../tsconfig.json",
+  "compilerOptions": { "baseUrl": ".", "paths": { "@/*": ["./src/*"] } },
+  "include": ["src"]
+}

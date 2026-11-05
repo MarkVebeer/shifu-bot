@@ -4,6 +4,7 @@
  * When chat and voice both earn XP, the list can be ranked by overall, chat or voice level.
  */
 import { useSearchParams } from 'react-router';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useI18n } from '../../apps/web/src/lib/i18n';
 import { formatNumber, RankedList, RankRow, SearchBox, useRankedList, YourPlace } from '../../apps/web/src/ui/member-list';
 import { ListSkeleton, Message, useMemberServer } from '../../apps/web/src/ui/member-shell';
@@ -59,7 +60,7 @@ export default function LevelingLeaderboardPage() {
   const value = (level: number, xp: number) => (
     <>
       <span className="block">{t('leveling.list.level', { level: n(level) })}</span>
-      <span className="block font-sans text-xs font-normal text-muted">{t('leveling.list.xp', { xp: n(xp) })}</span>
+      <span className="block font-sans text-xs font-normal text-muted-foreground">{t('leveling.list.xp', { xp: n(xp) })}</span>
     </>
   );
 
@@ -68,29 +69,18 @@ export default function LevelingLeaderboardPage() {
   return (
     <div className="space-y-5">
       {kinds.length > 1 && (
-        <div role="radiogroup" aria-label={t('leveling.list.rankBy')} className="grid grid-cols-3 gap-2">
-          {kinds.map((option) => {
-            const active = option === kind;
-            return (
-              <button
-                key={option}
-                type="button"
-                role="radio"
-                aria-checked={active}
-                onClick={() => setKind(option)}
-                className={cx(
-                  'glass-raised min-h-11 rounded-full px-3 text-sm font-semibold transition duration-200',
-                  active ? 'border-primary/70 text-ink shadow-glow' : 'text-muted hover:border-primary/40 hover:text-ink',
-                )}
-              >
+        <Tabs value={kind} onValueChange={(next) => setKind(next as LeaderboardKind)}>
+          <TabsList aria-label={t('leveling.list.rankBy')} className="grid h-11 w-full grid-cols-3">
+            {kinds.map((option) => (
+              <TabsTrigger key={option} value={option}>
                 {label(option)}
-              </button>
-            );
-          })}
-        </div>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
       )}
 
-      <p className="text-sm text-muted">
+      <p className="text-sm text-muted-foreground">
         {t('leveling.list.members', { count: n(data.members) })}
         {kind === 'overall' && <> · {t('leveling.list.overallHint')}</>}
       </p>
@@ -104,7 +94,7 @@ export default function LevelingLeaderboardPage() {
           detail={t('leveling.list.nextLevel', { left: n(mine.progress.needed - mine.progress.current) })}
         />
       ) : (
-        <p className="glass-raised px-5 py-4 text-sm text-muted">{t('leveling.list.notOnList')}</p>
+        <p className="rounded-lg border bg-muted/50 px-5 py-4 text-sm text-muted-foreground">{t('leveling.list.notOnList')}</p>
       )}
 
       <SearchBox value={list.search} onChange={list.setSearch} />

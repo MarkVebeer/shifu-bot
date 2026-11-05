@@ -1,5 +1,5 @@
 import type { GuildOverview } from '@shifubot/shared';
-import { ChevronsLeft, ChevronsRight, LayoutGrid, LogOut } from 'lucide-react';
+import { CaretUpDown, SignOut, SquaresFour } from '@phosphor-icons/react';
 import { Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, NavLink, Outlet, useBlocker, useMatch, useParams } from 'react-router';
 import { featurePages } from '../features';
@@ -8,7 +8,25 @@ import { usePermissionReport } from '../lib/use-permissions';
 import { GuildContext, type GuildContextValue } from '../lib/guild';
 import { errorText, I18nProvider, useT } from '../lib/i18n';
 import { useApi } from '../lib/use-api';
-import { Alert, Avatar, Button, cx, Logo, Skeleton } from '../ui/primitives';
+import { Button as UiButton } from '@/components/ui/button';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarRail,
+  SidebarTrigger,
+} from '@/components/ui/sidebar';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Alert, Avatar, Button, Card, cx, Logo, Skeleton } from '../ui/primitives';
 import { Icon } from '../ui/icon';
 import { PermissionCheck } from '../ui/permission-check';
 import { ConfirmDialog } from '../ui/widgets';
@@ -69,15 +87,13 @@ function GuildShell({ guild, reload }: { guild: GuildOverview; reload: () => Pro
     return () => window.removeEventListener('beforeunload', handler);
   }, [dirty]);
 
-  const toggleSidebar = () => {
-    setCollapsed((value) => {
-      try {
-        localStorage.setItem(SIDEBAR_KEY, value ? '0' : '1');
-      } catch {
-        // Storage can be unavailable (private mode). The toggle still works for this visit.
-      }
-      return !value;
-    });
+  const setSidebarOpen = (open: boolean) => {
+    setCollapsed(!open);
+    try {
+      localStorage.setItem(SIDEBAR_KEY, open ? '0' : '1');
+    } catch {
+      // Storage can be unavailable (private mode). The toggle still works for this visit.
+    }
   };
 
   const base = `/guilds/${guild.id}`;
@@ -99,89 +115,100 @@ function GuildShell({ guild, reload }: { guild: GuildOverview; reload: () => Pro
 
   return (
     <GuildContext.Provider value={context}>
-      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded-full focus:bg-brand focus:px-4 focus:py-2 focus:text-bg">
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground">
         {t('common.skipToContent')}
       </a>
-      <div className="flex min-h-dvh">
-        {/* Desktop sidebar */}
-        <aside
-          className={cx(
-            'sticky top-0 hidden h-dvh shrink-0 flex-col border-r border-line/60 bg-surface/50 backdrop-blur-xl transition-[width] duration-300 lg:flex',
-            collapsed ? 'w-20' : 'w-72',
-          )}
-        >
-          <div className={cx('flex items-center gap-3 px-5 py-5', collapsed && 'justify-center px-0')}>
-            <Logo size={34} />
-            {!collapsed && <span className="text-lg font-semibold">ShifuBot</span>}
-          </div>
-          <Link
-            to="/guilds"
-            className={cx(
-              'glass-raised glow-hover mx-3 mb-4 flex items-center gap-3 p-3',
-              collapsed && 'justify-center p-2',
-            )}
-            title={t('nav.servers')}
-          >
-            <Avatar src={guild.iconUrl} name={guild.name} size={collapsed ? 36 : 40} />
-            {!collapsed && (
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold">{guild.name}</p>
-                <p className="text-xs text-muted">{t('nav.servers')}</p>
-              </div>
-            )}
-          </Link>
-          <nav aria-label={t('nav.main')} className="flex-1 space-y-1 overflow-y-auto px-3">
-            {items.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                title={collapsed ? item.label : undefined}
-                className={({ isActive }) =>
-                  cx(
-                    'flex min-h-11 items-center gap-3 rounded-token px-3 text-sm font-medium transition',
-                    collapsed && 'justify-center px-0',
-                    isActive ? 'bg-ink text-bg' : 'text-muted hover:bg-raised/60 hover:text-ink',
-                  )
-                }
-              >
-                <span className="text-lg">{item.icon}</span>
-                {!collapsed && <span className="truncate">{item.label}</span>}
-              </NavLink>
-            ))}
-          </nav>
-          <div className={cx('flex items-center gap-2 border-t border-line/60 p-3', collapsed && 'flex-col')}>
-            {me && <Avatar src={me.user.avatarUrl} name={me.user.username} size={36} />}
-            {!collapsed && <span className="min-w-0 flex-1 truncate text-sm">{me?.user.globalName ?? me?.user.username}</span>}
-            <Button variant="ghost" size="icon" onClick={() => void logout()} aria-label={t('common.logout')} title={t('common.logout')}>
-              <LogOut className="size-5" aria-hidden />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleSidebar}
-              aria-label={collapsed ? t('nav.expand') : t('nav.collapse')}
-              aria-expanded={!collapsed}
-              title={collapsed ? t('nav.expand') : t('nav.collapse')}
-            >
-              {collapsed ? <ChevronsRight className="size-5" aria-hidden /> : <ChevronsLeft className="size-5" aria-hidden />}
-            </Button>
-          </div>
-        </aside>
+      <SidebarProvider open={!collapsed} onOpenChange={(open) => setSidebarOpen(open)}>
+        {/* Desktop sidebar (shadcn/ui Sidebar, collapses to icons) */}
+        <Sidebar collapsible="icon">
+          <SidebarHeader>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <div className="flex h-12 items-center gap-3 px-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+                  <Logo size={30} />
+                  <span className="text-lg font-semibold group-data-[collapsible=icon]:hidden">ShifuBot</span>
+                </div>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild size="lg" tooltip={t('nav.servers')} className="border bg-card hover:bg-accent/60">
+                  <Link to="/guilds">
+                    <Avatar src={guild.iconUrl} name={guild.name} size={32} />
+                    <span className="grid min-w-0 flex-1 leading-tight">
+                      <span className="truncate font-semibold">{guild.name}</span>
+                      <span className="truncate text-xs text-muted-foreground">{t('nav.servers')}</span>
+                    </span>
+                    <CaretUpDown className="ml-auto text-muted-foreground" aria-hidden />
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarHeader>
+          <SidebarContent>
+            <nav aria-label={t('nav.main')} className="contents">
+              <SidebarGroup>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    <SidebarNavItem item={items[0]!} />
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+              <SidebarGroup>
+                <SidebarGroupLabel className="text-[11px] uppercase tracking-[0.08em] text-subtle">{t('overview.features')}</SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {items.slice(1, -1).map((item) => (
+                      <SidebarNavItem key={item.to} item={item} />
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+              <SidebarGroup className="mt-auto">
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    <SidebarNavItem item={items.at(-1)!} />
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            </nav>
+          </SidebarContent>
+          <SidebarFooter>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <div className="flex items-center gap-2 p-1 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:p-0">
+                  {me && <Avatar src={me.user.avatarUrl} name={me.user.username} size={32} />}
+                  <span className="min-w-0 flex-1 truncate text-sm group-data-[collapsible=icon]:hidden">{me?.user.globalName ?? me?.user.username}</span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className="size-9" onClick={() => void logout()} aria-label={t('common.logout')}>
+                        <SignOut aria-hidden />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">{t('common.logout')}</TooltipContent>
+                  </Tooltip>
+                </div>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarFooter>
+          <SidebarRail />
+        </Sidebar>
 
-        <div className="flex min-w-0 flex-1 flex-col">
+        <SidebarInset className="min-w-0">
+          {/* Desktop top bar with the collapse button */}
+          <header className="sticky top-0 z-30 hidden h-12 items-center gap-2 border-b bg-background/80 px-4 backdrop-blur md:flex">
+            <SidebarTrigger aria-label={collapsed ? t('nav.expand') : t('nav.collapse')} />
+          </header>
           {/* Mobile top bar */}
-          <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-line/60 bg-bg/75 px-4 py-3 backdrop-blur-xl lg:hidden">
+          <header className="sticky top-0 z-30 flex items-center gap-3 border-b bg-background/80 px-4 py-3 backdrop-blur md:hidden">
             <Link to="/guilds" className="flex min-w-0 items-center gap-3" aria-label={t('nav.servers')}>
               <Avatar src={guild.iconUrl} name={guild.name} size={34} />
               <span className="truncate font-semibold">{guild.name}</span>
             </Link>
             <Button variant="ghost" size="icon" className="ml-auto" onClick={() => void logout()} aria-label={t('common.logout')}>
-              <LogOut className="size-5" aria-hidden />
+              <SignOut className="size-5" aria-hidden />
             </Button>
           </header>
 
-          <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 pb-32 pt-6 sm:px-6 lg:px-10 lg:pb-12 lg:pt-10">
+          <div id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 pb-32 pt-6 sm:px-6 md:pb-12 lg:px-10 lg:pt-8">
             {/* The overview shows the full permission card instead. */}
             {!onOverview && (
               <div className="mb-6 empty:hidden">
@@ -191,25 +218,25 @@ function GuildShell({ guild, reload }: { guild: GuildOverview; reload: () => Pro
             <Suspense fallback={<PageSkeleton />}>
               <Outlet />
             </Suspense>
-          </main>
-        </div>
-      </div>
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
 
       {/* Mobile bottom navigation */}
       <nav
         aria-label={t('nav.main')}
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-line/70 bg-surface/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/90 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
       >
-        <ul className="mx-auto flex max-w-lg">
+        <ul className="mx-auto flex max-w-2xl overflow-x-auto [scrollbar-width:none]">
           {items.map((item) => (
-            <li key={item.to} className="flex-1">
+            <li key={item.to} className="min-w-[4.75rem] flex-1 shrink-0">
               <NavLink
                 to={item.to}
                 end={item.end}
                 className={({ isActive }) =>
                   cx(
                     'flex min-h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium transition',
-                    isActive ? 'text-primary' : 'text-muted',
+                    isActive ? 'text-brand' : 'text-muted-foreground',
                   )
                 }
               >
@@ -218,9 +245,9 @@ function GuildShell({ guild, reload }: { guild: GuildOverview; reload: () => Pro
               </NavLink>
             </li>
           ))}
-          <li className="flex-1">
-            <Link to="/guilds" className="flex min-h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium text-muted">
-              <LayoutGrid className="size-5" aria-hidden />
+          <li className="min-w-[4.75rem] flex-1 shrink-0">
+            <Link to="/guilds" className="flex min-h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium text-muted-foreground">
+              <SquaresFour className="size-5" aria-hidden />
               <span>{t('nav.servers')}</span>
             </Link>
           </li>
@@ -249,8 +276,8 @@ export function PageSkeleton() {
       <Skeleton className="h-8 w-56" />
       <Skeleton className="h-4 w-80 max-w-full" />
       <div className="grid gap-4 pt-4 lg:grid-cols-2">
-        <Skeleton className="h-64 rounded-card" />
-        <Skeleton className="h-64 rounded-card" />
+        <Skeleton className="h-64 rounded-lg" />
+        <Skeleton className="h-64 rounded-lg" />
       </div>
     </div>
   );
@@ -259,9 +286,9 @@ export function PageSkeleton() {
 function LayoutSkeleton() {
   return (
     <div className="flex min-h-dvh">
-      <div className="hidden w-72 border-r border-line/60 p-5 lg:block">
+      <div className="hidden w-64 border-r p-3 md:block">
         <Skeleton className="mb-6 h-9 w-36" />
-        <Skeleton className="mb-6 h-16 w-full rounded-panel" />
+        <Skeleton className="mb-6 h-16 w-full rounded-lg" />
         <div className="space-y-2">
           <Skeleton className="h-11 w-full" />
           <Skeleton className="h-11 w-full" />
@@ -279,12 +306,27 @@ function CenteredError({ error }: { error: unknown }) {
   const t = useT();
   return (
     <div className="grid min-h-dvh place-items-center p-4">
-      <div className="glass w-full max-w-md space-y-4 p-6">
+      <Card className="w-full max-w-md space-y-4">
         <Alert tone="danger">{errorText(t, error)}</Alert>
-        <Link to="/guilds" className="inline-flex min-h-11 items-center rounded-full bg-brand px-5 text-sm font-semibold text-bg">
-          {t('nav.servers')}
-        </Link>
-      </div>
+        <UiButton asChild className="min-h-11">
+          <Link to="/guilds">{t('nav.servers')}</Link>
+        </UiButton>
+      </Card>
     </div>
+  );
+}
+
+/** One entry of the sidebar: a shadcn/ui SidebarMenuButton around a router link. */
+function SidebarNavItem({ item }: { item: NavItem }) {
+  const active = useMatch({ path: item.to, end: item.end ?? false });
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton asChild isActive={Boolean(active)} tooltip={item.label} className="h-9">
+        <NavLink to={item.to} end={item.end}>
+          {item.icon}
+          <span>{item.label}</span>
+        </NavLink>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
   );
 }
