@@ -339,12 +339,7 @@ export default function VerificationPage() {
                   <span className="text-sm text-muted-foreground">{t('verification.form.days')}</span>
                 </div>
               </Field>
-              <Switch
-                checked={draft.restoreOnRejoin}
-                onChange={(value) => update('restoreOnRejoin', value)}
-                label={t('verification.form.restoreOnRejoin')}
-                description={t('verification.form.restoreOnRejoinHelp')}
-              />
+              {draft.mode === 'captcha' && <p className="text-sm text-muted-foreground">{t('verification.form.returningNote')}</p>}
             </div>
           </Card>
 

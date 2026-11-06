@@ -4,6 +4,7 @@ import { colors, hexToInt } from '@shifubot/shared';
 import { CAPTCHA_ALPHABET, CAPTCHA_LENGTH, encodePng, randomCaptchaCode, renderCaptcha } from './captcha';
 import {
   accountAgeDays,
+  needsCaptcha,
   buildVerificationPanel,
   defaultVerificationSettings,
   verificationSettingsSchema,
@@ -135,5 +136,34 @@ describe('migrations', () => {
       fail_action: 'retry',
       timeout_minutes: 10,
     });
+  });
+});
+
+describe('needsCaptcha', () => {
+  test('only a new member in captcha mode solves a captcha', () => {
+    expect(needsCaptcha('captcha', false)).toBe(true);
+    expect(needsCaptcha('captcha', true)).toBe(false);
+    expect(needsCaptcha('button', false)).toBe(false);
+    expect(needsCaptcha('button', true)).toBe(false);
+  });
+});
+
+describe('verification_003_drop_restore_on_rejoin', () => {
+  test('removes the setting and keeps settings and verified members', () => {
+    const silent = { info: () => {}, warn: () => {}, error: () => {}, debug: () => {} } as never;
+    const db = new Database(':memory:');
+    const last = verificationFeature.migrations.findIndex((migration) => migration.id === 'verification_003_drop_restore_on_rejoin');
+    expect(last).toBeGreaterThan(0);
+    migrate(db, verificationFeature.migrations.slice(0, last), silent);
+    db.query("INSERT INTO verification_settings (guild_id, enabled, role_id, restore_on_rejoin, updated_at) VALUES ('g', 1, 'r', 0, 1)").run();
+    db.query("INSERT INTO verification_members (guild_id, user_id, verified_at) VALUES ('g', 'u', 1)").run();
+
+    migrate(db, verificationFeature.migrations, silent);
+
+    const row = db.query('SELECT * FROM verification_settings WHERE guild_id = ?').get('g') as Record<string, unknown>;
+    expect(row.enabled).toBe(1);
+    expect(row.role_id).toBe('r');
+    expect('restore_on_rejoin' in row).toBe(false);
+    expect(db.query('SELECT user_id FROM verification_members').get()).toEqual({ user_id: 'u' });
   });
 });

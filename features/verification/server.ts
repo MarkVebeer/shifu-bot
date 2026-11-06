@@ -37,6 +37,7 @@ import {
   CAPTCHA_RULES,
   defaultVerificationSettings,
   FAIL_ACTIONS,
+  needsCaptcha,
   verificationManifest,
   verificationSettingsSchema,
   VERIFY_IDS,
@@ -82,7 +83,6 @@ interface SettingsRow {
   button_label: string;
   color: string | null;
   min_account_age_days: number;
-  restore_on_rejoin: number;
   max_attempts: number;
   fail_action: string;
   timeout_minutes: number;
@@ -112,7 +112,6 @@ class VerificationStore {
           buttonLabel: row.button_label,
           color: row.color,
           minAccountAgeDays: row.min_account_age_days,
-          restoreOnRejoin: row.restore_on_rejoin === 1,
           maxAttempts: row.max_attempts,
           failAction: (FAIL_ACTIONS as readonly string[]).includes(row.fail_action) ? (row.fail_action as FailAction) : 'retry',
           timeoutMinutes: row.timeout_minutes,
@@ -127,13 +126,13 @@ class VerificationStore {
       .query(
         `INSERT INTO verification_settings
            (guild_id, enabled, channel_id, role_id, mode, title, description, button_label, color,
-            min_account_age_days, restore_on_rejoin, max_attempts, fail_action, timeout_minutes, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            min_account_age_days, max_attempts, fail_action, timeout_minutes, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT (guild_id) DO UPDATE SET
            enabled = excluded.enabled, channel_id = excluded.channel_id, role_id = excluded.role_id,
            mode = excluded.mode, title = excluded.title, description = excluded.description,
            button_label = excluded.button_label, color = excluded.color,
-           min_account_age_days = excluded.min_account_age_days, restore_on_rejoin = excluded.restore_on_rejoin,
+           min_account_age_days = excluded.min_account_age_days,
            max_attempts = excluded.max_attempts, fail_action = excluded.fail_action, timeout_minutes = excluded.timeout_minutes,
            updated_at = excluded.updated_at, last_error = NULL, last_error_at = NULL`,
       )
@@ -148,7 +147,6 @@ class VerificationStore {
         s.buttonLabel,
         s.color,
         s.minAccountAgeDays,
-        Number(s.restoreOnRejoin),
         s.maxAttempts,
         s.failAction,
         s.timeoutMinutes,
@@ -280,6 +278,11 @@ export default defineServerFeature({
         ALTER TABLE verification_settings ADD COLUMN fail_action TEXT NOT NULL DEFAULT 'retry';
         ALTER TABLE verification_settings ADD COLUMN timeout_minutes INTEGER NOT NULL DEFAULT 10;
       `,
+    },
+    {
+      // Members who verified before no longer get the role on joining: they press the button, without a captcha.
+      id: 'verification_003_drop_restore_on_rejoin',
+      sql: `ALTER TABLE verification_settings DROP COLUMN restore_on_rejoin;`,
     },
   ],
 
@@ -430,13 +433,13 @@ export default defineServerFeature({
         return reply(interaction, 'warning', renderPlaceholders(t.tooYoung, { days: settings.minAccountAgeDays }));
       }
 
-      if (settings.mode === 'button') {
+      const verifiedBefore = store.isVerified(guild.id, member.id);
+      if (!needsCaptcha(settings.mode, verifiedBefore)) {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const ok = await grantRole(member, role.role);
-        if (ok) ctx.audit.record(guild.id, { type: 'shifubot.verified', actorId: member.id, targetId: member.id, targetKind: 'user', data: { mode: 'button' } });
-        await interaction.editReply(
-          ok ? `${emoji.success} ${renderPlaceholders(t.success, { server: guild.name })}` : `${emoji.error} ${t.roleFailed}`,
-        );
+        if (ok) ctx.audit.record(guild.id, { type: 'shifubot.verified', actorId: member.id, targetId: member.id, targetKind: 'user', data: { mode: verifiedBefore ? 'returning' : 'button' } });
+        const done = verifiedBefore ? t.restored : renderPlaceholders(t.success, { server: guild.name });
+        await interaction.editReply(ok ? `${emoji.success} ${done}` : `${emoji.error} ${t.roleFailed}`);
         return;
       }
 
@@ -590,18 +593,6 @@ export default defineServerFeature({
             else if (interaction.customId === VERIFY_IDS.answer) await onAnswer(interaction);
           } else if (interaction.isModalSubmit() && interaction.customId === VERIFY_IDS.modal) {
             await onModal(interaction);
-          }
-        },
-
-        /** Members who verified before get their role back when they rejoin. */
-        [Events.GuildMemberAdd]: async (member: GuildMember) => {
-          if (member.user.bot) return;
-          const settings = store.get(member.guild.id);
-          if (!settings.enabled || !settings.restoreOnRejoin || !store.isVerified(member.guild.id, member.id)) return;
-          const role = resolveRole(member.guild, settings);
-          if ('error' in role) return;
-          if (await grantRole(member, role.role)) {
-            logger.info('Verified role restored on rejoin', { guildId: member.guild.id, userId: member.id });
           }
         },
       },

@@ -65,8 +65,6 @@ export const verificationSettingsSchema = z.object({
   color: hexColor.nullable(),
   /** Accounts younger than this many days cannot verify. 0 turns the check off. */
   minAccountAgeDays: z.number().int().min(0, 'Must be 0 or more').max(365, 'At most 365 days'),
-  /** Give the role again, without a captcha, to members who verified before and rejoin. */
-  restoreOnRejoin: z.boolean(),
   /** Wrong captcha answers allowed before failAction runs. */
   maxAttempts: z.number().int().min(1, 'At least 1 try').max(10, 'At most 10 tries'),
   failAction: z.enum(FAIL_ACTIONS),
@@ -86,7 +84,6 @@ export const defaultVerificationSettings: VerificationSettings = {
   buttonLabel: '',
   color: null,
   minAccountAgeDays: 0,
-  restoreOnRejoin: true,
   maxAttempts: 3,
   failAction: 'retry',
   timeoutMinutes: 10,
@@ -128,6 +125,11 @@ export function buildVerificationPanel(settings: VerificationSettings, ctx: Pane
     ],
     allowedMentions: { users: [], roles: [], parse: [] },
   };
+}
+
+/** A captcha is only for captcha mode, and only once: a member who verified before just presses the button. */
+export function needsCaptcha(mode: VerificationMode, verifiedBefore: boolean): boolean {
+  return mode === 'captcha' && !verifiedBefore;
 }
 
 /** Whole days since a Discord account was created. */
