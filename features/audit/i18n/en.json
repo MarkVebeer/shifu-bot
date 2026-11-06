@@ -66,6 +66,7 @@
       "verificationRefused": "Verification refused",
       "verificationFailed": "Failed verification",
       "xpReset": "XP reset",
+      "xpChanged": "XP corrected",
       "messageFailed": "ShifuBot message failed",
       "logsPurged": "Audit log cleared",
       "eventsSkipped": "Events skipped"
@@ -164,6 +165,7 @@
     "daysOnServer": "{days} days on the server",
     "memberNumber": "Member #{count}",
     "skipped": "{count} events were skipped because the server hit the per minute limit.",
+    "xpChanged": "{track}: {before} → {after} XP",
     "filterUser": "Show only {name}",
     "filterChannel": "Show only #{name}"
   },

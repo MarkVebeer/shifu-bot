@@ -49,6 +49,25 @@ export const XP_RULES = {
 export const LEVEL_TRACKS = ['text', 'voice'] as const;
 export type LevelTrack = (typeof LEVEL_TRACKS)[number];
 
+/** Most XP one track can hold. Guards manual corrections against typos. */
+export const MAX_MEMBER_XP = 100_000_000;
+
+/** A manual XP correction on the dashboard: add to, take from, or set a track's XP. */
+export const XP_OPS = ['add', 'remove', 'set'] as const;
+export type XpOp = (typeof XP_OPS)[number];
+
+export const xpAdjustSchema = z.object({
+  track: z.enum(LEVEL_TRACKS),
+  op: z.enum(XP_OPS),
+  amount: z.number().int().min(0).max(MAX_MEMBER_XP),
+  reason: z.string().trim().max(200, 'Reason can be at most 200 characters').optional(),
+});
+export type XpAdjust = z.infer<typeof xpAdjustSchema>;
+
+/** Which members the dashboard manager lists: those on the server, or those who left. */
+export const MEMBER_STATUSES = ['current', 'left'] as const;
+export type MemberStatus = (typeof MEMBER_STATUSES)[number];
+
 /** Emoji of each level kind, used everywhere so chat, voice and overall are never confused. */
 export const LEVEL_EMOJI = { text: 'chat', voice: 'voice', overall: 'overall' } as const;
 

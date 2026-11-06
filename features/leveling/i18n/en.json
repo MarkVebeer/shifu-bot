@@ -1,6 +1,10 @@
 {
   "name": "Leveling",
   "description": "Members get a chat level for chatting and a separate voice level for talking in voice. Both add up to an overall level that ranks the live leaderboard.",
+  "tabs": {
+    "members": "Members",
+    "settings": "Settings"
+  },
   "defaults": {
     "title": "{track} level up!",
     "description": "{user} just reached **{track} level {level}**. Keep it up!"
@@ -126,13 +130,6 @@
     "help": "Use this if someone deleted the leaderboard message."
   },
   "top": {
-    "title": "Top members",
-    "hint": "The top 25 by total XP (chat + voice). Members who left are hidden.",
-    "empty": "Nobody has XP yet.",
-    "xp": "{xp} XP total",
-    "textDetail": "{xp} chat XP from {messages} messages",
-    "voiceDetail": "{xp} voice XP from {minutes} minutes in voice",
-    "overallDetail": "Level of chat XP + voice XP together",
     "reset": "Reset all XP",
     "resetTitle": "Reset all XP?",
     "resetBody": "Every member of this server goes back to chat level 0 and voice level 0. This cannot be undone.",
@@ -161,5 +158,59 @@
     "missing_permissions": "missing permissions",
     "send_failed": "Discord rejected the message",
     "panel_deleted": "the leaderboard message was deleted"
+  },
+  "manager": {
+    "disabled": "Leveling is turned off, so nobody earns XP right now. You can still correct XP here.",
+    "status": "Members",
+    "statusOptions": {
+      "current": "Current",
+      "left": "Who left"
+    },
+    "refresh": "Refresh",
+    "empty": "Nobody has XP yet. Search for a name to give someone XP by hand.",
+    "emptyLeft": "None of the members who left have XP.",
+    "left": "Left",
+    "noXp": "No XP yet",
+    "others": "Other members of the server",
+    "othersHint": "They have no XP yet. Pick one to give them some.",
+    "edit": "Edit",
+    "editMember": "Edit the XP of {name}",
+    "place": "Place #{rank}",
+    "saved": "{name}: {before} → {after} XP",
+    "undo": "Undo",
+    "undone": "Change undone",
+    "resetDone": "{name} was reset",
+    "editor": {
+      "help": "A correction sends no level up message. The leaderboard panel follows on its next refresh.",
+      "track": "Which XP",
+      "trackHint": "Level {level} · {xp} XP",
+      "action": "What to do",
+      "ops": {
+        "add": "Add",
+        "remove": "Take away",
+        "set": "Set to"
+      },
+      "amount": "How much",
+      "unit": "Unit",
+      "unitXp": "XP",
+      "unitLevel": "Level",
+      "levelHelp": "The member starts at the beginning of that level.",
+      "tooBig": "That is too much. The most you can enter is {max}.",
+      "clampedZero": "They only have {xp} XP, so they end up at 0.",
+      "clampedMax": "A member can have at most {max} XP, so it stops there.",
+      "preview": "Result",
+      "previewEmpty": "Enter an amount to see the result.",
+      "previewLevel": "{label} level {from} → {to}",
+      "previewXp": "{from} → {to} XP",
+      "noChange": "This does not change anything.",
+      "reason": "Reason",
+      "reasonHelp": "Shown in the audit log.",
+      "save": "Save XP",
+      "close": "Close",
+      "reset": "Reset this member",
+      "resetTitle": "Reset {name}?",
+      "resetBody": "Their chat XP, voice XP, message count and voice minutes go back to 0. This cannot be undone.",
+      "resetConfirm": "Reset member"
+    }
   }
 }

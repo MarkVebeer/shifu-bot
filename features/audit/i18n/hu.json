@@ -66,6 +66,7 @@
       "verificationRefused": "Ellenőrzés elutasítva",
       "verificationFailed": "Sikertelen ellenőrzés",
       "xpReset": "XP nullázva",
+      "xpChanged": "XP javítva",
       "messageFailed": "A ShifuBot üzenete nem ment el",
       "logsPurged": "Napló törölve",
       "eventsSkipped": "Kihagyott események"
@@ -164,6 +165,7 @@
     "daysOnServer": "{days} napot volt a szerveren",
     "memberNumber": "{count}. tag",
     "skipped": "{count} esemény kimaradt, mert a szerver elérte a percenkénti korlátot.",
+    "xpChanged": "{track}: {before} → {after} XP",
     "filterUser": "Csak {name} mutatása",
     "filterChannel": "Csak #{name} mutatása"
   },

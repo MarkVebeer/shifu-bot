@@ -20,7 +20,7 @@ export interface RowActions {
 }
 
 /** Keys shown in the summary line, or handled by a special block, so not listed again. */
-const HIDDEN_KEYS = new Set(['targetName', 'threadId', 'threadName', 'url', 'messageId', 'reason']);
+const HIDDEN_KEYS = new Set(['actorName', 'targetName', 'threadId', 'threadName', 'url', 'messageId', 'reason', 'track']);
 const USER_KEYS = new Set(['inviterId', 'authorId']);
 const CHANNEL_KEYS = new Set(['fromChannelId', 'toChannelId']);
 const isUrl = (value: unknown): value is string => typeof value === 'string' && /^https:\/\//.test(value);
@@ -174,7 +174,7 @@ export function EventRow({ event, names, actions }: { event: AuditEvent; names: 
                 {userChip(event.actorId!)}
               </>
             )}
-            {!actor && event.actorId && userChip(event.actorId)}
+            {!actor && event.actorId && userChip(event.actorId, data.actorName as string | undefined)}
             {target && (
               <>
                 <span aria-hidden>→</span>
@@ -195,6 +195,15 @@ export function EventRow({ event, names, actions }: { event: AuditEvent; names: 
           </span>
           {typeof data.reason === 'string' && <span className="mt-1 block text-sm text-foreground/90">{t('audit.row.reason', { reason: data.reason })}</span>}
           {event.type === 'shifubot.eventsSkipped' && <span className="mt-1 block text-sm text-warning">{t('audit.row.skipped', { count: String(data.count ?? 0) })}</span>}
+          {event.type === 'shifubot.xpChanged' && (
+            <span className="mt-1 block text-sm text-foreground/90">
+              {t('audit.row.xpChanged', {
+                track: t(`leveling.tracks.${String(data.track)}` as 'leveling.tracks.text'),
+                before: Number(data.before ?? 0).toLocaleString(locale),
+                after: Number(data.after ?? 0).toLocaleString(locale),
+              })}
+            </span>
+          )}
           {typeof data.content === 'string' && !open && <span className="mt-1 line-clamp-2 block text-sm text-foreground/90">{data.content}</span>}
         </span>
         <CaretDown className={cx('mt-1 size-4 shrink-0 text-muted-foreground transition', open && 'rotate-180')} aria-hidden />

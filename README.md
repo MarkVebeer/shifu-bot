@@ -29,6 +29,9 @@ discord.js, Hono, SQLite and React. Self host it on a Pelican panel, with Docker
   changed) and has a **My rank** and a **Full leaderboard** button. The full leaderboard is a page for
   members (`/servers/<id>/leveling`) with every member, ranked by overall, chat or voice level,
   with search and the viewer's own place. Turn off XP for chosen text, voice channels or categories.
+  On the dashboard, the **Members** tab lists every member with XP: search for anyone, correct their
+  chat or voice XP by hand (add, take away, or set it, also by level) or reset them. Corrections send
+  no level up message and show up in the audit log.
   Upgrading from a version with a single level resets everyone's XP once.
 - 📋 **Audit log** (off by default). Records what a moderator would look for and shows it on the
   dashboard, searchable and filterable by time, category, event type, member (who did it or who it

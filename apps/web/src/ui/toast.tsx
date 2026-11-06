@@ -20,7 +20,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 export function useToast() {
   return useMemo(
     () => ({
-      success: (message: string) => toast.success(message, { duration: 4000 }),
+      /** With an `action` (for example Undo) the toast stays longer, so there is time to press it. */
+      success: (message: string, options?: { action: { label: string; onClick: () => void } }) =>
+        toast.success(message, { duration: options ? 8000 : 4000, action: options?.action }),
       error: (message: string) => toast.error(message, { duration: 7000 }),
     }),
     [],

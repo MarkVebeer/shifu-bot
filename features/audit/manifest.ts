@@ -194,6 +194,7 @@ export const GATEWAY_TYPES = {
     'shifubot.verificationRefused',
     'shifubot.verificationFailed',
     'shifubot.xpReset',
+    'shifubot.xpChanged',
     'shifubot.messageFailed',
     'shifubot.logsPurged',
     'shifubot.eventsSkipped',

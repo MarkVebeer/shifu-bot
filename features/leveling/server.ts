@@ -24,10 +24,16 @@ import { WindowLimiter } from '../../apps/bot/src/core/send-queue';
 import { foldName, namePattern } from '../../apps/bot/src/core/search';
 import { ApiError, parseInput, parseJsonBody } from '../../apps/bot/src/http/errors';
 import { z } from 'zod';
+import { snowflake } from '@shifubot/shared';
 import {
+  activeTracks,
   buildLeaderboardPanel,
   leaderboardPath,
+  MEMBER_STATUSES,
   shownLevels,
+  xpAdjustSchema,
+  type MemberStatus,
+  type XpOp,
   type LeaderboardKind,
   buildLevelUpMessage,
   buildRankMessage,
@@ -45,7 +51,7 @@ import {
   type RankStats,
   type XpSources,
 } from './manifest';
-import { isIgnoredChannel, isVoiceEligible, messageXp, voiceDay, voiceXpGrant } from './xp';
+import { adjustedXp, isIgnoredChannel, isVoiceEligible, messageXp, voiceDay, voiceXpGrant } from './xp';
 
 export type LevelingErrorCode = PanelErrorCode;
 
@@ -176,6 +182,36 @@ export interface LeaderboardListResponse {
   matches: number;
   entries: LeaderboardListEntry[];
   me: LeaderboardListEntry | null;
+}
+
+const manageQuerySchema = listQuerySchema.extend({ status: z.enum(MEMBER_STATUSES).optional() });
+const memberSearchSchema = z.object({ q: z.string().trim().min(2).max(100) });
+const byQuerySchema = z.object({ by: z.enum(['overall', 'text', 'voice']).optional() });
+
+/** One row of the dashboard manager. */
+export interface ManagedMember extends LeaderboardListEntry {
+  left: boolean;
+}
+
+export interface ManagedMembersResponse {
+  xpSources: XpSources;
+  by: LeaderboardKind;
+  /** Members on this list (with this status and any XP). */
+  members: number;
+  matches: number;
+  entries: ManagedMember[];
+}
+
+/** Members of the server without XP, found through Discord's member search. */
+export interface MemberSearchResponse {
+  members: { userId: string; displayName: string; avatarUrl: string }[];
+}
+
+/** Result of a manual correction. `member` is null when the member no longer has any XP. */
+export interface XpChangeResponse {
+  before: number;
+  after: number;
+  member: ManagedMember | null;
 }
 
 const listEntry = (row: MemberRow & { rank: number }): LeaderboardListEntry => ({
@@ -435,6 +471,117 @@ export class LevelingStore {
     return row ? listEntry(row) : null;
   }
 
+  /**
+   * The list of the dashboard manager: every member with any XP, current or left, ranked by one level
+   * kind. Ranks match the member page, because members with no XP of that kind sort after everyone else.
+   */
+  manageList(
+    guildId: string,
+    options: { by: LeaderboardKind; status: MemberStatus; q?: string; offset?: number; limit?: number },
+  ): { entries: ManagedMember[]; matches: number; members: number } {
+    const limit = Math.min(Math.max(options.limit ?? 50, 1), LIST_PAGE_MAX);
+    const offset = Math.max(options.offset ?? 0, 0);
+    const pattern = namePattern(options.q);
+    const ranked = this.managedRanked(options.by, options.status === 'left');
+    const where = pattern ? `WHERE search_name LIKE ? ESCAPE '\\'` : '';
+    const params = pattern ? [guildId, pattern] : [guildId];
+    const rows = this.db
+      .query<MemberRow & { rank: number; left_at: number | null }, (string | number)[]>(`${ranked} SELECT * FROM ranked ${where} ORDER BY rank LIMIT ? OFFSET ?`)
+      .all(...params, limit, offset);
+    const count = (filter: string, values: string[]) =>
+      this.db.query<{ n: number }, string[]>(`${ranked} SELECT COUNT(*) AS n FROM ranked ${filter}`).get(...values)?.n ?? 0;
+    const members = count('', [guildId]);
+    return {
+      entries: rows.map((row) => ({ ...listEntry(row), left: row.left_at !== null })),
+      matches: pattern ? count(where, params) : members,
+      members,
+    };
+  }
+
+  /** One row of the dashboard manager, or null when the member has no XP. */
+  managedMember(guildId: string, userId: string, by: LeaderboardKind): ManagedMember | null {
+    const left = this.db
+      .query<{ left_at: number | null }, [string, string]>('SELECT left_at FROM leveling_members WHERE guild_id = ? AND user_id = ?')
+      .get(guildId, userId);
+    if (!left) return null;
+    const row = this.db
+      .query<MemberRow & { rank: number; left_at: number | null }, [string, string]>(`${this.managedRanked(by, left.left_at !== null)} SELECT * FROM ranked WHERE user_id = ?`)
+      .get(guildId, userId);
+    return row ? { ...listEntry(row), left: row.left_at !== null } : null;
+  }
+
+  private managedRanked(by: LeaderboardKind, left: boolean): string {
+    return `
+      WITH ranked AS (
+        SELECT user_id, text_xp, voice_xp, messages, voice_minutes, display_name, search_name, avatar_url, left_at,
+               ROW_NUMBER() OVER (ORDER BY ${KIND_COLUMN[by]} DESC, user_id) AS rank
+        FROM leveling_members WHERE guild_id = ? AND left_at IS ${left ? 'NOT NULL' : 'NULL'} AND xp > 0
+      )`;
+  }
+
+  /** The display name of a member we have a row for, or null. */
+  memberName(guildId: string, userId: string): string | null {
+    return (
+      this.db
+        .query<{ display_name: string }, [string, string]>('SELECT display_name FROM leveling_members WHERE guild_id = ? AND user_id = ?')
+        .get(guildId, userId)?.display_name ?? null
+    );
+  }
+
+  /** Which of these members already have XP. */
+  idsWithXp(guildId: string, userIds: string[]): Set<string> {
+    if (!userIds.length) return new Set();
+    const rows = this.db
+      .query<{ user_id: string }, string[]>(`SELECT user_id FROM leveling_members WHERE guild_id = ? AND xp > 0 AND user_id IN (${userIds.map(() => '?').join(', ')})`)
+      .all(guildId, ...userIds);
+    return new Set(rows.map((row) => row.user_id));
+  }
+
+  /**
+   * A manual correction of one track. Keeps xp equal to chat + voice and leaves the message count,
+   * the voice minutes and today's voice cap alone. `snapshot` creates the row for a member without one.
+   */
+  adjustXp(guildId: string, userId: string, track: LevelTrack, op: XpOp, amount: number, snapshot?: MemberSnapshot): { before: number; after: number } {
+    const column = track === 'text' ? 'text_xp' : 'voice_xp';
+    return this.db.transaction(() => {
+      const row = this.db
+        .query<{ value: number }, [string, string]>(`SELECT ${column} AS value FROM leveling_members WHERE guild_id = ? AND user_id = ?`)
+        .get(guildId, userId);
+      const before = row?.value ?? 0;
+      const after = adjustedXp(before, op, amount);
+      if (after === before) return { before, after };
+      if (row) {
+        this.db
+          .query(`UPDATE leveling_members SET ${column} = ?, xp = xp + ?, updated_at = ? WHERE guild_id = ? AND user_id = ?`)
+          .run(after, after - before, Date.now(), guildId, userId);
+      } else {
+        if (!snapshot) throw new Error('A member without a row needs a snapshot');
+        this.db
+          .query(
+            `INSERT INTO leveling_members (guild_id, user_id, xp, ${column}, display_name, search_name, avatar_url, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          )
+          .run(guildId, userId, after, after, snapshot.displayName, foldName(snapshot.displayName), snapshot.avatarUrl, Date.now());
+      }
+      return { before, after };
+    })();
+  }
+
+  /**
+   * Back to zero for one member, with the counters that go with the XP. Today's voice cap stays, so a
+   * reset cannot be used to earn more voice XP today. Returns the XP they had, or null without a row.
+   */
+  resetMember(guildId: string, userId: string): number | null {
+    const row = this.db
+      .query<{ xp: number }, [string, string]>('SELECT xp FROM leveling_members WHERE guild_id = ? AND user_id = ?')
+      .get(guildId, userId);
+    if (!row) return null;
+    this.db
+      .query('UPDATE leveling_members SET xp = 0, text_xp = 0, voice_xp = 0, messages = 0, voice_minutes = 0, updated_at = ? WHERE guild_id = ? AND user_id = ?')
+      .run(Date.now(), guildId, userId);
+    return row.xp;
+  }
+
   setLeft(guildId: string, userId: string, left: boolean): boolean {
     return (
       this.db
@@ -458,6 +605,15 @@ function snapshot(member: GuildMember | PartialGuildMember): MemberSnapshot {
     displayName: member.nickname ?? member.user.displayName,
     avatarUrl: member.displayAvatarURL({ size: 128, extension: 'png' }),
   };
+}
+
+/** The moderator's name for the audit log, which may not know this user yet. */
+const sessionName = (session: { globalName: string | null; username: string }) => session.globalName ?? session.username;
+
+/** The requested level kind if it counts on this server, otherwise the server's own ranking. */
+function byOrDefault(by: LeaderboardKind | undefined, sources: XpSources): LeaderboardKind {
+  const kinds = shownLevels(sources);
+  return by && kinds.includes(by) ? by : kinds[0]!;
 }
 
 /** The channel, its parent (channel of a thread, or category) and the category of a thread's channel. */
@@ -887,6 +1043,84 @@ export default defineServerFeature({
           ctx.audit.record(guild.id, { type: 'shifubot.xpReset', actorId: c.get('session').userId, data: { feature: 'leveling' } });
           await refreshPanel(guild);
           return c.json({ members: [] } satisfies TopResponse);
+        });
+
+        /** The manager's list: every member with XP, with search, paging and the members who left. */
+        router.get('/members', (c) => {
+          const guild = c.get('guild');
+          const query = parseInput(manageQuerySchema, c.req.query(), 'List query');
+          const { xpSources } = store.get(guild.id);
+          const by = byOrDefault(query.by, xpSources);
+          const list = store.manageList(guild.id, { by, status: query.status ?? 'current', q: query.q, offset: query.offset, limit: query.limit });
+          return c.json({ xpSources, by, ...list } satisfies ManagedMembersResponse);
+        });
+
+        const searchLimiter = new WindowLimiter(30);
+        /** Members without XP do not have a row: find them through Discord, so they can be given XP too. */
+        router.get('/members/search', async (c) => {
+          const guild = c.get('guild');
+          const { q } = parseInput(memberSearchSchema, c.req.query(), 'Search');
+          if (!searchLimiter.tryTake(guild.id)) throw new ApiError(429, 'rate_limited', 'Too many member searches');
+          const found = [...(await guild.members.search({ query: q, limit: 10, cache: false })).values()].filter((member) => !member.user.bot);
+          const withXp = store.idsWithXp(guild.id, found.map((member) => member.id));
+          const members = found.filter((member) => !withXp.has(member.id)).map((member) => {
+            const { id, displayName, avatarUrl } = snapshot(member);
+            return { userId: id, displayName, avatarUrl };
+          });
+          return c.json({ members } satisfies MemberSearchResponse);
+        });
+
+        /** A manual correction. No level up message: this is a fix, not an achievement. */
+        router.post('/members/:userId/xp', async (c) => {
+          const guild = c.get('guild');
+          const userId = parseInput(snowflake, c.req.param('userId'), 'User id');
+          const { by } = parseInput(byQuerySchema, c.req.query(), 'Query');
+          const body = await parseJsonBody(c.req.raw, xpAdjustSchema);
+          const { xpSources } = store.get(guild.id);
+          if (!activeTracks(xpSources).includes(body.track)) throw new ApiError(400, 'validation', 'This kind of XP is turned off on this server');
+
+          let name = store.memberName(guild.id, userId);
+          let newMember: MemberSnapshot | undefined;
+          if (name === null) {
+            const member = await guild.members.fetch({ user: userId, cache: false }).catch(() => null);
+            if (!member || member.user.bot) throw new ApiError(404, 'not_found', 'This member is not on the server');
+            newMember = snapshot(member);
+            name = newMember.displayName;
+          }
+
+          const { before, after } = store.adjustXp(guild.id, userId, body.track, body.op, body.amount, newMember);
+          if (before !== after) {
+            dirty.add(guild.id);
+            logger.info('Member XP corrected', { guildId: guild.id, targetId: userId, track: body.track, before, after, userId: c.get('session').userId });
+            ctx.audit.record(guild.id, {
+              type: 'shifubot.xpChanged',
+              actorId: c.get('session').userId,
+              targetId: userId,
+              targetKind: 'user',
+              data: { actorName: sessionName(c.get('session')), targetName: name, track: body.track, before, after, ...(body.reason ? { reason: body.reason } : {}) },
+            });
+          }
+          return c.json({ before, after, member: store.managedMember(guild.id, userId, byOrDefault(by, xpSources)) } satisfies XpChangeResponse);
+        });
+
+        router.post('/members/:userId/reset', (c) => {
+          const guild = c.get('guild');
+          const userId = parseInput(snowflake, c.req.param('userId'), 'User id');
+          const name = store.memberName(guild.id, userId);
+          const before = store.resetMember(guild.id, userId);
+          if (before === null) throw new ApiError(404, 'not_found', 'This member has no XP');
+          if (before > 0) {
+            dirty.add(guild.id);
+            logger.info('Member XP reset', { guildId: guild.id, targetId: userId, userId: c.get('session').userId });
+            ctx.audit.record(guild.id, {
+              type: 'shifubot.xpChanged',
+              actorId: c.get('session').userId,
+              targetId: userId,
+              targetKind: 'user',
+              data: { actorName: sessionName(c.get('session')), targetName: name, track: 'overall', before, after: 0 },
+            });
+          }
+          return c.json({ before, after: 0, member: null } satisfies XpChangeResponse);
         });
       },
 

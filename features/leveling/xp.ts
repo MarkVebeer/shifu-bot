@@ -2,7 +2,13 @@
  * Leveling rules that decide who earns XP. Plain data in, boolean out, so they
  * are easy to test without Discord objects.
  */
-import { XP_RULES } from './manifest';
+import { MAX_MEMBER_XP, XP_RULES, type XpOp } from './manifest';
+
+/** A track's XP after a manual correction, kept between 0 and MAX_MEMBER_XP. */
+export function adjustedXp(current: number, op: XpOp, amount: number): number {
+  const next = op === 'add' ? current + amount : op === 'remove' ? current - amount : amount;
+  return Math.min(Math.max(0, next), MAX_MEMBER_XP);
+}
 
 /**
  * True when XP is off for a channel. `chain` is the channel id followed by its

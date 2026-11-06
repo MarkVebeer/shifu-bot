@@ -80,15 +80,23 @@ export function useRankedList<E, R extends ListPage<E>>(path: string, extra: Rec
     }
   }, [state, path, query]);
 
-  return { q, search, setSearch, state, loadingMore, loadMore, retry: () => setRetry((n) => n + 1) };
+  /** Change the loaded data without loading it again, so the list keeps its place. */
+  const updateData = useCallback((change: (data: R) => R) => {
+    setState((current) => (current.kind === 'ready' ? { kind: 'ready', data: change(current.data) } : current));
+  }, []);
+
+  const retryList = useCallback(() => setRetry((n) => n + 1), []);
+
+  return { q, search, setSearch, state, loadingMore, loadMore, updateData, retry: retryList };
 }
 
-export function SearchBox({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+export function SearchBox({ id, value, onChange }: { id?: string; value: string; onChange: (value: string) => void }) {
   const { t } = useI18n();
   return (
     <div className="relative">
       <MagnifyingGlass className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
       <Input
+        id={id}
         type="search"
         value={value}
         onChange={(event) => onChange(event.target.value)}

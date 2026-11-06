@@ -1,6 +1,10 @@
 {
   "name": "Szintek",
   "description": "A tagok chat szintet kapnak a chatelésért és külön hang szintet a voice-ban töltött időért. A kettő együtt adja az összesített szintet, ami alapján az élő toplista rangsorol.",
+  "tabs": {
+    "members": "Tagok",
+    "settings": "Beállítások"
+  },
   "defaults": {
     "title": "{track} szintlépés!",
     "description": "{user} új szintet ért el: **{track} szint {level}**. Csak így tovább!"
@@ -126,13 +130,6 @@
     "help": "Akkor használd, ha valaki törölte a toplista üzenetet."
   },
   "top": {
-    "title": "Legjobb tagok",
-    "hint": "A top 25 az összes XP alapján (chat + hang). A kilépett tagok nem látszanak.",
-    "empty": "Még senkinek sincs XP-je.",
-    "xp": "{xp} XP összesen",
-    "textDetail": "{xp} chat XP {messages} üzenetből",
-    "voiceDetail": "{xp} hang XP {minutes} perc voice-ból",
-    "overallDetail": "A chat XP és a hang XP együttes szintje",
     "reset": "Összes XP nullázása",
     "resetTitle": "Nullázod az összes XP-t?",
     "resetBody": "A szerver minden tagja visszaesik 0-s chat és 0-s hang szintre. Ez nem vonható vissza.",
@@ -161,5 +158,59 @@
     "missing_permissions": "hiányzó jogosultságok",
     "send_failed": "a Discord elutasította az üzenetet",
     "panel_deleted": "a toplista üzenetet törölték"
+  },
+  "manager": {
+    "disabled": "A szintezés ki van kapcsolva, így most senki nem kap XP-t. Kézzel itt is javíthatod.",
+    "status": "Tagok",
+    "statusOptions": {
+      "current": "Jelenlegi",
+      "left": "Kilépettek"
+    },
+    "refresh": "Frissítés",
+    "empty": "Még senkinek sincs XP-je. Keress rá egy névre, és kézzel is adhatsz neki.",
+    "emptyLeft": "A kilépett tagok közül senkinek sincs XP-je.",
+    "left": "Kilépett",
+    "noXp": "Még nincs XP-je",
+    "others": "A szerver többi tagja",
+    "othersHint": "Nekik még nincs XP-jük. Válassz egyet, és adj neki.",
+    "edit": "Szerkesztés",
+    "editMember": "{name} XP-jének szerkesztése",
+    "place": "{rank}. hely",
+    "saved": "{name}: {before} → {after} XP",
+    "undo": "Visszavonás",
+    "undone": "Módosítás visszavonva",
+    "resetDone": "{name} nullázva",
+    "editor": {
+      "help": "A javításról nem megy szintlépés üzenet. A toplista panel a következő frissítéskor követi.",
+      "track": "Melyik XP",
+      "trackHint": "{level}. szint · {xp} XP",
+      "action": "Mit csináljon",
+      "ops": {
+        "add": "Hozzáadás",
+        "remove": "Levonás",
+        "set": "Beállítás"
+      },
+      "amount": "Mennyi",
+      "unit": "Egység",
+      "unitXp": "XP",
+      "unitLevel": "Szint",
+      "levelHelp": "A tag ennek a szintnek az elejéről indul.",
+      "tooBig": "Ez túl sok. Legfeljebb ennyit adhatsz meg: {max}.",
+      "clampedZero": "Csak {xp} XP-je van, így 0-ra kerül.",
+      "clampedMax": "Egy tagnak legfeljebb {max} XP-je lehet, így ott megáll.",
+      "preview": "Eredmény",
+      "previewEmpty": "Adj meg egy mennyiséget, és itt látod az eredményt.",
+      "previewLevel": "{label} szint {from} → {to}",
+      "previewXp": "{from} → {to} XP",
+      "noChange": "Ez nem változtat semmit.",
+      "reason": "Indoklás",
+      "reasonHelp": "Az audit naplóban jelenik meg.",
+      "save": "XP mentése",
+      "close": "Bezárás",
+      "reset": "Tag nullázása",
+      "resetTitle": "Nullázod ezt a tagot: {name}?",
+      "resetBody": "A chat XP-je, a hang XP-je, az üzenetszáma és a voice percei visszaállnak 0-ra. Ez nem vonható vissza.",
+      "resetConfirm": "Tag nullázása"
+    }
   }
 }
