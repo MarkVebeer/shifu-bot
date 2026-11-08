@@ -33,7 +33,8 @@ export interface GuildListItem {
   name: string;
   iconUrl: string | null;
   botPresent: boolean;
-  inviteUrl: string;
+  /** Null when the server is not on this bot's allowed list. */
+  inviteUrl: string | null;
   memberCount: number | null;
 }
 

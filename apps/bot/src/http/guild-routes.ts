@@ -12,6 +12,7 @@ import {
 import { ChannelType, DiscordAPIError, PermissionFlagsBits, type GuildMember, type NonThreadGuildBasedChannel } from 'discord.js';
 import { Hono } from 'hono';
 import type { AppContext, FeatureInstance, GuildRouteEnv, ServerFeature } from '../core/feature';
+import { isGuildAllowed } from '../core/guild-allowlist';
 import { LruCache } from '../core/lru-cache';
 import { INVITE_PERMISSIONS, isPostableChannel, missingSendPermissions, roleProblem } from '../core/permissions';
 import { fetchUserGuilds, guildIconUrl, type OAuthGuild } from './discord-oauth';
@@ -83,11 +84,16 @@ export function guildRoutes(
           name: guild.name,
           iconUrl: guildIconUrl(guild),
           botPresent: Boolean(cached),
-          inviteUrl: inviteUrl(config.discord.clientId, guild.id),
+          inviteUrl: isGuildAllowed(config.allowedGuildIds, guild.id) ? inviteUrl(config.discord.clientId, guild.id) : null,
           memberCount: cached?.memberCount ?? null,
         };
       })
-      .sort((a, b) => Number(b.botPresent) - Number(a.botPresent) || a.name.localeCompare(b.name));
+      .sort(
+        (a, b) =>
+          Number(b.botPresent) - Number(a.botPresent) ||
+          Number(b.inviteUrl !== null) - Number(a.inviteUrl !== null) ||
+          a.name.localeCompare(b.name),
+      );
     c.header('Cache-Control', 'no-store');
     return c.json({ guilds: items });
   });

@@ -1,17 +1,22 @@
 import { Events, type ClientEvents } from 'discord.js';
 import type { AppContext, FeatureInstance, ServerFeature } from '../core/feature';
+import { leaveIfNotAllowed } from '../core/guild-allowlist';
 
 /** Wire core lifecycle events and every feature's event handlers onto the client. */
 export function registerEvents(ctx: AppContext, features: { feature: ServerFeature; instance: FeatureInstance }[]) {
-  const { client, logger, guildSettings } = ctx;
+  const { client, config, logger, guildSettings } = ctx;
 
-  client.once(Events.ClientReady, (ready) => {
+  client.once(Events.ClientReady, async (ready) => {
     logger.info('Connected to Discord', { user: ready.user.tag, guilds: ready.guilds.cache.size });
     // Make sure servers that added the bot while it was offline get default settings.
-    for (const guild of ready.guilds.cache.values()) guildSettings.ensure(guild.id);
+    // Servers off the list are skipped: ensure() would cancel their pending cleanup.
+    for (const guild of ready.guilds.cache.values()) {
+      if (!(await leaveIfNotAllowed(guild, config.allowedGuildIds, logger))) guildSettings.ensure(guild.id);
+    }
   });
 
   client.on(Events.GuildCreate, async (guild) => {
+    if (await leaveIfNotAllowed(guild, config.allowedGuildIds, logger)) return;
     logger.info('Joined server', { guildId: guild.id, members: guild.memberCount });
     guildSettings.ensure(guild.id);
     for (const { feature, instance } of features) {

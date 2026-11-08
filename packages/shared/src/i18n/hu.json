@@ -88,6 +88,8 @@
     "subtitle": "Azok a szerverek, ahol Szerver kezelése jogosultságod van.",
     "withBot": "Beállításra kész",
     "withoutBot": "ShifuBot hozzáadása",
+    "notAllowed": "Nem engedélyezett",
+    "notAllowedHelp": "Ez a ShifuBot csak azokra a szerverekre vehető fel, amelyeket a tulajdonosa engedélyezett.",
     "invite": "Bot meghívása",
     "manage": "Vezérlőpult megnyitása",
     "empty": "Még nem kezelsz egy szervert sem. Hozz létre egyet Discordon, vagy kérj Szerver kezelése jogot.",

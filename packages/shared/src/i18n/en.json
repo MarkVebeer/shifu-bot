@@ -88,6 +88,8 @@
     "subtitle": "Servers where you have the Manage Server permission.",
     "withBot": "Ready to configure",
     "withoutBot": "Add ShifuBot",
+    "notAllowed": "Not allowed",
+    "notAllowedHelp": "This ShifuBot can only be added to the servers its owner has allowed.",
     "invite": "Invite bot",
     "manage": "Open dashboard",
     "empty": "You do not manage any servers yet. Create one in Discord or ask for the Manage Server permission.",

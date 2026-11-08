@@ -199,6 +199,20 @@
                 "integer",
                 "between:1,10"
             ]
+        },
+        {
+            "sort": 13,
+            "name": "Allowed Server IDs",
+            "description": "Server IDs the bot may be in, separated by commas. Leave empty to allow every server. The bot leaves any server that is not listed, including ones it is already in, so check the list before restarting.",
+            "env_variable": "ALLOWED_GUILD_IDS",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": [
+                "nullable",
+                "string",
+                "regex:/^\\d{17,20}(\\s*,\\s*\\d{17,20})*$/"
+            ]
         }
     ]
 }

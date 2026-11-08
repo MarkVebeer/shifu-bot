@@ -89,8 +89,10 @@ export function GuildPickerPage() {
                     <div className="mt-1 flex flex-wrap gap-2">
                       {guild.botPresent ? (
                         <Badge tone="success">{t('guilds.withBot')}</Badge>
-                      ) : (
+                      ) : guild.inviteUrl ? (
                         <Badge>{t('guilds.withoutBot')}</Badge>
+                      ) : (
+                        <Badge tone="warning">{t('guilds.notAllowed')}</Badge>
                       )}
                       {guild.memberCount !== null && <Badge>{t('guilds.members', { count: guild.memberCount })}</Badge>}
                     </div>
@@ -103,10 +105,17 @@ export function GuildPickerPage() {
                       <ArrowRight aria-hidden />
                     </Link>
                   </UiButton>
-                ) : (
+                ) : guild.inviteUrl ? (
                   <ButtonLink href={guild.inviteUrl} external variant="secondary" icon={<Plus className="size-4" aria-hidden />}>
                     {t('guilds.invite')}
                   </ButtonLink>
+                ) : (
+                  <div className="space-y-2">
+                    <Button variant="secondary" disabled className="w-full">
+                      {t('guilds.invite')}
+                    </Button>
+                    <p className="text-sm text-muted-foreground">{t('guilds.notAllowedHelp')}</p>
+                  </div>
                 )}
               </li>
             ))}

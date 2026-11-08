@@ -40,6 +40,16 @@ const envSchema = z.object({
   AUDIT_MAX_ROWS_PER_GUILD: z.coerce.number().int().min(1_000).max(50_000_000).default(500_000),
   AUDIT_MAX_EVENTS_PER_MINUTE: z.coerce.number().int().min(10).max(100_000).default(1_200),
   COUNTER_MAX_PER_GUILD: z.coerce.number().int().min(1).max(25).default(5),
+  ALLOWED_GUILD_IDS: z
+    .string()
+    .default('')
+    .transform((value) =>
+      value
+        .split(',')
+        .map((id) => id.trim())
+        .filter(Boolean),
+    )
+    .pipe(z.array(z.string().regex(/^\d{17,20}$/, 'must be server ids (17-20 digits) separated by commas.'))),
 });
 
 export type Config = ReturnType<typeof loadConfig>;
@@ -93,5 +103,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     goodbyeMaxPerMinute: raw.GOODBYE_MAX_PER_MINUTE,
     sendConcurrency: raw.SEND_CONCURRENCY,
     cleanupAfterDays: raw.CLEANUP_AFTER_DAYS,
+    /** Servers the bot may stay in. Empty means every server. */
+    allowedGuildIds: new Set(raw.ALLOWED_GUILD_IDS) as ReadonlySet<string>,
   };
 }

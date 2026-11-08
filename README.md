@@ -116,6 +116,9 @@ bot yet. You can also build the link yourself:
 https://discord.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&scope=bot%20applications.commands&permissions=268454912
 ```
 
+If you set `ALLOWED_GUILD_IDS`, the bot leaves any server that is not on the list, even when it was
+invited with this link. See [Limit the bot to specific servers](#limit-the-bot-to-specific-servers).
+
 | Scope | Why |
 | --- | --- |
 | `bot` | Adds the bot user to the server |
@@ -173,6 +176,7 @@ there. On Pelican you set the values in the panel instead, see
 | `DEFAULT_LOCALE` | | `en` | Language for new servers: `en` or `hu` |
 | `TRUST_PROXY` | | `true` | Trust `X-Forwarded-*` headers from your reverse proxy. Make sure the port can only be reached through the proxy; otherwise anyone can fake these headers and dodge the rate limit (or set this to `false`) |
 | `TRUST_PROXY_HOPS` | | `1` | How many reverse proxies are in front of ShifuBot. Set `2` for Cloudflare + nginx; a value that is too low makes visitors share one rate limit |
+| `ALLOWED_GUILD_IDS` | | empty | Server IDs the bot may be in, separated by commas. Empty allows every server. See [Limit the bot to specific servers](#limit-the-bot-to-specific-servers) |
 | `WELCOME_MAX_PER_MINUTE` | | `10` | Welcome messages per server per minute |
 | `GOODBYE_MAX_PER_MINUTE` | | `10` | Goodbye messages per server per minute |
 | `SEND_CONCURRENCY` | | `4` | Discord messages sent in parallel across all servers |
@@ -214,7 +218,7 @@ the `ghcr.io/pelican-eggs/yolks:bun_latest` image and starts with `bun run start
    reads it from `SERVER_PORT` and binds to `0.0.0.0`.
 3. **Resources:** 512 MB RAM is plenty for a few hundred servers; 1 GB gives headroom.
 4. Fill in the variables: `DISCORD_TOKEN`, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`,
-   `PUBLIC_URL` and `SESSION_SECRET`. `LOG_LEVEL`, `DEFAULT_LOCALE`, `DATABASE_PATH`, `TRUST_PROXY` and `TRUST_PROXY_HOPS` are optional.
+   `PUBLIC_URL` and `SESSION_SECRET`. `LOG_LEVEL`, `DEFAULT_LOCALE`, `DATABASE_PATH`, `TRUST_PROXY`, `TRUST_PROXY_HOPS` and `ALLOWED_GUILD_IDS` are optional.
 5. Create the server. The installer clones this repository, runs `bun install` and
    `bun run build`. Then press **Start**. The console shows `Dashboard listening` when ready.
 
@@ -238,6 +242,23 @@ DISCORD_MESSAGE_CONTENT=true
 
 Restart the server afterwards. The file survives updates and reinstalls because it is git ignored.
 If a variable is set in both places, the panel wins.
+
+### Limit the bot to specific servers
+
+Put the allowed server IDs in **Allowed Server IDs** on the **Startup** tab (`ALLOWED_GUILD_IDS`),
+separated by commas, then restart. Leave it empty to allow every server. To copy a server ID, turn
+on **Developer Mode** in Discord's advanced settings and right click the server.
+
+- Discord cannot refuse an invite, so the bot joins and leaves straight away if the server is not
+  listed.
+- On every start the bot also leaves the servers it is already in that are not listed. The console
+  logs each one as a warning.
+- The dashboard marks servers that are not listed as **Not allowed** and has no invite link for
+  them.
+
+Double check the IDs: a wrong ID makes the bot leave that server on the next start. Its data is
+kept for `CLEANUP_AFTER_DAYS` days. If you invite the bot back within that time the data returns,
+but the setup wizard shows again.
 
 ### Reverse proxy domain (HTTPS)
 
