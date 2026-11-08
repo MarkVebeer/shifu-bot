@@ -5,10 +5,20 @@ import type { Logger } from '../logger';
 import { ApiError } from './errors';
 import type { Session, SessionStore } from './session';
 
+/**
+ * The client's address from an X-Forwarded-For header. Each proxy appends the address it saw, so
+ * only the rightmost `hops` entries come from our own proxies. Anything left of them is whatever
+ * the client sent, and using it would let anyone dodge the rate limit with made up addresses.
+ */
+export function forwardedClientIp(header: string | undefined, hops: number): string | undefined {
+  const entries = header?.split(',').map((entry) => entry.trim()).filter(Boolean) ?? [];
+  return entries[Math.max(entries.length - hops, 0)];
+}
+
 /** Client IP, honouring X-Forwarded-For only when TRUST_PROXY is on. */
 export function clientIp(c: Context, config: Config): string {
   if (config.trustProxy) {
-    const forwarded = c.req.header('x-forwarded-for')?.split(',')[0]?.trim();
+    const forwarded = forwardedClientIp(c.req.header('x-forwarded-for'), config.trustProxyHops);
     if (forwarded) return forwarded;
     const real = c.req.header('x-real-ip');
     if (real) return real;

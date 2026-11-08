@@ -169,7 +169,8 @@ Copy `.env.example` to `.env` and fill it in. Every variable is documented there
 | `DATABASE_PATH` | | `./data/shifubot.db` | SQLite file, relative to the working directory |
 | `LOG_LEVEL` | | `info` | `trace`, `debug`, `info`, `warn`, `error` |
 | `DEFAULT_LOCALE` | | `en` | Language for new servers: `en` or `hu` |
-| `TRUST_PROXY` | | `true` | Trust `X-Forwarded-*` headers from your reverse proxy |
+| `TRUST_PROXY` | | `true` | Trust `X-Forwarded-*` headers from your reverse proxy. Make sure the port can only be reached through the proxy; otherwise anyone can fake these headers and dodge the rate limit (or set this to `false`) |
+| `TRUST_PROXY_HOPS` | | `1` | How many reverse proxies are in front of ShifuBot. Set `2` for Cloudflare + nginx; a value that is too low makes visitors share one rate limit |
 | `WELCOME_MAX_PER_MINUTE` | | `10` | Welcome messages per server per minute |
 | `GOODBYE_MAX_PER_MINUTE` | | `10` | Goodbye messages per server per minute |
 | `SEND_CONCURRENCY` | | `4` | Discord messages sent in parallel across all servers |

@@ -3,7 +3,7 @@ import { describe, expect, test } from 'bun:test';
 import { AuditLogEvent } from 'discord-api-types/v10';
 import { migrate } from '../../apps/bot/src/db/database';
 import { settingsChanges } from '../../apps/bot/src/http/guild-routes';
-import { auditEntryRecord, auditEntryType, memberChangeRecords, plain, voiceRecords, type VoiceLike } from './collect';
+import { auditEntryRecord, auditEntryType, csvCell, memberChangeRecords, plain, voiceRecords, type VoiceLike } from './collect';
 import en from './i18n/en.json';
 import {
   AUDIT_ACTIONS,
@@ -25,6 +25,32 @@ function createStore() {
   migrate(db, auditMigrations, silent);
   return { db, store: new AuditStore(db) };
 }
+
+describe('csvCell', () => {
+  test('neutralises text a spreadsheet would run as a formula', () => {
+    expect(csvCell('=HYPERLINK("http://evil.example")')).toBe(`"'=HYPERLINK(""http://evil.example"")"`);
+    for (const text of ['=1+1', '+1', '-1', '@SUM(A1)']) expect(csvCell(text)).toBe(`'${text}`);
+    expect(csvCell('\tcmd')).toBe(`'\tcmd`);
+    expect(csvCell('\rcmd')).toBe(`"'\rcmd"`);
+  });
+
+  test('leaves ordinary values alone', () => {
+    expect(csvCell('Márk')).toBe('Márk');
+    expect(csvCell('a=b')).toBe('a=b');
+    expect(csvCell('123456789012345678')).toBe('123456789012345678');
+    expect(csvCell('2026-11-08T10:00:00.000Z')).toBe('2026-11-08T10:00:00.000Z');
+    expect(csvCell(42)).toBe('42');
+    expect(csvCell(null)).toBe('');
+    expect(csvCell(undefined)).toBe('');
+  });
+
+  test('quotes commas, quotes and line breaks', () => {
+    expect(csvCell('a,b')).toBe('"a,b"');
+    expect(csvCell('say "hi"')).toBe('"say ""hi"""');
+    expect(csvCell('two\nlines')).toBe('"two\nlines"');
+    expect(csvCell({ a: 1 })).toBe('"{""a"":1}"');
+  });
+});
 
 describe('event types', () => {
   test('every Discord audit log action has a name, a category and an English label', () => {

@@ -22,7 +22,7 @@ import { defineServerFeature, type AppContext } from '../../apps/bot/src/core/fe
 import { LruCache } from '../../apps/bot/src/core/lru-cache';
 import { WindowLimiter } from '../../apps/bot/src/core/send-queue';
 import { ApiError, parseInput, parseJsonBody } from '../../apps/bot/src/http/errors';
-import { auditEntryRecord, daysBetween, memberChangeRecords, NEW_ACCOUNT_DAYS, voiceRecords, type AuditEntryLike, type VoiceLike } from './collect';
+import { auditEntryRecord, csvCell, daysBetween, memberChangeRecords, NEW_ACCOUNT_DAYS, voiceRecords, type AuditEntryLike, type VoiceLike } from './collect';
 import {
   auditFilterSchema,
   auditManifest,
@@ -123,11 +123,6 @@ function channelKind(channel: GuildBasedChannel | undefined): AuditEventsRespons
   if (channel.isTextBased()) return 'text';
   return 'other';
 }
-
-const csvCell = (value: unknown) => {
-  const text = value === null || value === undefined ? '' : typeof value === 'string' ? value : JSON.stringify(value);
-  return /[",\n\r]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
-};
 
 export default defineServerFeature({
   manifest: auditManifest,

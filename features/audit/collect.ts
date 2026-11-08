@@ -6,6 +6,16 @@ import type { AuditRecord, AuditTargetKind } from '../../apps/bot/src/core/audit
 import { AUDIT_ACTIONS, AUDIT_TIMEOUT } from './manifest';
 import type { UserSnapshot } from './store';
 
+/**
+ * One CSV cell. Text that a spreadsheet would run as a formula gets a leading apostrophe, because
+ * member names and message text are written by anyone and exports are opened by moderators.
+ */
+export function csvCell(value: unknown): string {
+  const raw = value === null || value === undefined ? '' : typeof value === 'string' ? value : JSON.stringify(value);
+  const text = typeof value === 'string' && /^[=+\-@\t\r]/.test(value) ? `'${raw}` : raw;
+  return /[",\n\r]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+}
+
 /** Converts discord.js values (users, channels, roles, collections, bigints) into small JSON. */
 export function plain(value: unknown, depth = 0): unknown {
   if (value === null || value === undefined) return null;
