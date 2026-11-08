@@ -212,7 +212,7 @@ the `ghcr.io/pelican-eggs/yolks:bun_latest` image and starts with `bun run start
    reads it from `SERVER_PORT` and binds to `0.0.0.0`.
 3. **Resources:** 512 MB RAM is plenty for a few hundred servers; 1 GB gives headroom.
 4. Fill in the variables: `DISCORD_TOKEN`, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`,
-   `PUBLIC_URL` and `SESSION_SECRET`. `LOG_LEVEL`, `DEFAULT_LOCALE` and `DATABASE_PATH` are optional.
+   `PUBLIC_URL` and `SESSION_SECRET`. `LOG_LEVEL`, `DEFAULT_LOCALE`, `DATABASE_PATH`, `TRUST_PROXY` and `TRUST_PROXY_HOPS` are optional.
 5. Create the server. The installer clones this repository, runs `bun install` and
    `bun run build`. Then press **Start**. The console shows `Dashboard listening` when ready.
 

@@ -171,6 +171,34 @@
                 "required",
                 "string"
             ]
+        },
+        {
+            "sort": 11,
+            "name": "Trust Proxy",
+            "description": "Trust the X-Forwarded-* headers of your reverse proxy. Use false when people connect straight to the allocation port without a proxy. With true, the port must only be reachable through the proxy, otherwise anyone can fake these headers and dodge the rate limit.",
+            "env_variable": "TRUST_PROXY",
+            "default_value": "true",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": [
+                "required",
+                "string",
+                "in:true,false"
+            ]
+        },
+        {
+            "sort": 12,
+            "name": "Trusted Proxy Hops",
+            "description": "How many reverse proxies are in front of ShifuBot. Use 2 for Cloudflare + nginx. A value that is too low makes all visitors share one rate limit.",
+            "env_variable": "TRUST_PROXY_HOPS",
+            "default_value": "1",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": [
+                "required",
+                "integer",
+                "between:1,10"
+            ]
         }
     ]
 }
