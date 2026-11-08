@@ -65,6 +65,7 @@
       "verified": "Passed verification",
       "verificationRefused": "Verification refused",
       "verificationFailed": "Failed verification",
+      "verificationRemoved": "Removed from the verified list",
       "xpReset": "XP reset",
       "xpChanged": "XP corrected",
       "messageFailed": "ShifuBot message failed",

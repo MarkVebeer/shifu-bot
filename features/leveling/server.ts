@@ -23,6 +23,7 @@ import { isPostableChannel, missingSendPermissions } from '../../apps/bot/src/co
 import { WindowLimiter } from '../../apps/bot/src/core/send-queue';
 import { foldName, namePattern } from '../../apps/bot/src/core/search';
 import { ApiError, parseInput, parseJsonBody } from '../../apps/bot/src/http/errors';
+import { sessionName } from '../../apps/bot/src/http/session';
 import { z } from 'zod';
 import { snowflake } from '@shifubot/shared';
 import {
@@ -608,8 +609,6 @@ function snapshot(member: GuildMember | PartialGuildMember): MemberSnapshot {
 }
 
 /** The moderator's name for the audit log, which may not know this user yet. */
-const sessionName = (session: { globalName: string | null; username: string }) => session.globalName ?? session.username;
-
 /** The requested level kind if it counts on this server, otherwise the server's own ranking. */
 function byOrDefault(by: LeaderboardKind | undefined, sources: XpSources): LeaderboardKind {
   const kinds = shownLevels(sources);

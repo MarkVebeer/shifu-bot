@@ -7,12 +7,14 @@ import {
   buildEmbed,
   emoji,
   renderPlaceholders,
+  snowflake,
   type BotPermission,
   type Locale,
   type MessagePayload,
   type PermissionIssue,
 } from '@shifubot/shared';
 import {
+  DiscordAPIError,
   Events,
   MessageFlags,
   type ButtonInteraction,
@@ -24,12 +26,14 @@ import {
   type Role,
   type TextChannel,
 } from 'discord.js';
+import { z } from 'zod';
 import { defineServerFeature, type AppContext } from '../../apps/bot/src/core/feature';
 import { LruCache } from '../../apps/bot/src/core/lru-cache';
 import { syncPanelMessage, type PanelRef } from '../../apps/bot/src/core/panel';
 import { isPostableChannel, missingSendPermissions, roleProblem, type RoleProblem } from '../../apps/bot/src/core/permissions';
 import { WindowLimiter } from '../../apps/bot/src/core/send-queue';
-import { ApiError, parseJsonBody } from '../../apps/bot/src/http/errors';
+import { ApiError, parseInput, parseJsonBody } from '../../apps/bot/src/http/errors';
+import { sessionName } from '../../apps/bot/src/http/session';
 import { CAPTCHA_LENGTH, randomCaptchaCode, renderCaptcha } from './captcha';
 import {
   accountAgeDays,
@@ -72,6 +76,53 @@ export interface VerificationResponse {
   panelError?: VerificationErrorCode;
 }
 
+/** Why adding or removing a verified member failed. */
+export type VerifiedMemberErrorCode = 'no_role' | RoleProblem | 'role_failed' | 'role_remove_failed' | 'already_verified' | 'unknown_user' | 'is_bot';
+
+/** One row of the verified members tab. Names come live from Discord. */
+export interface VerifiedMember {
+  userId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  verifiedAt: number;
+  onServer: boolean;
+  hasRole: boolean;
+}
+
+export interface VerifiedMembersResponse {
+  /** Everyone on the list, whatever the search. */
+  members: number;
+  matches: number;
+  entries: VerifiedMember[];
+}
+
+export interface AddVerifiedResponse {
+  displayName: string;
+  onServer: boolean;
+}
+
+export interface RemoveVerifiedResponse {
+  removedRole: boolean;
+}
+
+const VERIFIED_PAGE_MAX = 100;
+
+const verifiedQuerySchema = z.object({
+  q: z.string().trim().max(100).optional(),
+  offset: z.coerce.number().int().min(0).max(1_000_000).optional(),
+  limit: z.coerce.number().int().min(1).max(VERIFIED_PAGE_MAX).optional(),
+});
+const addVerifiedSchema = z.object({ userId: snowflake });
+const removeVerifiedSchema = z.object({ removeRole: z.boolean() });
+
+/** Discord's "this user or member does not exist" answers. */
+const isUnknownMember = (error: unknown) => error instanceof DiscordAPIError && (error.code === 10007 || error.code === 10013);
+
+interface VerifiedRow {
+  user_id: string;
+  verified_at: number;
+}
+
 interface SettingsRow {
   guild_id: string;
   enabled: number;
@@ -92,7 +143,7 @@ interface SettingsRow {
   last_error_at: number | null;
 }
 
-class VerificationStore {
+export class VerificationStore {
   private readonly cache = new LruCache<string, VerificationSettings>(10_000);
 
   constructor(private readonly db: Database) {}
@@ -209,6 +260,28 @@ class VerificationStore {
     );
   }
 
+  /** Newest first. `ids` limits the list to those users, `idPrefix` to ids that start with it. */
+  listVerified(guildId: string, options: { ids?: string[]; idPrefix?: string; offset?: number; limit: number }) {
+    const filter = `guild_id = ?1
+      AND (?2 IS NULL OR user_id IN (SELECT value FROM json_each(?2)))
+      AND (?3 IS NULL OR user_id LIKE ?3)`;
+    const params: [string, string | null, string | null] = [guildId, options.ids ? JSON.stringify(options.ids) : null, options.idPrefix ? `${options.idPrefix}%` : null];
+    return {
+      matches: this.db.query<{ count: number }, typeof params>(`SELECT COUNT(*) AS count FROM verification_members WHERE ${filter}`).get(...params)?.count ?? 0,
+      rows: this.db
+        .query<VerifiedRow, [...typeof params, number, number]>(
+          `SELECT user_id, verified_at FROM verification_members WHERE ${filter}
+           ORDER BY verified_at DESC, user_id LIMIT ?4 OFFSET ?5`,
+        )
+        .all(...params, options.limit, options.offset ?? 0),
+    };
+  }
+
+  /** True when the member was on the list. */
+  removeVerified(guildId: string, userId: string): boolean {
+    return this.db.query('DELETE FROM verification_members WHERE guild_id = ? AND user_id = ?').run(guildId, userId).changes > 0;
+  }
+
   private row(guildId: string) {
     return this.db
       .query<SettingsRow, [string]>('SELECT * FROM verification_settings WHERE guild_id = ?')
@@ -284,10 +357,14 @@ export default defineServerFeature({
       id: 'verification_003_drop_restore_on_rejoin',
       sql: `ALTER TABLE verification_settings DROP COLUMN restore_on_rejoin;`,
     },
+    {
+      id: 'verification_004_members_by_date',
+      sql: `CREATE INDEX idx_verification_members_date ON verification_members (guild_id, verified_at DESC);`,
+    },
   ],
 
   setup(ctx: AppContext) {
-    const { db, logger, queue, guildSettings } = ctx;
+    const { client, db, logger, queue, guildSettings } = ctx;
     const store = new VerificationStore(db);
     /** Open captchas per member. Memory only: a restart just asks for a new picture. */
     const challenges = new LruCache<string, Challenge>(50_000, CAPTCHA_RULES.expiresMinutes * 60_000);
@@ -299,6 +376,10 @@ export default defineServerFeature({
     /** New pictures per member per minute. Rendering costs CPU, so this also protects the bot. */
     const captchaLimiter = new WindowLimiter(5);
     const sampleLimiter = new WindowLimiter(20);
+    const verifiedListLimiter = new WindowLimiter(60);
+    const verifiedChangeLimiter = new WindowLimiter(30);
+    /** Names of people who left the server: those need a Discord call per person. */
+    const leftProfiles = new LruCache<string, { displayName: string; avatarUrl: string }>(10_000, 10 * 60_000);
 
     const texts = (locale: Locale) => verificationManifest.messages[locale];
 
@@ -399,6 +480,55 @@ export default defineServerFeature({
         return false;
       }
     }
+
+    /** Null only when Discord says the member is not there, so an outage never looks like everyone left. */
+    async function fetchMember(guild: Guild, userId: string): Promise<GuildMember | null> {
+      try {
+        return await guild.members.fetch({ user: userId, cache: false });
+      } catch (error) {
+        if (isUnknownMember(error)) return null;
+        throw error;
+      }
+    }
+
+    async function leftProfile(userId: string) {
+      const cached = leftProfiles.get(userId);
+      if (cached) return cached;
+      try {
+        const user = await client.users.fetch(userId, { cache: false });
+        const profile = { displayName: user.displayName, avatarUrl: user.displayAvatarURL({ size: 128, extension: 'png' }) };
+        leftProfiles.set(userId, profile);
+        return profile;
+      } catch {
+        return null;
+      }
+    }
+
+    async function verifiedEntries(guild: Guild, rows: VerifiedRow[]): Promise<VerifiedMember[]> {
+      if (!rows.length) return []; // An empty user list would ask Discord for every member.
+      const members = await guild.members.fetch({ user: rows.map((row) => row.user_id), time: 10_000 });
+      const { roleId } = store.get(guild.id);
+      return Promise.all(
+        rows.map(async (row) => {
+          const member = members.get(row.user_id);
+          const profile = member
+            ? { displayName: member.displayName, avatarUrl: member.displayAvatarURL({ size: 128, extension: 'png' }) }
+            : await leftProfile(row.user_id);
+          return {
+            userId: row.user_id,
+            displayName: profile?.displayName ?? row.user_id,
+            avatarUrl: profile?.avatarUrl ?? null,
+            verifiedAt: row.verified_at,
+            onServer: Boolean(member),
+            hasRole: Boolean(member && roleId && member.roles.cache.has(roleId)),
+          };
+        }),
+      );
+    }
+
+    const takeVerifiedChange = (guildId: string) => {
+      if (!verifiedChangeLimiter.tryTake(guildId)) throw new ApiError(429, 'rate_limited', 'Too many changes to the verified list');
+    };
 
     const reply = (interaction: ButtonInteraction | ModalSubmitInteraction, icon: keyof typeof emoji, text: string) =>
       interaction.reply({ content: `${emoji[icon]} ${text}`, flags: MessageFlags.Ephemeral });
@@ -628,6 +758,96 @@ export default defineServerFeature({
           }
           store.setError(guild.id, null);
           return c.json({ ...response(guild, settings), channel: result.channel && { id: result.channel.id, name: result.channel.name } });
+        });
+
+        router.get('/members', async (c) => {
+          const guild = c.get('guild');
+          const query = parseInput(verifiedQuerySchema, c.req.query(), 'List query');
+          if (!verifiedListLimiter.tryTake(guild.id)) throw new ApiError(429, 'rate_limited', 'Too many requests for the verified list');
+          const q = query.q ?? '';
+          const idPrefix = /^\d{5,20}$/.test(q) ? q : undefined;
+          // Names live on Discord, so a name search asks Discord who matches.
+          const ids = q && !idPrefix ? [...(await guild.members.search({ query: q, limit: 1000, cache: false })).keys()] : undefined;
+          const { matches, rows } = store.listVerified(guild.id, { ids, idPrefix, offset: query.offset, limit: query.limit ?? 50 });
+          return c.json({ members: store.verifiedCount(guild.id), matches, entries: await verifiedEntries(guild, rows) } satisfies VerifiedMembersResponse);
+        });
+
+        /** Add someone by user id. Members on the server get the role now, others when they press Verify after joining. */
+        router.post('/members', async (c) => {
+          const guild = c.get('guild');
+          const session = c.get('session');
+          takeVerifiedChange(guild.id);
+          const { userId } = await parseJsonBody(c.req.raw, addVerifiedSchema);
+          if (store.isVerified(guild.id, userId)) throw new ApiError(409, 'already_verified', 'This member is already on the list');
+
+          const member = await fetchMember(guild, userId);
+          const user =
+            member?.user ??
+            (await client.users.fetch(userId, { cache: false }).catch((error: unknown) => {
+              if (isUnknownMember(error)) return null;
+              throw error;
+            }));
+          if (!user) throw new ApiError(404, 'unknown_user', 'There is no Discord user with this id');
+          if (user.bot) throw new ApiError(400, 'is_bot', 'Bots cannot be verified');
+
+          if (member) {
+            const role = resolveRole(guild, store.get(guild.id));
+            if ('error' in role) throw new ApiError(409, role.error, `Cannot give the role: ${role.error.replaceAll('_', ' ')}`);
+            if (!(await grantRole(member, role.role))) throw new ApiError(409, 'role_failed', 'Discord refused to give the role');
+          } else {
+            store.markVerified(guild.id, userId);
+          }
+
+          const displayName = member?.displayName ?? user.displayName;
+          logger.info('Member added to the verified list', { guildId: guild.id, targetId: userId, userId: session.userId });
+          ctx.audit.record(guild.id, {
+            type: 'shifubot.verified',
+            actorId: session.userId,
+            targetId: userId,
+            targetKind: 'user',
+            data: { mode: 'manual', actorName: sessionName(session), targetName: displayName },
+          });
+          return c.json({ displayName, onServer: Boolean(member) } satisfies AddVerifiedResponse);
+        });
+
+        /** The role goes first: if Discord refuses, the member stays on the list and it can be tried again. */
+        router.post('/members/:userId/remove', async (c) => {
+          const guild = c.get('guild');
+          const session = c.get('session');
+          takeVerifiedChange(guild.id);
+          const userId = parseInput(snowflake, c.req.param('userId'), 'User id');
+          const { removeRole } = await parseJsonBody(c.req.raw, removeVerifiedSchema);
+          if (!store.isVerified(guild.id, userId)) throw new ApiError(404, 'not_found', 'This member is not on the list');
+
+          // Without the role step a Discord outage must not block taking someone off the list.
+          const member = await fetchMember(guild, userId).catch((error: unknown) => {
+            if (removeRole) throw error;
+            return null;
+          });
+          const settings = store.get(guild.id);
+          let removedRole = false;
+          if (removeRole && member && settings.roleId && member.roles.cache.has(settings.roleId)) {
+            const role = resolveRole(guild, settings);
+            if ('error' in role) throw new ApiError(409, role.error, `Cannot take the role: ${role.error.replaceAll('_', ' ')}`);
+            try {
+              await member.roles.remove(role.role, 'ShifuBot verification: removed from the verified list');
+              removedRole = true;
+            } catch (error) {
+              logger.warn('Could not take the verified role', { guildId: guild.id, roleId: role.role.id, error });
+              throw new ApiError(409, 'role_remove_failed', 'Discord refused to take the role');
+            }
+          }
+
+          store.removeVerified(guild.id, userId);
+          logger.info('Member removed from the verified list', { guildId: guild.id, targetId: userId, removedRole, userId: session.userId });
+          ctx.audit.record(guild.id, {
+            type: 'shifubot.verificationRemoved',
+            actorId: session.userId,
+            targetId: userId,
+            targetKind: 'user',
+            data: { removedRole, actorName: sessionName(session), ...(member ? { targetName: member.displayName } : {}) },
+          });
+          return c.json({ removedRole } satisfies RemoveVerifiedResponse);
         });
 
         /** A sample captcha for the dashboard preview. */

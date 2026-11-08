@@ -1,6 +1,35 @@
 {
   "name": "Hitelesítés",
   "description": "Tartsd távol a botokat: az új tagok egy captcha megoldása után férnek hozzá a szerverhez.",
+  "tabs": {
+    "members": "Tagok",
+    "settings": "Beállítások"
+  },
+  "members": {
+    "count": "{count} tag van a listán",
+    "help": "A listán lévő tagok captcha nélkül kapják vissza a rangot a Hitelesítés gombbal.",
+    "empty": "Még senki nem hitelesítette magát.",
+    "searchHelp": "Keress a név elejére vagy User ID-re. Név alapján csak a szerveren lévők találhatók meg.",
+    "addLabel": "Hozzáadás User ID alapján",
+    "addHelp": "Bekapcsolt Fejlesztői módban kattints jobb gombbal a tagra Discordon, és válaszd a Felhasználói azonosító másolása lehetőséget. A szerveren lévő tagok azonnal megkapják a rangot.",
+    "addInvalid": "A User ID 17-20 számjegyből áll.",
+    "add": "Hozzáadás",
+    "added": "{name} hitelesítve lett, és megkapta a rangot.",
+    "addedLater": "{name} felkerült a listára. A rangot csatlakozás után kapja meg a Hitelesítés gombbal.",
+    "roleProblem": "A rangot most nem lehet kiosztani: {error}",
+    "verifiedAt": "Hitelesítve: {time}",
+    "left": "Nincs a szerveren",
+    "noRole": "Nincs meg a rangja",
+    "remove": "Eltávolítás",
+    "removeMember": "{name} eltávolítása",
+    "removeTitle": "Eltávolítod {name} tagot a hitelesítettek közül?",
+    "removeBody": "Captcha módban a Hitelesítés gomb következő megnyomásakor újra meg kell oldania a captchát.",
+    "removeBodyRole": "Captcha módban a Hitelesítés gomb következő megnyomásakor újra meg kell oldania a captchát. A hitelesített rangot is el akarod venni tőle?",
+    "removeOnly": "Csak a listáról",
+    "removeWithRole": "A rangot is elveszem",
+    "removed": "{name} lekerült a listáról.",
+    "removedRole": "{name} lekerült a listáról, és elvesztette a rangot."
+  },
   "defaults": {
     "title": "Hitelesítsd magad a(z) {server} szerveren",
     "descriptionCaptcha": "Kattints a lenti gombra, és írd be a képen látható kódot. Pár másodperc az egész, és távol tartja a botokat a(z) {server} szerverről.",
@@ -128,6 +157,10 @@
     "no_manage_roles": "a ShifuBotnak nincs Rangok kezelése joga",
     "role_too_high": "a rang a ShifuBot legmagasabb rangja felett van. Húzd a ShifuBot rangját fölé a Szerverbeállítások → Rangok menüben",
     "role_failed": "a Discord nem engedte kiosztani a rangot",
+    "role_remove_failed": "a Discord nem engedte elvenni a rangot",
+    "already_verified": "Ez a tag már a listán van",
+    "unknown_user": "Nincs ilyen azonosítójú Discord felhasználó",
+    "is_bot": "Botokat nem lehet hitelesíteni",
     "fail_action_failed": "a ShifuBot nem tudta megbüntetni a captchán elbukott tagot: hiányzik a jog, vagy a tag rangja a ShifuBot felett van"
   }
 }

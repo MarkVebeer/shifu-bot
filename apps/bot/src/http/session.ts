@@ -17,6 +17,9 @@ export interface Session {
   expiresAt: number;
 }
 
+/** The name to show for the signed in user, for example in the audit log. */
+export const sessionName = (session: Pick<Session, 'globalName' | 'username'>) => session.globalName ?? session.username;
+
 interface SessionRow {
   id: string;
   user_id: string;

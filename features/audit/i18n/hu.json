@@ -65,6 +65,7 @@
       "verified": "Sikeres ellenőrzés",
       "verificationRefused": "Ellenőrzés elutasítva",
       "verificationFailed": "Sikertelen ellenőrzés",
+      "verificationRemoved": "Eltávolítva a hitelesítettek közül",
       "xpReset": "XP nullázva",
       "xpChanged": "XP javítva",
       "messageFailed": "A ShifuBot üzenete nem ment el",

@@ -1,6 +1,35 @@
 {
   "name": "Verification",
   "description": "Keep bots out: new members solve a captcha before they get access to the server.",
+  "tabs": {
+    "members": "Members",
+    "settings": "Settings"
+  },
+  "members": {
+    "count": "{count} members on the list",
+    "help": "Members on this list get the role back by pressing Verify, without a captcha.",
+    "empty": "Nobody has verified yet.",
+    "searchHelp": "Search by the start of a name or a user ID. Names only find people who are on the server.",
+    "addLabel": "Add by user ID",
+    "addHelp": "With Developer Mode on, right click a member in Discord and choose Copy User ID. Members on the server get the role straight away.",
+    "addInvalid": "A user ID is 17-20 digits.",
+    "add": "Add",
+    "added": "{name} is verified and got the role.",
+    "addedLater": "{name} is on the list. They get the role by pressing Verify after joining.",
+    "roleProblem": "The role cannot be given right now: {error}",
+    "verifiedAt": "Verified {time}",
+    "left": "Not on the server",
+    "noRole": "Does not have the role",
+    "remove": "Remove",
+    "removeMember": "Remove {name}",
+    "removeTitle": "Remove {name} from the verified list?",
+    "removeBody": "In captcha mode they will have to solve a captcha again next time they press Verify.",
+    "removeBodyRole": "In captcha mode they will have to solve a captcha again next time they press Verify. Do you also want to take away the verified role?",
+    "removeOnly": "Only from the list",
+    "removeWithRole": "Also take the role",
+    "removed": "{name} was removed from the list.",
+    "removedRole": "{name} was removed from the list and lost the role."
+  },
   "defaults": {
     "title": "Verify to enter {server}",
     "descriptionCaptcha": "Click the button below and type the code from the picture. It takes a few seconds and keeps bots out of {server}.",
@@ -128,6 +157,10 @@
     "no_manage_roles": "ShifuBot is missing the Manage Roles permission",
     "role_too_high": "the role is above ShifuBot's highest role. Drag ShifuBot's role above it in Server Settings → Roles",
     "role_failed": "Discord refused to give the role",
+    "role_remove_failed": "Discord refused to take the role",
+    "already_verified": "This member is already on the list",
+    "unknown_user": "There is no Discord user with this ID",
+    "is_bot": "Bots cannot be verified",
     "fail_action_failed": "ShifuBot could not punish a member who failed the captcha: it is missing the permission, or the member's role is above ShifuBot's"
   }
 }

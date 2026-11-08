@@ -15,7 +15,8 @@ discord.js, Hono, SQLite and React. Self host it on a Pelican panel, with Docker
   solve a captcha (or just click, in button mode) and get the verified role. Set how many wrong
   tries are allowed and what happens after (try again, timeout, kick or ban). Optional minimum
   account age. Members who verified before only press the button to get their role back, without
-  another captcha, also after rejoining. The
+  another captcha, also after rejoining. The **Members** tab lists who is verified, adds someone by
+  user ID and removes someone, with or without taking the role. The
   captcha images are drawn in plain TypeScript, so there are no native modules to install.
 - 🏆 **Leveling.** Every member has three levels: a 💬 **chat level** from chat XP (15–25 XP per
   message, at most once a minute), a 🎙️ **voice level** from voice XP (at most 600 a day, spread over
