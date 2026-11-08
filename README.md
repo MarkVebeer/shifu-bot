@@ -155,7 +155,9 @@ Already existing servers that invited ShifuBot before verification existed must 
 
 ## 2. Configuration
 
-Copy `.env.example` to `.env` and fill it in. Every variable is documented there.
+With Docker or plain Bun, copy `.env.example` to `.env` and fill it in. Every variable is documented
+there. On Pelican you set the values in the panel instead, see
+[Do I need a `.env` file?](#do-i-need-a-env-file)
 
 | Variable | Required | Default | Description |
 | --- | --- | --- | --- |
@@ -219,6 +221,24 @@ the `ghcr.io/pelican-eggs/yolks:bun_latest` image and starts with `bun run start
 The database lives in `data/shifubot.db` inside the server folder, so it survives restarts,
 updates and reinstalls.
 
+### Do I need a `.env` file?
+
+No. The panel's **Startup** tab covers everything ShifuBot needs to run. `GIT_REPO` and `GIT_BRANCH`
+are shown there too, but only an admin can change them.
+
+You only need a `.env` to change a setting that is not in the panel: `DISCORD_MESSAGE_CONTENT`,
+`WELCOME_MAX_PER_MINUTE`, `GOODBYE_MAX_PER_MINUTE`, `SEND_CONCURRENCY`, `CLEANUP_AFTER_DAYS`,
+`AUDIT_MAX_ROWS_PER_GUILD`, `AUDIT_MAX_EVENTS_PER_MINUTE`, `COUNTER_MAX_PER_GUILD`, `BOT_DISABLED`
+or `HOST`. All of them have working defaults. To change one, create a `.env` in the root of the
+server folder with only those lines:
+
+```env
+DISCORD_MESSAGE_CONTENT=true
+```
+
+Restart the server afterwards. The file survives updates and reinstalls because it is git ignored.
+If a variable is set in both places, the panel wins.
+
 ### Reverse proxy domain (HTTPS)
 
 Discord login needs a stable public address, ideally HTTPS. Point a domain at the node and proxy it
@@ -261,6 +281,11 @@ Open the server in Pelican, go to **Settings → Reinstall Server**. The install
 code from the branch in `GIT_BRANCH`, reinstalls dependencies and rebuilds the dashboard. Your
 `data` folder is left untouched and database migrations run on the next start. Start the server
 again afterwards.
+
+Reinstalling does not update the egg itself. If a release changes
+[`pelican/egg-shifubot.json`](pelican/egg-shifubot.json), for example to add a new variable, update
+the egg in the admin area from that file or its raw GitHub URL first, otherwise the new variable
+will not show up in the **Startup** tab.
 
 ---
 
